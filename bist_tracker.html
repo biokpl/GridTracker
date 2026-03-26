@@ -1660,7 +1660,6 @@ document.addEventListener('DOMContentLoaded',async()=>{
   load();
   updateMarket(); setInterval(updateMarket,30000);
   $('oDate').value=new Date().toISOString().split('T')[0];
-  renderManualList();
 
   // Firebase'den güncel veriyi yükle
   const fb=await fbRead();
@@ -1680,7 +1679,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
     }
   },300000);
 
-  // ════ AUTO_DATA_INJECT ════ GT_TMPL_b256c65d6f28
+  // ════ AUTO_DATA_INJECT ════ GT_TMPL_a76d2cefb83e
 });
 </script>
 </body>
