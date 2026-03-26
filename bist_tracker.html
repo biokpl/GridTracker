@@ -1566,8 +1566,10 @@ function renderCostSummary(){
 //  SABAH OTOMASYONU AYARLARI
 // ════════════════════════════════════════════════════════
 const AUTO_API = 'http://localhost:5050';
+const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
 async function loadAutoSettings(){
+  if(!IS_LOCAL){ $('autoStatus').className='alert warn'; $('autoStatus').textContent='⚠ Otomasyon ayarları sadece yerel ağdan erişilebilir'; $('autoStatus').style.display='flex'; return; }
   try{
     const r = await fetch(AUTO_API+'/api/morning-settings');
     if(!r.ok) throw new Error();
@@ -1603,6 +1605,7 @@ async function saveAutoSettings(){
 }
 
 async function loadHolidays(){
+  if(!IS_LOCAL){ $('holidayList').innerHTML='<div style="font-size:11px;color:var(--text3)">Tatil listesi sadece yerel ağdan görüntülenebilir.</div>'; return; }
   const year = new Date().getFullYear();
   $('holYear').textContent = year;
   try{
@@ -1679,7 +1682,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
     }
   },300000);
 
-  // ════ AUTO_DATA_INJECT ════ GT_TMPL_a76d2cefb83e
+  // ════ AUTO_DATA_INJECT ════ GT_TMPL_2dd2ff00c0e5
 });
 </script>
 </body>
