@@ -1,0 +1,11 @@
+# Hassas veriler - asla push etme
+morning_config.ini
+*.log
+data.json
+
+# Geçici dosyalar
+*.png
+*.jpg
+__pycache__/
+*.pyc
+.env
