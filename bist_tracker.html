@@ -460,11 +460,6 @@ select.field-input option{background:var(--surface2);}
 <!-- ══ ÖZET ══ -->
 <div class="page on" id="pg-home">
 
-  <div class="alert" id="syncAlert" style="display:none">
-    <span class="alert-icon">ℹ</span>
-    <span id="syncMsg">—</span>
-  </div>
-
   <!-- Overall — ana kart -->
   <div class="portfolio-card">
     <div class="pf-glow"></div>
@@ -476,7 +471,11 @@ select.field-input option{background:var(--surface2);}
         <div class="pf-stat-label">Önceki Güne Göre</div>
         <div class="pf-stat-val" id="h-overall-diff">—</div>
       </div>
-
+      <div class="pf-sep"></div>
+      <div class="pf-stat">
+        <div class="pf-stat-label">Tarih</div>
+        <div class="pf-stat-val" id="h-overall-date">—</div>
+      </div>
     </div>
   </div>
 
@@ -992,10 +991,7 @@ function getMonthStats(y,mo){
 //  HOME
 // ════════════════════════════════════════════════════════
 function renderHome(){
-  if(!D){
-    const al=$('syncAlert'); al.style.display='flex'; al.className='alert err';
-    $('syncMsg').textContent='Veri yok — python grid_tracker_service.py --now komutunu çalıştırın'; return;
-  }
+  if(!D){ $('syncTime').textContent='Veri yok'; return; }
 
   // Sync info
   if(D.lastUpdated){
@@ -1004,12 +1000,6 @@ function renderHome(){
     const timePart=lu.length>=16?lu.slice(11,16):'';
     $('syncTime').textContent='Son: '+(datePart&&timePart?datePart+' '+timePart:datePart||timePart||'—');
   } else { $('syncTime').textContent='—'; }
-  const stale=Math.floor((Date.now()-new Date(D.lastUpdated).getTime())/60000);
-  const al=$('syncAlert');
-  if(stale>120){
-    al.style.display='flex'; al.className='alert warn';
-    $('syncMsg').textContent=`Son güncelleme ${stale} dk önce`;
-  } else { al.style.display='none'; }
 
   // Overall — yuvarlak, kuruşsuz
   const ov=D.todayOverall||0;
