@@ -1311,8 +1311,9 @@ function renderHome(){
   $('h-mdays').textContent=bistDayCount(now.getFullYear(),now.getMonth())+'. iş günü';
 
   // Total Gerçek Kar
-  const mk=(D.monthlyKar||[]);
-  const totalKar=mk.reduce((s,d)=>s+d.profit,0);
+  const mkRaw=D.monthlyKar||[];
+  const mk=Array.isArray(mkRaw)?mkRaw:Object.values(mkRaw);
+  const totalKar=mk.reduce((s,d)=>s+(d.profit||0),0);
   const tk=$('h-totalkar');
   if(tk){tk.textContent=totalKar?(((totalKar>=0?'+':'')+fxi(totalKar)+' ₺')):'—';tk.className='kpi-val '+(totalKar>0?'pos':totalKar<0?'neg':'');}
 
@@ -1418,7 +1419,8 @@ function exportCSV(){
 function renderMonthlyKar(){
   const MN=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
   const fmt=m=>{const[y,mo]=m.split('-');return MN[parseInt(mo)-1]+' '+y;};
-  const data=(D&&D.monthlyKar)||[];
+  const rawMk=(D&&D.monthlyKar)||[];
+  const data=Array.isArray(rawMk)?rawMk:Object.values(rawMk);
   const sorted=[...data].sort((a,b)=>b.month.localeCompare(a.month));
   const last6=sorted.slice(0,6);
   const total6=last6.reduce((s,d)=>s+d.profit,0);
