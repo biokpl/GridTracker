@@ -863,179 +863,34 @@ async function fbWrite(path,data){
 // ════════════════════════════════════════════════════════
 //  VERİ (Python bu bloğu günceller — Firebase yüklenemezse fallback)
 // ════════════════════════════════════════════════════════
-        // GRID_DATA_START
+                // GRID_DATA_START
         window.__GRID_DATA__ = {
-  "lastUpdated": "2026-03-27 01:45:56",
+  "lastUpdated": "2026-03-27",
   "today": "2026-03-27",
-  "todayOverall": 1191353.06,
+  "todayOverall": 0,
   "todayProfit": {
-    "bySymbol": {
-      "EREGL": {
-        "symbol": "EREGL",
-        "buyCount": 0,
-        "sellCount": 0,
-        "pairCount": 0,
-        "openBuys": 0,
-        "carriedIn": 1,
-        "avgBuy": 0,
-        "avgSell": 0,
-        "grossProfit": 0,
-        "commission": 0,
-        "netProfit": 0,
-        "pairs": [],
-        "openPositions": [
-          {
-            "amount": 28.26,
-            "carryover": false,
-            "commission": 0.002826,
-            "date": "2026-03-24",
-            "datetime": "2026-03-24 10:44:32",
-            "execAmount": 28.26,
-            "execPrice": 28.26,
-            "execQty": 1,
-            "price": 28.26,
-            "qty": 1,
-            "referans": "772297521",
-            "status": "Gerçekleşti",
-            "symbol": "EREGL",
-            "time": "10:44:32",
-            "type": "Alış"
-          }
-        ]
-      }
-    },
+    "bySymbol": {},
     "totalGross": 0,
     "totalCommission": 0,
     "totalNet": 0,
-    "openPositions": {
-      "EREGL": [
-        {
-          "amount": 28.26,
-          "carryover": false,
-          "commission": 0.002826,
-          "date": "2026-03-24",
-          "datetime": "2026-03-24 10:44:32",
-          "execAmount": 28.26,
-          "execPrice": 28.26,
-          "execQty": 1,
-          "price": 28.26,
-          "qty": 1,
-          "referans": "772297521",
-          "status": "Gerçekleşti",
-          "symbol": "EREGL",
-          "time": "10:44:32",
-          "type": "Alış"
-        }
-      ]
-    }
+    "openPositions": {}
   },
   "allTrades": [],
-  "dailyLog": {
-    "2026-03-27": {
-      "date": "2026-03-27",
-      "trades": 0,
-      "sells": 0,
-      "buys": 0,
-      "grossProfit": 0,
-      "commission": 0,
-      "netProfit": 0,
-      "overall": 1191353.06,
-      "bySymbol": {
-        "EREGL": {
-          "symbol": "EREGL",
-          "buyCount": 0,
-          "sellCount": 0,
-          "pairCount": 0,
-          "openBuys": 0,
-          "carriedIn": 1,
-          "avgBuy": 0,
-          "avgSell": 0,
-          "grossProfit": 0,
-          "commission": 0,
-          "netProfit": 0,
-          "pairs": [],
-          "openPositions": [
-            {
-              "amount": 28.26,
-              "carryover": false,
-              "commission": 0.002826,
-              "date": "2026-03-24",
-              "datetime": "2026-03-24 10:44:32",
-              "execAmount": 28.26,
-              "execPrice": 28.26,
-              "execQty": 1,
-              "price": 28.26,
-              "qty": 1,
-              "referans": "772297521",
-              "status": "Gerçekleşti",
-              "symbol": "EREGL",
-              "time": "10:44:32",
-              "type": "Alış"
-            }
-          ]
-        }
-      },
-      "updatedAt": "2026-03-27 01:45:56"
-    }
-  },
-  "overallHistory": [
-    {
-      "date": "2026-03-27",
-      "amount": 1191353.06,
-      "note": "Otomatik - 01:45"
-    }
-  ],
+  "dailyLog": {},
+  "overallHistory": [],
   "openPositions": {
     "date": "2026-03-27",
-    "positions": {
-      "EREGL": [
-        {
-          "amount": 28.26,
-          "carryover": false,
-          "commission": 0.002826,
-          "date": "2026-03-24",
-          "datetime": "2026-03-24 10:44:32",
-          "execAmount": 28.26,
-          "execPrice": 28.26,
-          "execQty": 1,
-          "price": 28.26,
-          "qty": 1,
-          "referans": "772297521",
-          "status": "Gerçekleşti",
-          "symbol": "EREGL",
-          "time": "10:44:32",
-          "type": "Alış"
-        }
-      ]
-    }
+    "positions": {}
   },
   "settings": {
     "commissionRate": 1,
     "costs": [
-      {
-        "amount": 95,
-        "name": "Hesap İşletim Ücreti"
-      },
-      {
-        "amount": 1095,
-        "name": "Algo"
-      },
-      {
-        "amount": 980,
-        "name": "IQ Terminal"
-      },
-      {
-        "amount": 282,
-        "name": "Tek Kademe"
-      },
-      {
-        "amount": 420,
-        "name": "Otomatik Emir"
-      },
-      {
-        "amount": 26,
-        "name": "Endeks Veri"
-      }
+      {"amount": 95,   "name": "Hesap İşletim Ücreti"},
+      {"amount": 1095, "name": "Algo"},
+      {"amount": 980,  "name": "IQ Terminal"},
+      {"amount": 282,  "name": "Tek Kademe"},
+      {"amount": 420,  "name": "Otomatik Emir"},
+      {"amount": 26,   "name": "Endeks Veri"}
     ],
     "gridInterval": 0,
     "lotTolerance": 0
