@@ -1301,8 +1301,8 @@ function renderHome(){
 
   // Trades
   const dl=(D.dailyLog||{})[D.today]||{};
-  $('h-trades').textContent=dl.sells||0;
-  $('h-trades-sub').textContent=`${dl.buys||0} alış · ${dl.sells||0} satış`;
+  $('h-trades').textContent=dl.sells||'—';
+  $('h-trades-sub').textContent=(dl.buys||dl.sells)?`${dl.buys||0} alış · ${dl.sells||0} satış`:'— alış · — satış';
 
   // Monthly
   const now=new Date();
@@ -1476,10 +1476,10 @@ function renderMonthly(){
     const nc=d.netProfit>0?'td-pos':d.netProfit<0?'td-neg':'';
     return `<tr>
       <td style="color:#7b92b5;font-weight:600">${d.date.slice(5).replace('-','.')}</td>
-      <td class="td-dim">${d.trades}</td>
-      <td class="${d.grossProfit>=0?'td-pos':'td-neg'}">${fxs(d.grossProfit)}</td>
-      <td class="td-amb">${fx(d.commission)}</td>
-      <td class="${nc}" style="font-weight:600">${fxs(d.netProfit)}</td>
+      <td class="td-dim">${d.trades||'—'}</td>
+      <td class="${d.grossProfit>0?'td-pos':d.grossProfit<0?'td-neg':''}">${d.grossProfit?fxs(d.grossProfit):'—'}</td>
+      <td class="td-amb">${d.commission?fx(d.commission):'—'}</td>
+      <td class="${nc}" style="font-weight:600">${d.netProfit?fxs(d.netProfit):'—'}</td>
       <td style="color:#4e6080">${d.overall?fxi(d.overall)+'₺':'—'}</td>
     </tr>`;
   }).join('');
