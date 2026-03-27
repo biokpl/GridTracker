@@ -1060,9 +1060,9 @@ async function fbWrite(path,data){
 // ════════════════════════════════════════════════════════
                 // GRID_DATA_START
         window.__GRID_DATA__ = {
-  "lastUpdated": "2026-03-27",
+  "lastUpdated": "2026-03-27 22:04:11",
   "today": "2026-03-27",
-  "todayOverall": 0,
+  "todayOverall": 1232342.31,
   "todayProfit": {
     "bySymbol": {},
     "totalGross": 0,
@@ -1071,9 +1071,32 @@ async function fbWrite(path,data){
     "openPositions": {}
   },
   "allTrades": [],
-  "dailyLog": {},
-  "overallHistory": [],
-  "birikimTx": [],
+  "dailyLog": {
+    "2026-03-27": {
+      "date": "2026-03-27",
+      "trades": 0,
+      "sells": 0,
+      "buys": 0,
+      "grossProfit": 0,
+      "commission": 0,
+      "netProfit": 0,
+      "overall": 1232342.31,
+      "bySymbol": {},
+      "updatedAt": "2026-03-27 22:04:11"
+    }
+  },
+  "overallHistory": [
+    {
+      "amount": 1388255,
+      "date": "2026-03-15",
+      "note": "İran/ABD-İsrail Svş. Öncesi"
+    },
+    {
+      "date": "2026-03-27",
+      "amount": 1232342.31,
+      "note": "Otomatik - 22:04"
+    }
+  ],
   "openPositions": {
     "date": "2026-03-27",
     "positions": {}
@@ -1081,12 +1104,30 @@ async function fbWrite(path,data){
   "settings": {
     "commissionRate": 1,
     "costs": [
-      {"amount": 95,   "name": "Hesap İşletim Ücreti"},
-      {"amount": 1095, "name": "Algo"},
-      {"amount": 980,  "name": "IQ Terminal"},
-      {"amount": 282,  "name": "Tek Kademe"},
-      {"amount": 420,  "name": "Otomatik Emir"},
-      {"amount": 26,   "name": "Endeks Veri"}
+      {
+        "amount": 95,
+        "name": "Hesap İşletim Ücreti"
+      },
+      {
+        "amount": 1095,
+        "name": "Algo"
+      },
+      {
+        "amount": 980,
+        "name": "IQ Terminal"
+      },
+      {
+        "amount": 282,
+        "name": "Tek Kademe"
+      },
+      {
+        "amount": 420,
+        "name": "Otomatik Emir"
+      },
+      {
+        "amount": 26,
+        "name": "Endeks Veri"
+      }
     ],
     "gridInterval": 0,
     "lotTolerance": 0
@@ -1729,15 +1770,35 @@ document.addEventListener('DOMContentLoaded',async()=>{
   }
   renderHome();
 
-  // Her 5 dakikada bir Firebase'i kontrol et
-  setInterval(async()=>{
-    const fb=await fbRead();
-    if(fb&&(!D||fb.lastUpdated>D.lastUpdated)){
-      D=fb;
-      renderHome();
-      toast('Veri güncellendi','ok',2000);
-    }
-  },300000);
+  // Firebase SSE — değişiklik anında yansır
+  function renderAll(showToast){
+    renderHome();
+    renderSermaye();
+    if(showToast) toast('Veri güncellendi','ok',2000);
+  }
+  function startFirebaseStream(){
+    const es=new EventSource(FIREBASE_URL+'/gridtracker.json');
+    es.addEventListener('put',e=>{
+      try{
+        const {path,data}=JSON.parse(e.data);
+        if(!data) return;
+        if(path==='/'){
+          const prev=D?D.lastUpdated:null;
+          D=data;
+          if(!D.birikimTx) D.birikimTx=[];
+          if(D.settings&&D.settings.costs) S.settings.costs=D.settings.costs;
+          renderAll(D.lastUpdated&&D.lastUpdated!==prev);
+        } else {
+          if(!D) return;
+          const key=path.slice(1);
+          D[key]=data;
+          renderAll(false);
+        }
+      }catch(_){}
+    });
+    es.onerror=()=>{ es.close(); setTimeout(startFirebaseStream,5000); };
+  }
+  startFirebaseStream();
 
   // ════ AUTO_DATA_INJECT ════ GT_TMPL_2dd2ff00c0e5
 });
