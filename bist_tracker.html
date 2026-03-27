@@ -1495,29 +1495,19 @@ function addBirikimTx(type){
   const tx={id:Date.now().toString(),date,amount,note};
   if(!D.birikimTx) D.birikimTx=[];
   D.birikimTx.push(tx);
-  D.todayOverall=(D.todayOverall||0)+amount;
   $('srAmt').value='';
   $('srNote').value='';
   renderSermaye();
-  renderHome();
-  Promise.all([
-    fbWrite('gridtracker/birikimTx',D.birikimTx),
-    fbWrite('gridtracker/todayOverall',D.todayOverall),
-  ]).then(()=>toast(type==='in'?'Para girişi kaydedildi':'Para çıkışı kaydedildi','ok'))
+  fbWrite('gridtracker/birikimTx',D.birikimTx)
+    .then(()=>toast(type==='in'?'Para girişi kaydedildi':'Para çıkışı kaydedildi','ok'))
     .catch(()=>toast('Kaydedildi (Firebase hatası)','warn'));
 }
 
 function delBirikimTx(id){
   if(!D||!D.birikimTx) return;
-  const tx=D.birikimTx.find(t=>t.id===id);
-  if(tx) D.todayOverall=(D.todayOverall||0)-tx.amount;
   D.birikimTx=D.birikimTx.filter(t=>t.id!==id);
   renderSermaye();
-  renderHome();
-  Promise.all([
-    fbWrite('gridtracker/birikimTx',D.birikimTx),
-    fbWrite('gridtracker/todayOverall',D.todayOverall),
-  ]);
+  fbWrite('gridtracker/birikimTx',D.birikimTx);
   toast('Silindi','ok',1500);
 }
 
