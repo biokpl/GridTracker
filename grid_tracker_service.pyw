@@ -1,16 +1,49 @@
-<!DOCTYPE html>
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+BIST Grid Bot Tracker - Otomatik Servis v2
+===========================================
+Her iş günü BİST kapanışından 35 dakika sonra çalışır:
+  - Normal günler : 18:35
+  - Arife günleri : 13:05
+
+Masaüstündeki 1.xlsx ve 2.xlsx dosyalarını okur,
+verileri doğrudan bist_tracker.html içine gömer.
+(data.json da yedek olarak yazılır)
+
+Kullanım:
+  python grid_tracker_service.py          # Servis (sürekli)
+  python grid_tracker_service.py --now    # Hemen çalıştır (test)
+  python grid_tracker_service.py --setup  # Görev zamanlayıcıya ekle
+  python grid_tracker_service.py --html   # Sadece HTML'i yeniden oluştur
+"""
+
+import os, sys, json, time, logging, argparse, re, subprocess
+from datetime import datetime, date, timedelta
+from pathlib import Path
+
+try:
+    import openpyxl
+except ImportError:
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'openpyxl'])
+    import openpyxl
+
+try:
+    import requests
+except ImportError:
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'requests'])
+    import requests
+
+
+# ══════════════════════════════════════════════════════════════
+#  HTML ŞABLONU  (güncelleme: bist_tracker.html bu içerikten oluşturulur)
+# ══════════════════════════════════════════════════════════════
+HTML_TEMPLATE = '''<!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Grid Tracker</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#000000">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="GridTracker">
-<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -62,22 +95,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);display:flex
 .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite;}
 .dot.off{background:var(--red);animation:none;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.sync-time{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  background:rgba(30,58,95,.25);border:1px solid rgba(59,130,246,.14);
-  border-radius:7px;padding:4px 6px;margin-right:6px;gap:0;
-}
-.sync-time .st-lbl{
-  font-size:6.5px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;
-  color:rgba(147,197,253,.45);font-style:normal;white-space:nowrap;
-  padding-bottom:3px;margin-bottom:3px;width:100%;text-align:center;
-  border-bottom:1px solid;
-  border-image:linear-gradient(90deg,transparent,#1e3a5f 10%,#60a5fa 50%,#1e3a5f 90%,transparent) 1;
-}
-.sync-time .st-val{
-  font-family:var(--mono);font-size:8.5px;font-weight:500;
-  color:rgba(147,197,253,.52);font-style:normal;white-space:nowrap;letter-spacing:.4px;
-}
+.sync-time{font-family:var(--mono);font-size:10px;color:var(--text3);}
 
 /* ── NAV ── */
 .nav{
@@ -89,32 +107,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);display:flex
 .nav::-webkit-scrollbar{display:none;}
 .nav-btn{
   flex:1;min-width:64px;
-  padding:7px 12px;border-radius:6px;border:1px solid transparent;
+  padding:7px 12px;border-radius:6px;border:none;
   background:transparent;color:var(--text3);
   font-family:var(--sans);font-size:12px;font-weight:500;
   cursor:pointer;transition:all .15s;white-space:nowrap;
   display:flex;align-items:center;justify-content:center;gap:5px;
-  position:relative;overflow:hidden;
 }
 .nav-btn:hover{color:var(--text2);background:var(--surface2);}
-.nav-btn.on{background:var(--surface2);}
-.nav-btn.on::before{
-  content:'';position:absolute;top:0;left:8%;right:8%;height:1px;
-  background:linear-gradient(90deg,transparent,var(--tc),transparent);
-  opacity:.9;
-}
-.nav-btn.on::after{
-  content:'';position:absolute;bottom:0;left:18%;right:18%;height:1px;
-  background:linear-gradient(90deg,transparent,var(--tc),transparent);
-  opacity:.35;
-}
-/* Sekme renkleri */
-.nav-btn:nth-child(1).on{color:#60a5fa;border-color:rgba(59,130,246,.22);background:rgba(59,130,246,.06);--tc:#3b82f6;}
-.nav-btn:nth-child(2).on{color:#4ade80;border-color:rgba(34,197,94,.22);background:rgba(34,197,94,.05);--tc:#22c55e;}
-.nav-btn:nth-child(3).on{color:#fbbf24;border-color:rgba(245,158,11,.22);background:rgba(245,158,11,.05);--tc:#f59e0b;}
-.nav-btn:nth-child(4).on{color:#c4b5fd;border-color:rgba(167,139,250,.22);background:rgba(167,139,250,.05);--tc:#a78bfa;}
-.nav-btn:nth-child(5).on{color:#5eead4;border-color:rgba(45,212,191,.22);background:rgba(45,212,191,.05);--tc:#2dd4bf;}
-.nav-btn:nth-child(6).on{color:#a1a1aa;border-color:rgba(113,113,122,.22);background:rgba(113,113,122,.05);--tc:#71717a;}
+.nav-btn.on{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
 .nav-icon{font-size:13px;}
 
 /* ── SCROLL AREA ── */
@@ -294,12 +294,6 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .td-amb{color:var(--amber);}
 .td-dim{color:var(--text3);}
 .htbl th,.htbl td{text-align:center;}
-@media(max-width:480px){
-  .htbl .col-ort{display:none;}
-  .htbl th,.htbl td{padding:7px 6px;font-size:10px;}
-  .ttbl th,.ttbl td{padding:4px 3px;font-size:9px;}
-  table{font-size:9px;}
-}
 .td-sell{color:#f87171;}
 .th-sell,.th-netkar{display:inline-block;position:relative;padding-bottom:4px;}
 .th-sell::after{
@@ -343,15 +337,6 @@ tr:hover td{background:rgba(255,255,255,.02);}
   background:var(--surface2);border:1px solid var(--border);border-radius:7px;
   padding:9px 12px;color:var(--text);font-family:var(--mono);font-size:13px;
   outline:none;transition:border-color .15s;width:100%;
-  height:40px;box-sizing:border-box;
-  -webkit-appearance:none;appearance:none;
-}
-.field-input[type=date]{padding:0 10px;cursor:pointer;}
-.field-input[type=date]::-webkit-datetime-edit{padding:0;line-height:40px;}
-.field-input[type=date]::-webkit-datetime-edit-fields-wrapper{padding:0;}
-.field-input[type=date]::-webkit-inner-spin-button,
-.field-input[type=date]::-webkit-calendar-picker-indicator{
-  opacity:.4;cursor:pointer;filter:invert(.6);
 }
 .field-input:focus{border-color:var(--blue);}
 .field-input::placeholder{color:var(--text3);}
@@ -400,22 +385,6 @@ select.field-input option{background:var(--surface2);}
 .s-title-c{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#a1a1aa;white-space:nowrap;display:flex;align-items:center;gap:0;}
 
 /* ── MONTH NAV ── */
-.mk-stat{
-  flex:1;background:var(--surface);border:1px solid var(--border);
-  border-top:2px solid var(--msc,#3b82f6);border-radius:var(--r);
-  padding:18px 10px 14px;text-align:center;position:relative;
-}
-.mk-stat.blue{--msc:#3b82f6;}
-.mk-stat.green{--msc:#22c55e;}
-.mk-stat.amber{--msc:#f59e0b;}
-.mk-stat-lbl{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text2);margin-bottom:10px;}
-.mk-stat-val{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--text);line-height:1;margin-bottom:6px;}
-.mk-stat-val.pos{color:#4ade80;}
-.mk-stat-val.neg{color:#f87171;}
-.mk-stat-val.blue{color:#60a5fa;}
-.mk-stat-sub{font-size:9px;color:var(--text3);}
-.mk-stats{display:flex;gap:8px;margin-bottom:12px;}
-.mk-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);margin:4px 0 16px;}
 .month-nav{display:flex;align-items:center;gap:4px;margin-bottom:16px;}
 .month-btn{
   background:var(--surface2);border:1px solid var(--border);border-radius:7px;
@@ -484,103 +453,6 @@ select.field-input option{background:var(--surface2);}
   .kpi-val{font-size:15px;}
   .kpi-strip.three .kpi-val{font-size:13px;}
 }
-
-/* ── SERMAYe ── */
-.sr-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
-.sr-stat{
-  background:var(--surface);border:1px solid var(--border);
-  border-radius:var(--r);padding:20px 12px;text-align:center;
-  position:relative;overflow:hidden;
-}
-.sr-stat::before{
-  content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
-  background:linear-gradient(90deg,transparent,var(--sc,#3b82f6),transparent);
-  opacity:.5;
-}
-.sr-stat::after{
-  content:'';position:absolute;bottom:0;left:10%;right:10%;height:1px;
-  background:linear-gradient(90deg,transparent,var(--sc,#3b82f6),transparent);
-  opacity:.2;
-}
-.sr-stat.blue{--sc:#3b82f6;background:linear-gradient(180deg,rgba(59,130,246,.04) 0%,var(--surface) 60%);}
-.sr-stat.teal{--sc:#2dd4bf;background:linear-gradient(180deg,rgba(45,212,191,.04) 0%,var(--surface) 60%);}
-.sr-stat-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#8b9ab5;margin-bottom:10px;}
-.sr-stat-sub{font-size:8.5px;color:#6b7a92;margin-top:6px;}
-.sr-stat-val{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--text);}
-.sr-stat-val.pos{color:#4ade80;}
-.sr-stat-val.neg{color:#f87171;}
-.sr-stat-val.blue{color:#60a5fa;}
-.sr-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
-.btn-money-in{
-  background:linear-gradient(135deg,#166534,#14532d);
-  color:#86efac;border:1px solid rgba(34,197,94,.25);border-radius:8px;
-  padding:11px;font-family:var(--sans);font-size:11px;font-weight:700;
-  cursor:pointer;letter-spacing:.8px;transition:opacity .15s;
-}
-.btn-money-in:active{opacity:.8;}
-.btn-money-out{
-  background:linear-gradient(135deg,#7f1d1d,#991b1b);
-  color:#fca5a5;border:1px solid rgba(239,68,68,.25);border-radius:8px;
-  padding:11px;font-family:var(--sans);font-size:11px;font-weight:700;
-  cursor:pointer;letter-spacing:.8px;transition:opacity .15s;
-}
-.btn-money-out:active{opacity:.8;}
-.sr-list-head{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
-.sr-ftab{padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text3);font-family:var(--sans);font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;}
-.sr-ftab.fa{background:rgba(59,130,246,.12);border-color:var(--blue);color:var(--blue);}
-.sr-ftab.fi{background:rgba(34,197,94,.1);border-color:var(--green);color:var(--green);}
-.sr-ftab.fo{background:rgba(239,68,68,.1);border-color:var(--red);color:var(--red);}
-.sr-tx{
-  display:flex;align-items:center;padding:9px 12px;gap:10px;
-  border-radius:8px;border:1px solid var(--border);
-  background:linear-gradient(135deg,rgba(15,23,42,.6) 0%,var(--surface2) 100%);
-  margin-bottom:5px;transition:border-color .15s;
-}
-.sr-tx:hover{border-color:var(--border2);}
-.sr-tx-icon{
-  width:28px;height:28px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:700;flex-shrink:0;
-}
-.sr-tx-icon.in{background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.05));color:#4ade80;border:1px solid rgba(34,197,94,.2);}
-.sr-tx-icon.out{background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(239,68,68,.05));color:#f87171;border:1px solid rgba(239,68,68,.2);}
-.sr-tx-note{font-size:11.5px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
-.sr-tx-date{font-size:9px;color:#7090b0;margin-top:2px;font-family:var(--mono);}
-.sr-tx-amt{font-family:var(--mono);font-size:13px;font-weight:600;}
-.sr-tx-amt.pos{color:#4ade80;}
-.sr-tx-amt.neg{color:#f87171;}
-#sr-list{max-height:260px;overflow-y:auto;padding-right:3px;overflow-x:hidden;}
-#sr-list::-webkit-scrollbar{width:3px;}
-#sr-list::-webkit-scrollbar-track{background:transparent;}
-#sr-list::-webkit-scrollbar-thumb{background:rgba(59,130,246,.25);border-radius:3px;}
-#sr-list::-webkit-scrollbar-thumb:hover{background:rgba(59,130,246,.45);}
-/* GridBot kazanç — portfolio-card altına eklenen özel alan */
-.sr-bot-row{
-  display:flex;align-items:center;justify-content:center;gap:6px;
-  padding:10px 0 0;margin-top:4px;
-  border-top:1px solid;
-  border-image:linear-gradient(90deg,transparent,#1e3a5f 20%,#3b82f6 50%,#1e3a5f 80%,transparent) 1;
-}
-.sr-bot-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#8b9ab5;}
-.sr-bot-val{font-family:var(--mono);font-size:18px;font-weight:600;}
-.sr-bot-val.pos{color:#4ade80;}
-.sr-bot-val.neg{color:#f87171;}
-
-/* ── DESKTOP: telefon çerçevesi ── */
-@media(min-width:720px){
-  html{
-    background:#000 radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.22) 0%,transparent 55%);
-    min-height:100vh;
-  }
-  body{
-    max-width:640px;
-    margin:0 auto;
-    border-left:1px solid var(--border2);
-    border-right:1px solid var(--border2);
-    box-shadow:0 0 80px rgba(0,0,0,.9),0 0 0 1px rgba(59,130,246,.04);
-  }
-  .page{max-width:100%;}
-}
 </style>
 </head>
 <body>
@@ -606,7 +478,6 @@ select.field-input option{background:var(--surface2);}
   <button class="nav-btn" onclick="go('pg-trades',this)"><span class="nav-icon">⇅</span>İşlemler</button>
   <button class="nav-btn" onclick="go('pg-monthly',this)"><span class="nav-icon">▦</span>Aylık</button>
   <button class="nav-btn" onclick="go('pg-overall',this)"><span class="nav-icon">◎</span>Overall</button>
-  <button class="nav-btn" onclick="go('pg-sermaye',this)"><span class="nav-icon">₺</span>Sermaye</button>
   <button class="nav-btn" onclick="go('pg-settings',this)"><span class="nav-icon">⚙</span>Ayarlar</button>
 </div>
 
@@ -615,6 +486,11 @@ select.field-input option{background:var(--surface2);}
 
 <!-- ══ ÖZET ══ -->
 <div class="page on" id="pg-home">
+
+  <div class="alert" id="syncAlert" style="display:none">
+    <span class="alert-icon">ℹ</span>
+    <span id="syncMsg">—</span>
+  </div>
 
   <!-- Overall — ana kart -->
   <div class="portfolio-card">
@@ -636,9 +512,19 @@ select.field-input option{background:var(--surface2);}
   </div>
 
   <!-- Günlük P&L -->
-  <div class="kpi-strip" style="margin-bottom:10px">
+  <div class="kpi-strip three" style="margin-bottom:10px">
+    <div class="kpi g">
+      <div class="kpi-label"><span class="kpi-icon">📈</span>Brüt Kar</div>
+      <div class="kpi-val pos" id="h-gross">—</div>
+      <div class="kpi-sub">₺ bugün</div>
+    </div>
+    <div class="kpi a">
+      <div class="kpi-label"><span class="kpi-icon">💸</span>Komisyon</div>
+      <div class="kpi-val amb" id="h-comm">—</div>
+      <div class="kpi-sub">₺ bugün</div>
+    </div>
     <div class="kpi">
-      <div class="kpi-label"><span class="kpi-icon">💎</span>Günlük Net Kar</div>
+      <div class="kpi-label"><span class="kpi-icon">💎</span>Net Kar</div>
       <div class="kpi-val" id="h-net">—</div>
       <div class="kpi-sub">₺ bugün</div>
     </div>
@@ -686,7 +572,7 @@ select.field-input option{background:var(--surface2);}
     <div class="card">
       <div class="tbl-wrap">
         <table class="htbl">
-          <thead><tr><th>Hisse</th><th>Alış</th><th><span class="th-sell">Satış</span></th><th class="col-ort">Ort.Alış</th><th class="col-ort">Ort.Satış</th><th><span class="th-netkar">Net Kar</span></th></tr></thead>
+          <thead><tr><th>Hisse</th><th>Alış</th><th><span class="th-sell">Satış</span></th><th>Ort.Alış</th><th>Ort.Satış</th><th><span class="th-netkar">Net Kar</span></th></tr></thead>
           <tbody id="h-sym-tbl"><tr><td colspan="6"><div class="empty"><div class="empty-icon">📊</div><div class="empty-text">Veri bekleniyor</div></div></td></tr></tbody>
         </table>
       </div>
@@ -697,6 +583,42 @@ select.field-input option{background:var(--surface2);}
 
 <!-- ══ İŞLEMLER ══ -->
 <div class="page" id="pg-trades">
+
+  <div class="s-head-c" style="margin-bottom:12px"><div class="s-rule"></div><div class="section-title s-title-c">İşlem Geçmişi</div><div class="s-rule"></div></div>
+
+  <div class="t-filter">
+    <div class="t-filter-group">
+      <div class="t-filter-label">🏷 Hisse</div>
+      <select id="fSym" onchange="renderTrades()">
+        <option value="">Tüm Hisseler</option>
+      </select>
+    </div>
+    <div class="t-filter-group">
+      <div class="t-filter-label">⇅ İşlem Tipi</div>
+      <select id="fType" onchange="renderTrades()">
+        <option value="">Alış &amp; Satış</option>
+        <option>Alış</option>
+        <option>Satış</option>
+      </select>
+    </div>
+    <div style="display:flex;align-items:flex-end;padding-bottom:1px">
+      <button class="btn btn-ghost btn-sm" onclick="exportCSV()" style="white-space:nowrap">↓ CSV</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="tbl-wrap">
+      <table class="ttbl">
+        <thead><tr><th>Saat</th><th>Hisse</th><th>İşlem</th><th>Lot</th><th>Fiyat</th><th>Tutar</th><th>Komisyon</th></tr></thead>
+        <tbody id="trades-tbl"><tr><td colspan="7"><div class="empty"><div class="empty-icon">↕</div><div class="empty-text">Veri yok</div></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /pg-trades -->
+
+<!-- ══ AYLIK ══ -->
+<div class="page" id="pg-monthly">
 
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">‹</button>
@@ -722,12 +644,12 @@ select.field-input option{background:var(--surface2);}
   <div class="kpi-strip" style="margin-bottom:16px">
     <div class="kpi" style="padding:0;display:flex;overflow:hidden">
       <div style="flex:1;padding:14px 10px 12px;text-align:center">
-        <div class="kpi-label" style="font-size:7.5px">Ort. Günlük Kar</div>
+        <div class="kpi-label">≈ Ort. Günlük Kar</div>
         <div class="kpi-val kpi-muted" id="m-avg">—</div>
       </div>
       <div style="width:1px;background:rgba(255,255,255,.06);margin:10px 0"></div>
       <div style="flex:1;padding:14px 10px 12px;text-align:center">
-        <div class="kpi-label" style="font-size:7.5px">Ort. Aylık Kar</div>
+        <div class="kpi-label">≈ Ort. Aylık Kar</div>
         <div class="kpi-val kpi-muted" id="m-mavg">—</div>
       </div>
     </div>
@@ -744,39 +666,6 @@ select.field-input option{background:var(--surface2);}
       <table class="ttbl">
         <thead><tr><th>Tarih</th><th>İşlem</th><th>Brüt Kar</th><th>Komisyon</th><th><span class="th-netkar">Net Kar</span></th><th>Overall</th></tr></thead>
         <tbody id="m-tbl"><tr><td colspan="6"><div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Bu ay veri yok</div></div></td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-</div><!-- /pg-trades -->
-
-<!-- ══ AYLIK ══ -->
-<div class="page" id="pg-monthly">
-
-  <!-- GridBot Aylık Kar -->
-  <div class="mk-stats">
-    <div class="mk-stat blue">
-      <div class="mk-stat-lbl">Toplam Kar</div>
-      <div class="mk-stat-val blue" id="mk-total">—</div>
-      <div class="mk-stat-sub" id="mk-period">— ay</div>
-    </div>
-    <div class="mk-stat green">
-      <div class="mk-stat-lbl">En İyi Ay</div>
-      <div class="mk-stat-val pos" id="mk-best-val">—</div>
-      <div class="mk-stat-sub" id="mk-best-lbl">—</div>
-    </div>
-    <div class="mk-stat amber">
-      <div class="mk-stat-lbl">Ort. Aylık</div>
-      <div class="mk-stat-val" id="mk-avg">—</div>
-      <div class="mk-stat-sub">aylık ortalama</div>
-    </div>
-  </div>
-
-  <div class="card" style="margin-top:0">
-    <div class="tbl-wrap">
-      <table class="ttbl">
-        <thead><tr><th>Yıl</th><th>Ay</th><th style="text-align:right;padding-right:10px">Net Kazanç</th></tr></thead>
-        <tbody id="mk-list"><tr><td colspan="3"><div class="empty"><div class="empty-icon">📈</div><div class="empty-text">Henüz veri yok</div></div></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -818,71 +707,6 @@ select.field-input option{background:var(--surface2);}
   </div>
 
 </div><!-- /pg-overall -->
-
-<!-- ══ SERMAYe ══ -->
-<div class="page" id="pg-sermaye">
-
-  <!-- Ana Para + GridBot Kazancı -->
-  <div class="sr-stats">
-    <div class="sr-stat blue">
-      <div class="sr-stat-lbl">Ana Para</div>
-      <div class="sr-stat-val blue" id="sr-ana">—</div>
-      <div class="sr-stat-sub">Net yatırılan sermaye</div>
-    </div>
-    <div class="sr-stat teal">
-      <div class="sr-stat-lbl">GridBot Kazancı</div>
-      <div class="sr-stat-val" id="sr-bot">—</div>
-      <div class="sr-stat-sub">Overall − Ana Para</div>
-    </div>
-  </div>
-
-  <!-- Toplam Giriş / Çıkış -->
-  <div class="kpi-strip" style="margin-bottom:12px">
-    <div class="kpi g">
-      <div class="kpi-label"><span class="kpi-icon">▲</span>Toplam Giriş</div>
-      <div class="kpi-val pos" id="sr-in">—</div>
-    </div>
-    <div class="kpi r">
-      <div class="kpi-label"><span class="kpi-icon">▼</span>Toplam Çıkış</div>
-      <div class="kpi-val neg" id="sr-out">—</div>
-    </div>
-  </div>
-
-  <!-- Form -->
-  <div class="card" style="margin-bottom:10px">
-    <div class="card-body">
-      <div class="row-fields" style="margin-bottom:8px">
-        <div class="field"><div class="field-label">📅 Tarih</div><input class="field-input" id="srDate" type="date"></div>
-        <div class="field"><div class="field-label">💰 Miktar</div><input class="field-input" id="srAmt" type="text" inputmode="numeric" placeholder="0"></div>
-      </div>
-      <div class="field" style="margin-bottom:10px">
-        <div class="field-label">💬 Not</div>
-        <input class="field-input" id="srNote" placeholder="İşlem açıklaması (opsiyonel)">
-      </div>
-      <div class="sr-btn-row">
-        <button class="btn-money-in"  onclick="addBirikimTx('in')">▲ Para Ekle</button>
-        <button class="btn-money-out" onclick="addBirikimTx('out')">▼ Para Çek</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Hareket listesi -->
-  <div class="card">
-    <div class="card-body">
-      <div class="sr-list-head">
-        <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3)">Hareketler</span>
-        <div style="display:flex;gap:4px;margin-left:auto">
-          <button class="sr-ftab fa" id="sr-tab-all" onclick="setSrFilter('all')">Tümü</button>
-          <button class="sr-ftab"    id="sr-tab-in"  onclick="setSrFilter('in')">↑ Giriş</button>
-          <button class="sr-ftab"    id="sr-tab-out" onclick="setSrFilter('out')">↓ Çıkış</button>
-        </div>
-        <span style="font-size:9px;color:var(--text3);margin-left:6px;white-space:nowrap" id="sr-count">0 kayıt</span>
-      </div>
-      <div id="sr-list"></div>
-    </div>
-  </div>
-
-</div><!-- /pg-sermaye -->
 
 <!-- ══ AYARLAR ══ -->
 <div class="page" id="pg-settings">
@@ -1019,37 +843,6 @@ select.field-input option{background:var(--surface2);}
 //  FİREBASE
 // ════════════════════════════════════════════════════════
 const FIREBASE_URL='https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app';
-
-// BİST işlem günü sayacı — resmi/dini tatil OLMAYAN Pzt-Cum günlerini sayar
-function bistDayCount(y,mo){
-  const now=new Date();
-  const isCurrent=(y===now.getFullYear()&&mo===now.getMonth());
-  const last=isCurrent?now.getDate():new Date(y,mo+1,0).getDate();
-  let c=0;
-  for(let i=1;i<=last;i++){
-    const dow=new Date(y,mo,i).getDay();
-    if(dow>0&&dow<6){
-      const ds=`${y}-${String(mo+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-      if(!BIST_HOLIDAYS.has(ds))c++;
-    }
-  }
-  return c;
-}
-
-// BİST işlem günü olMAYAN hafta içi günleri (resmi/dini tatil — arefe dahil DEĞİL, yarım gün açık)
-const BIST_HOLIDAYS=new Set([
-  // 2025
-  '2025-01-01','2025-03-31','2025-04-23','2025-05-01','2025-05-19',
-  '2025-06-06','2025-06-09','2025-07-15','2025-10-29',
-  // 2026
-  '2026-01-01','2026-03-20','2026-04-23','2026-05-01','2026-05-19',
-  '2026-05-27','2026-05-28','2026-05-29','2026-07-15','2026-10-29',
-  // 2027
-  '2027-01-01','2027-03-09','2027-03-10','2027-03-11','2027-04-23',
-  '2027-05-17','2027-05-18','2027-05-19','2027-07-15','2027-08-30','2027-10-29',
-  // 2028
-  '2028-02-28','2028-05-01','2028-05-04','2028-05-05','2028-05-19','2028-08-30',
-]);
 async function fbRead(){
   try{
     const r=await fetch(FIREBASE_URL+'/gridtracker.json');
@@ -1066,81 +859,8 @@ async function fbWrite(path,data){
 // ════════════════════════════════════════════════════════
 //  VERİ (Python bu bloğu günceller — Firebase yüklenemezse fallback)
 // ════════════════════════════════════════════════════════
-                // GRID_DATA_START
-        window.__GRID_DATA__ = {
-  "lastUpdated": "2026-03-27 22:04:11",
-  "today": "2026-03-27",
-  "todayOverall": 1232342.31,
-  "todayProfit": {
-    "bySymbol": {},
-    "totalGross": 0,
-    "totalCommission": 0,
-    "totalNet": 0,
-    "openPositions": {}
-  },
-  "allTrades": [],
-  "dailyLog": {
-    "2026-03-27": {
-      "date": "2026-03-27",
-      "trades": 0,
-      "sells": 0,
-      "buys": 0,
-      "grossProfit": 0,
-      "commission": 0,
-      "netProfit": 0,
-      "overall": 1232342.31,
-      "bySymbol": {},
-      "updatedAt": "2026-03-27 22:04:11"
-    }
-  },
-  "overallHistory": [
-    {
-      "amount": 1388255,
-      "date": "2026-03-15",
-      "note": "İran/ABD-İsrail Svş. Öncesi"
-    },
-    {
-      "date": "2026-03-27",
-      "amount": 1232342.31,
-      "note": "Otomatik - 22:04"
-    }
-  ],
-  "openPositions": {
-    "date": "2026-03-27",
-    "positions": {}
-  },
-  "settings": {
-    "commissionRate": 1,
-    "costs": [
-      {
-        "amount": 95,
-        "name": "Hesap İşletim Ücreti"
-      },
-      {
-        "amount": 1095,
-        "name": "Algo"
-      },
-      {
-        "amount": 980,
-        "name": "IQ Terminal"
-      },
-      {
-        "amount": 282,
-        "name": "Tek Kademe"
-      },
-      {
-        "amount": 420,
-        "name": "Otomatik Emir"
-      },
-      {
-        "amount": 26,
-        "name": "Endeks Veri"
-      }
-    ],
-    "gridInterval": 0,
-    "lotTolerance": 0
-  }
-};
+        // GRID_DATA_START
+        window.__GRID_DATA__ = null;
         // GRID_DATA_END
 
 // ════════════════════════════════════════════════════════
@@ -1174,11 +894,6 @@ function load(){ try{
 // ════════════════════════════════════════════════════════
 //  NAV
 // ════════════════════════════════════════════════════════
-const PAGES=['pg-home','pg-trades','pg-monthly','pg-overall','pg-sermaye','pg-settings'];
-function goById(id){
-  const btn=[...document.querySelectorAll('.nav-btn')].find(b=>b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+id+"'"));
-  if(btn) go(id,btn);
-}
 function go(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
@@ -1187,8 +902,7 @@ function go(id,btn){
   if(id==='pg-settings'){ renderSettings(); loadAutoSettings(); loadHolidays(); }
   if(id==='pg-monthly') renderMonthly();
   if(id==='pg-overall') renderOverall();
-  if(id==='pg-trades') renderMonthly();
-  if(id==='pg-sermaye') renderSermaye();
+  if(id==='pg-trades') renderTrades();
 }
 
 // ════════════════════════════════════════════════════════
@@ -1242,15 +956,19 @@ function getMonthStats(y,mo){
 //  HOME
 // ════════════════════════════════════════════════════════
 function renderHome(){
-  if(!D){ $('syncTime').innerHTML=`<div class="st-lbl">Güncelleme</div><div class="st-val">—</div>`; return; }
+  if(!D){
+    const al=$('syncAlert'); al.style.display='flex'; al.className='alert err';
+    $('syncMsg').textContent='Veri yok — python grid_tracker_service.py --now komutunu çalıştırın'; return;
+  }
 
   // Sync info
-  if(D.lastUpdated){
-    const lu=D.lastUpdated;
-    const timePart=lu.length>=16?lu.slice(11,16):'—';
-    const datePart=lu.length>=10?lu.slice(8,10)+'/'+lu.slice(5,7):'—';
-    $('syncTime').innerHTML=`<div class="st-lbl">Güncelleme</div><div class="st-val">${timePart} · ${datePart}</div>`;
-  } else { $('syncTime').innerHTML=`<div class="st-lbl">Güncelleme</div><div class="st-val">—</div>`; }
+  $('syncTime').textContent=D.lastUpdated?D.lastUpdated.slice(11,16):'—';
+  const stale=Math.floor((Date.now()-new Date(D.lastUpdated).getTime())/60000);
+  const al=$('syncAlert');
+  if(stale>120){
+    al.style.display='flex'; al.className='alert warn';
+    $('syncMsg').textContent=`Son güncelleme ${stale} dk önce`;
+  } else { al.style.display='none'; }
 
   // Overall — yuvarlak, kuruşsuz
   const ov=D.todayOverall||0;
@@ -1275,14 +993,14 @@ function renderHome(){
 
   // Trades
   const dl=(D.dailyLog||{})[D.today]||{};
-  $('h-trades').textContent=dl.sells||0;
+  $('h-trades').textContent=dl.trades||0;
   $('h-trades-sub').textContent=`${dl.buys||0} alış · ${dl.sells||0} satış`;
 
   // Monthly
   const now=new Date();
   const ms=getMonthStats(now.getFullYear(),now.getMonth());
   setpnl('h-mnet',ms.net);
-  $('h-mdays').textContent=bistDayCount(now.getFullYear(),now.getMonth())+'. iş günü';
+  $('h-mdays').textContent=ms.tdays+'. işlem günü';
 
   // Lisans
   renderLicense(ms.comm);
@@ -1337,8 +1055,8 @@ function renderSymTable(){
       <td class="td-sym">${k}</td>
       <td class="td-dim">${s.buyCount}</td>
       <td class="td-sell">${s.sellCount}</td>
-      <td class="col-ort">${fx(s.avgBuy)}</td>
-      <td class="col-ort">${fx(s.avgSell)}</td>
+      <td>${fx(s.avgBuy)}</td>
+      <td>${fx(s.avgSell)}</td>
       <td class="${nc}">${fxs(s.netProfit)} ₺</td>
     </tr>`;
   }).join('');
@@ -1375,7 +1093,7 @@ function exportCSV(){
   const h=['Tarih','Saat','Hisse','İşlem','Lot','Fiyat','Tutar','Komisyon'];
   const rows=(D.allTrades||[]).map(t=>[t.date,t.time,t.symbol,t.type,t.qty,t.execPrice,t.execAmount,t.commission].join(';'));
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['\ufeff'+[h.join(';'),...rows].join('\n')],{type:'text/csv'}));
+  a.href=URL.createObjectURL(new Blob(['\\ufeff'+[h.join(';'),...rows].join('\\n')],{type:'text/csv'}));
   a.download='grid-islemler.csv'; a.click();
   toast('CSV indirildi','ok');
 }
@@ -1383,69 +1101,30 @@ function exportCSV(){
 // ════════════════════════════════════════════════════════
 //  MONTHLY
 // ════════════════════════════════════════════════════════
-function renderMonthlyKar(){
-  const MN=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
-  const fmt=m=>{const[y,mo]=m.split('-');return MN[parseInt(mo)-1]+' '+y;};
-  const data=(D&&D.monthlyKar)||[];
-  const sorted=[...data].sort((a,b)=>b.month.localeCompare(a.month));
-  const total=data.reduce((s,d)=>s+d.profit,0);
-  const avg=data.length?Math.round(total/data.length):0;
-  const best=data.length?data.reduce((a,b)=>b.profit>a.profit?b:a):null;
-
-  const tv=$('mk-total');
-  if(tv){tv.textContent=(total>=0?'+':'')+fxi(total)+'₺';tv.className='mk-stat-val '+(total>0?'pos':total<0?'neg':'blue');}
-  const pp=$('mk-period');if(pp)pp.textContent=data.length+' aylık toplam';
-  const bv=$('mk-best-val');if(bv&&best){bv.textContent=(best.profit>=0?'+':'')+fxi(best.profit)+'₺';bv.className='mk-stat-val pos';}
-  const bl=$('mk-best-lbl');if(bl&&best)bl.textContent=fmt(best.month);
-  const av=$('mk-avg');
-  if(av){av.textContent=(avg>=0?'+':'')+fxi(avg)+'₺';av.className='mk-stat-val '+(avg>0?'pos':avg<0?'neg':'');}
-
-  const list=$('mk-list');if(!list)return;
-  if(!sorted.length){list.innerHTML='<tr><td colspan="3"><div class="empty"><div class="empty-icon">📈</div><div class="empty-text">Henüz veri yok</div></div></td></tr>';return;}
-  list.innerHTML=sorted.map(d=>{
-    const[y,mo]=d.month.split('-');
-    const isPos=d.profit>=0;
-    return `<tr>
-      <td style="color:#6b7a92;font-weight:600">${y}</td>
-      <td style="color:#8fa8c8;font-weight:600">${MN[parseInt(mo)-1]}</td>
-      <td class="${isPos?'td-pos':'td-neg'}" style="font-weight:700;text-align:right;padding-right:10px">${isPos?'+':''}${fxi(d.profit)} ₺</td>
-    </tr>`;
-  }).join('');
-}
 function renderMonthly(){
-  renderMonthlyKar();
   const now=new Date();
   if(!S.month) S.month={y:now.getFullYear(),m:now.getMonth()};
   const MONTHS=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
   $('monthLbl').innerHTML=`<span class="month-label-m">${MONTHS[S.month.m]}</span><span class="month-label-y">${S.month.y}</span>`;
   const st=getMonthStats(S.month.y,S.month.m);
-  const tb=$('m-tbl');
-  if(!st.rows.length){
-    $('m-days').textContent='— işlem günü';
-    ['m-gross','m-net'].forEach(id=>{const e=$(id);if(e){e.textContent='—';e.className='kpi-val';}});
-    $('m-comm').textContent='—';
-    const ea=$('m-avg');if(ea){ea.textContent='—';ea.className='kpi-val kpi-muted';}
-    const em=$('m-mavg');if(em){em.textContent='—';em.className='kpi-val kpi-muted';}
-    const od=$('m-odiff');if(od){od.textContent='—';od.className='kpi-val';}
-    tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">◫</div><div class="empty-text">Bu ay veri yok</div></div></td></tr>`; return;
-  }
-  $('m-days').textContent=bistDayCount(S.month.y,S.month.m)+'. işlem günü';
-  const mset=(id,v)=>{const e=$(id);if(!e)return;e.textContent=v?fx(v)+' ₺':'—';e.className='kpi-val '+(v>0?'pos':v<0?'neg':'');};
-  mset('m-gross',st.gross); $('m-comm').textContent=st.comm?fx(st.comm)+' ₺':'—'; mset('m-net',st.net);
+  $('m-days').textContent=st.tdays+'. işlem günü';
+  setpnl('m-gross',st.gross); $('m-comm').textContent=fx(st.comm)+' ₺'; setpnl('m-net',st.net);
   const avg=st.tdays?st.net/st.tdays:0;
-  const ea=$('m-avg'); if(ea){ea.textContent=avg?fx(avg)+' ₺':'—';ea.className='kpi-val kpi-muted';}
+  const ea=$('m-avg'); if(ea){ea.textContent=fx(avg)+' ₺';ea.className='kpi-val kpi-muted';}
   const dl2=(D&&D.dailyLog)||{};const mmap={};Object.keys(dl2).forEach(dt=>{const mk=dt.slice(0,7);if(!mmap[mk])mmap[mk]=0;mmap[mk]+=(dl2[dt].netProfit||0);});const mvals=Object.values(mmap);const mavg=mvals.length?mvals.reduce((a,b)=>a+b,0)/mvals.length:0;
-  const em=$('m-mavg'); if(em){em.textContent=mavg?fx(mavg)+' ₺':'—';em.className='kpi-val kpi-muted';}
-  const od=$('m-odiff'); od.textContent=st.odiff?(((st.odiff>=0?'+':'')+fxi(st.odiff)+' ₺')):'—'; od.className='kpi-val '+(st.odiff>0?'pos':st.odiff<0?'neg':'');
+  const em=$('m-mavg'); if(em){em.textContent=fx(mavg)+' ₺';em.className='kpi-val kpi-muted';}
+  const od=$('m-odiff'); od.textContent=(st.odiff>=0?'+':'')+fxi(st.odiff)+' ₺'; od.className='kpi-val '+(st.odiff>0?'pos':st.odiff<0?'neg':'');
+  const tb=$('m-tbl');
+  if(!st.rows.length){ tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">◫</div><div class="empty-text">Bu ay veri yok</div></div></td></tr>`; return; }
   tb.innerHTML=st.rows.map(d=>{
     const nc=d.netProfit>0?'td-pos':d.netProfit<0?'td-neg':'';
     return `<tr>
-      <td style="color:#7b92b5;font-weight:600">${d.date.slice(5).replace('-','.')}</td>
+      <td style="color:#7b92b5;font-weight:600;font-size:11px">${d.date.slice(5).replace('-','.')}</td>
       <td class="td-dim">${d.trades}</td>
       <td class="${d.grossProfit>=0?'td-pos':'td-neg'}">${fxs(d.grossProfit)}</td>
       <td class="td-amb">${fx(d.commission)}</td>
       <td class="${nc}" style="font-weight:600">${fxs(d.netProfit)}</td>
-      <td style="color:#4e6080">${d.overall?fxi(d.overall)+'₺':'—'}</td>
+      <td style="color:#4e6080;font-size:10px">${d.overall?fx(d.overall)+' ₺':'—'}</td>
     </tr>`;
   }).join('');
 }
@@ -1470,10 +1149,10 @@ function renderOverall(){
     const dc=diff!==null?(diff>=0?'td-pos':'td-neg'):'';
     const diffTxt=diff!==null?(diff>=0?'+':'')+fxi(diff)+' ₺':'—';
     return `<tr>
-      <td style="color:#7b92b5;font-weight:600">${h.date.split('-').reverse().join('.')}</td>
-      <td style="color:#c4cfe0;font-weight:600;font-family:var(--mono)">${fxi(h.amount)}₺</td>
+      <td style="color:#7b92b5;font-weight:600;font-size:11px">${h.date.split('-').reverse().join('.')}</td>
+      <td style="color:#c4cfe0;font-weight:600;font-family:var(--mono)">${fxi(h.amount)} ₺</td>
       <td class="${dc}" style="font-weight:${diff!==null?'600':'400'}">${diffTxt}</td>
-      <td style="color:#4e6080;font-family:var(--sans)">${h.note||'—'}</td>
+      <td style="color:#4e6080;font-family:var(--sans);font-size:10px">${h.note||'—'}</td>
       <td><button class="btn btn-danger btn-xs" onclick="delOverall('${h.date}')" style="padding:2px 6px;font-size:10px;opacity:.6">✕</button></td>
     </tr>`;
   }).join('');
@@ -1488,119 +1167,9 @@ function saveOverall(){
   if(idx>=0) D.overallHistory[idx]={date,amount:amt,note};
   else D.overallHistory.push({date,amount:amt,note});
   D.overallHistory.sort((a,b)=>a.date.localeCompare(b.date));
-  $('oForm').style.display='none'; renderOverall();
-  fbWrite('gridtracker/overallHistory',D.overallHistory)
-    .then(()=>toast('Kaydedildi','ok'))
-    .catch(()=>toast('Kaydedildi (Firebase hatası)','warn'));
+  $('oForm').style.display='none'; renderOverall(); toast('Kaydedildi','ok');
 }
-function delOverall(date){
-  if(!D) return;
-  D.overallHistory=D.overallHistory.filter(h=>h.date!==date);
-  renderOverall();
-  fbWrite('gridtracker/overallHistory',D.overallHistory);
-}
-
-// ════════════════════════════════════════════════════════
-//  SERMAYe
-// ════════════════════════════════════════════════════════
-let srFilter='all';
-
-function fxSr(n){
-  return Math.abs(Math.round(n)).toLocaleString('tr-TR')+'₺';
-}
-
-function calcSr(){
-  const txs=(D&&D.birikimTx)||[];
-  const active=txs.filter(t=>!t.exclude);
-  const anaPara=txs.reduce((s,t)=>s+t.amount,0);
-  const totalIn=active.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
-  const totalOut=active.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
-  const botKar=(D?D.todayOverall||0:0)-anaPara;
-  return{anaPara,totalIn,totalOut,botKar};
-}
-
-function renderSermaye(){
-  const{anaPara,totalIn,totalOut,botKar}=calcSr();
-
-  $('sr-ana').textContent=fxSr(anaPara);
-
-  const botEl=$('sr-bot');
-  botEl.textContent=(botKar>=0?'+':'-')+fxSr(botKar);
-  botEl.className='sr-stat-val '+(botKar>=0?'pos':'neg');
-
-  $('sr-in').textContent=fxSr(totalIn);
-  $('sr-out').textContent=fxSr(totalOut);
-
-  const txs=(D&&D.birikimTx)||[];
-  const sorted=[...txs].sort((a,b)=>b.date.localeCompare(a.date));
-  const filtered=sorted.filter(t=>{
-    if(srFilter==='in') return t.amount>0;
-    if(srFilter==='out') return t.amount<0;
-    return true;
-  });
-
-  $('sr-count').textContent=filtered.length+' kayıt';
-  const list=$('sr-list');
-
-  if(!filtered.length){
-    const msg=srFilter==='in'?'Para girişi yok':srFilter==='out'?'Para çıkışı yok':'Henüz kayıt yok';
-    list.innerHTML=`<div class="empty"><div class="empty-icon">💰</div><div class="empty-text">${msg}</div></div>`;
-    return;
-  }
-
-  list.innerHTML=filtered.map(t=>{
-    const isIn=t.amount>0;
-    const dateStr=t.date.split('-').reverse().join('.');
-    const excStyle=t.exclude?'opacity:.45;':'';
-    const excBadge=t.exclude?'<span style="font-size:8px;background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.2);border-radius:4px;padding:1px 5px;margin-left:5px;letter-spacing:.4px">referans</span>':'';
-    return `<div class="sr-tx" style="${excStyle}">
-      <div class="sr-tx-icon ${isIn?'in':'out'}">${isIn?'▲':'▼'}</div>
-      <div style="flex:1;min-width:0">
-        <div class="sr-tx-note">${t.note||(isIn?'Para Girişi':'Para Çıkışı')}${excBadge}</div>
-        <div class="sr-tx-date">${dateStr}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:12px;padding-right:2px">
-        <div class="sr-tx-amt ${isIn?'pos':'neg'}">${isIn?'+':'-'}${fxSr(t.amount)}</div>
-        <button class="btn btn-danger btn-xs" onclick="delBirikimTx('${t.id}')" style="padding:2px 6px;font-size:10px;opacity:.6;flex-shrink:0">✕</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function setSrFilter(f){
-  srFilter=f;
-  ['all','in','out'].forEach(k=>{
-    $('sr-tab-'+k).className='sr-ftab'+(k===f?' f'+(k==='all'?'a':k==='in'?'i':'o'):'');
-  });
-  renderSermaye();
-}
-
-function addBirikimTx(type){
-  if(!D){ toast('Veri yüklenemedi','err'); return; }
-  const date=$('srDate').value;
-  const rawVal=$('srAmt').value.replace(/[^\d]/g,'');
-  const val=parseInt(rawVal)||0;
-  const note=$('srNote').value.trim();
-  if(!date||val<=0){ toast('Tarih ve miktar gerekli','err'); return; }
-  const amount=type==='in'?val:-val;
-  const tx={id:Date.now().toString(),date,amount,note};
-  if(!D.birikimTx) D.birikimTx=[];
-  D.birikimTx.push(tx);
-  $('srAmt').value='';
-  $('srNote').value='';
-  renderSermaye();
-  fbWrite('gridtracker/birikimTx',D.birikimTx)
-    .then(()=>toast(type==='in'?'Para girişi kaydedildi':'Para çıkışı kaydedildi','ok'))
-    .catch(()=>toast('Kaydedildi (Firebase hatası)','warn'));
-}
-
-function delBirikimTx(id){
-  if(!D||!D.birikimTx) return;
-  D.birikimTx=D.birikimTx.filter(t=>t.id!==id);
-  renderSermaye();
-  fbWrite('gridtracker/birikimTx',D.birikimTx);
-  toast('Silindi','ok',1500);
-}
+function delOverall(date){ if(!D) return; D.overallHistory=D.overallHistory.filter(h=>h.date!==date); renderOverall(); }
 
 // ════════════════════════════════════════════════════════
 //  BOT HİSSELERİ
@@ -1675,26 +1244,8 @@ function renderCostSummary(){
 const AUTO_API = 'http://localhost:5050';
 const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
-function _wakeTime(t){ const[h,m]=t.split(':').map(Number); return `${String(m<5?h-1:h).padStart(2,'0')}:${String(m<5?m+55:m-5).padStart(2,'0')}`; }
-
 async function loadAutoSettings(){
-  if(!IS_LOCAL){
-    // Uzaktan: Firebase'den oku
-    try{
-      const r = await fetch(FIREBASE_URL+'/settings/schedule_time.json');
-      const val = await r.json();
-      if(val){ $('autoTime').value=val; $('autoWake').textContent=_wakeTime(val); }
-      $('autoStatus').className='alert inf';
-      $('autoStatus').textContent='• Saat değişikliği, Firebase ile PC\'ye iletilir (~1 dk gecikme)';
-      Object.assign($('autoStatus').style,{fontSize:'10px',fontStyle:'italic',justifyContent:'center',color:'#4e6080'});
-      $('autoStatus').style.display='flex';
-    }catch{
-      $('autoStatus').className='alert warn';
-      $('autoStatus').textContent='⚠ Firebase\'e ulaşılamadı';
-      $('autoStatus').style.display='flex';
-    }
-    return;
-  }
+  if(!IS_LOCAL){ $('autoStatus').className='alert warn'; $('autoStatus').textContent='⚠ Otomasyon ayarları sadece yerel ağdan erişilebilir'; $('autoStatus').style.display='flex'; return; }
   try{
     const r = await fetch(AUTO_API+'/api/morning-settings');
     if(!r.ok) throw new Error();
@@ -1712,17 +1263,6 @@ async function loadAutoSettings(){
 async function saveAutoSettings(){
   const t = $('autoTime').value;
   if(!t){ toast('Saat seçin','err'); return; }
-  if(!IS_LOCAL){
-    // Uzaktan: Firebase'e yaz
-    try{
-      await fetch(FIREBASE_URL+'/settings/schedule_time.json',{method:'PUT',body:JSON.stringify(t),headers:{'Content-Type':'application/json'}});
-      $('autoWake').textContent = _wakeTime(t);
-      toast('Saat Firebase\'e kaydedildi — ev PC güncelleniyor','ok');
-    }catch{
-      toast('Firebase\'e yazılamadı','err');
-    }
-    return;
-  }
   try{
     const r = await fetch(AUTO_API+'/api/morning-settings',{
       method:'POST',
@@ -1798,92 +1338,686 @@ function clearAll(){
 document.addEventListener('DOMContentLoaded',async()=>{
   load();
   updateMarket(); setInterval(updateMarket,30000);
-  const _today=new Date().toISOString().split('T')[0];
-  $('oDate').value=_today;
-  $('srDate').value=_today;
-
-  // srAmt — sayısal maskeleme + Enter → Para Ekle
-  $('srAmt').addEventListener('input',e=>{
-    const v=e.target.value.replace(/[^\d]/g,'');
-    e.target.value=v?Number(v).toLocaleString('tr-TR'):'';
-  });
-  $('srAmt').addEventListener('keydown',e=>{
-    if(e.key==='Enter'){ e.preventDefault(); addBirikimTx('in'); }
-  });
+  $('oDate').value=new Date().toISOString().split('T')[0];
 
   // Firebase'den güncel veriyi yükle
   const fb=await fbRead();
   if(fb){
     D=fb;
-    if(!D.birikimTx) D.birikimTx=[];
     if(D.settings&&D.settings.costs) S.settings.costs=D.settings.costs;
   }
   renderHome();
 
-  // Firebase SSE — değişiklik anında yansır
-  function renderAll(showToast){
-    renderHome();
-    renderSermaye();
-    if(showToast) toast('Veri güncellendi','ok',2000);
-  }
-  function startFirebaseStream(){
-    const es=new EventSource(FIREBASE_URL+'/gridtracker.json');
-    es.addEventListener('put',e=>{
-      try{
-        const {path,data}=JSON.parse(e.data);
-        if(!data) return;
-        if(path==='/'){
-          const prev=D?D.lastUpdated:null;
-          D=data;
-          if(!D.birikimTx) D.birikimTx=[];
-          if(D.settings&&D.settings.costs) S.settings.costs=D.settings.costs;
-          renderAll(D.lastUpdated&&D.lastUpdated!==prev);
-        } else {
-          if(!D) return;
-          const key=path.slice(1);
-          D[key]=data;
-          renderAll(false);
-        }
-      }catch(_){}
-    });
-    es.onerror=()=>{ es.close(); setTimeout(startFirebaseStream,5000); };
-  }
-  startFirebaseStream();
+  // Her 5 dakikada bir Firebase'i kontrol et
+  setInterval(async()=>{
+    const fb=await fbRead();
+    if(fb&&(!D||fb.lastUpdated>D.lastUpdated)){
+      D=fb;
+      renderHome();
+      toast('Veri güncellendi','ok',2000);
+    }
+  },300000);
 
-  // ════ AUTO_DATA_INJECT ════ GT_TMPL_2dd2ff00c0e5
+  // ════ AUTO_DATA_INJECT ════
 });
-</script>
-<script>
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js').catch(()=>{});
-}
-
-// ── Swipe navigasyon ──────────────────────────────────
-(function(){
-  let sx=0,sy=0,locked=false;
-  const content=document.querySelector('.content');
-  content.addEventListener('touchstart',e=>{
-    sx=e.touches[0].clientX;
-    sy=e.touches[0].clientY;
-    locked=false;
-  },{passive:true});
-  content.addEventListener('touchmove',e=>{
-    if(locked) return;
-    const dx=e.touches[0].clientX-sx;
-    const dy=e.touches[0].clientY-sy;
-    // Dikey kaydırma başladıysa swipe'ı kilitle
-    if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>8) locked=true;
-  },{passive:true});
-  content.addEventListener('touchend',e=>{
-    if(locked) return;
-    const dx=e.changedTouches[0].clientX-sx;
-    const dy=e.changedTouches[0].clientY-sy;
-    if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx)*0.7) return;
-    const cur=PAGES.findIndex(p=>document.getElementById(p).classList.contains('on'));
-    const next=dx<0?Math.min(cur+1,PAGES.length-1):Math.max(cur-1,0);
-    if(next!==cur) goById(PAGES[next]);
-  },{passive:true});
-})();
 </script>
 </body>
 </html>
+'''
+
+# ──────────────────────────────────────────────────────────
+#  YAPILANDIRMA
+# ──────────────────────────────────────────────────────────
+DESKTOP    = Path.home() / 'Desktop'
+FILE1      = DESKTOP / '1.xlsx'
+FILE2      = DESKTOP / '2.xlsx'
+
+SCRIPT_DIR = Path(__file__).parent
+HTML_FILE  = SCRIPT_DIR / 'bist_tracker.html'
+DATA_JSON  = SCRIPT_DIR / 'data.json'
+LOG_FILE   = SCRIPT_DIR / 'grid_tracker.log'
+
+NORMAL_CLOSE    = (18, 0)
+HALF_DAY_CLOSE  = (13, 0)   # Arife günleri BIST 13:00'da kapanır
+OFFSET_MIN      = 35
+COMMISSION_RATE = 1 / 10000   # Her alış VE satış için ayrı ayrı
+FIREBASE_URL    = 'https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app'
+
+# Arife günleri: BIST 13:00'da kapanır → akşam otomasyonu 13:35'te çalışır
+# Sabit ulusal bayramların arife günü: sadece Cumhuriyet Bayramı (29 Eki) öncesi 28 Eki
+ARIFE_DAYS = {
+    # 2025
+    '2025-03-28',  # Ramazan Bayramı arefe
+    '2025-06-05',  # Kurban Bayramı arefe
+    '2025-10-28',  # Cumhuriyet Bayramı arefe
+    # 2026
+    '2026-03-19',  # Ramazan Bayramı arefe
+    '2026-05-26',  # Kurban Bayramı arefe
+    '2026-10-28',  # Cumhuriyet Bayramı arefe
+    # 2027
+    '2027-03-08',  # Ramazan Bayramı arefe
+    '2027-05-15',  # Kurban Bayramı arefe
+    '2027-10-28',  # Cumhuriyet Bayramı arefe
+    # 2028
+    '2028-02-25',  # Ramazan Bayramı arefe
+    '2028-05-03',  # Kurban Bayramı arefe
+    '2028-10-28',  # Cumhuriyet Bayramı arefe
+}
+
+# Resmi tatil günleri: BIST kapalı
+HOLIDAYS = {
+    # ── 2025 ──────────────────────────────────────────────
+    '2025-01-01',                                           # Yılbaşı
+    '2025-03-29','2025-03-30','2025-03-31',                 # Ramazan Bayramı
+    '2025-04-23',                                           # Ulusal Egemenlik ve Çocuk Bayramı
+    '2025-05-01',                                           # Emek ve Dayanışma Günü
+    '2025-05-19',                                           # Gençlik ve Spor Bayramı
+    '2025-06-06','2025-06-07','2025-06-08','2025-06-09',    # Kurban Bayramı
+    '2025-07-15',                                           # Demokrasi ve Milli Birlik Günü
+    '2025-08-30',                                           # Zafer Bayramı
+    '2025-10-29',                                           # Cumhuriyet Bayramı
+    # ── 2026 ──────────────────────────────────────────────
+    '2026-01-01',                                           # Yılbaşı
+    '2026-03-20','2026-03-21','2026-03-22',                 # Ramazan Bayramı
+    '2026-04-23',                                           # Ulusal Egemenlik ve Çocuk Bayramı
+    '2026-05-01',                                           # Emek ve Dayanışma Günü
+    '2026-05-19',                                           # Gençlik ve Spor Bayramı
+    '2026-05-27','2026-05-28','2026-05-29','2026-05-30',    # Kurban Bayramı
+    '2026-07-15',                                           # Demokrasi ve Milli Birlik Günü
+    '2026-08-30',                                           # Zafer Bayramı
+    '2026-10-29',                                           # Cumhuriyet Bayramı
+    # ── 2027 ──────────────────────────────────────────────
+    '2027-01-01',                                           # Yılbaşı
+    '2027-03-09','2027-03-10','2027-03-11',                 # Ramazan Bayramı
+    '2027-04-23',                                           # Ulusal Egemenlik ve Çocuk Bayramı
+    '2027-05-01',                                           # Emek ve Dayanışma Günü
+    '2027-05-16','2027-05-17','2027-05-18','2027-05-19',    # Kurban Bayramı (19 May = Gençlik Bayramı ile çakışıyor)
+    '2027-07-15',                                           # Demokrasi ve Milli Birlik Günü
+    '2027-08-30',                                           # Zafer Bayramı
+    '2027-10-29',                                           # Cumhuriyet Bayramı
+    # ── 2028 ──────────────────────────────────────────────
+    '2028-01-01',                                           # Yılbaşı
+    '2028-02-26','2028-02-27','2028-02-28',                 # Ramazan Bayramı
+    '2028-04-23',                                           # Ulusal Egemenlik ve Çocuk Bayramı
+    '2028-05-01',                                           # Emek ve Dayanışma Günü
+    '2028-05-04','2028-05-05','2028-05-06','2028-05-07',    # Kurban Bayramı
+    '2028-05-19',                                           # Gençlik ve Spor Bayramı
+    '2028-07-15',                                           # Demokrasi ve Milli Birlik Günü
+    '2028-08-30',                                           # Zafer Bayramı
+    '2028-10-29',                                           # Cumhuriyet Bayramı
+}
+
+DEFAULT_COSTS = [
+    {'name':'Hesap İşletim Ücreti','amount':95},
+    {'name':'Algo',                'amount':1095},
+    {'name':'IQ Terminal',         'amount':980},
+    {'name':'Tek Kademe',          'amount':282},
+    {'name':'Otomatik Emir',       'amount':420},
+    {'name':'Endeks Veri',         'amount':26},
+]
+
+# ──────────────────────────────────────────────────────────
+#  LOGGING
+# ──────────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_FILE, encoding='utf-8'),
+        logging.StreamHandler(sys.stdout),
+    ]
+)
+log = logging.getLogger('GridTracker')
+
+# ──────────────────────────────────────────────────────────
+#  TAKVİM
+# ──────────────────────────────────────────────────────────
+def is_trading_day(d=None):
+    if d is None: d = date.today()
+    if d.weekday() >= 5: return False
+    if d.strftime('%Y-%m-%d') in HOLIDAYS: return False
+    return True
+
+def is_arife(d=None):
+    if d is None: d = date.today()
+    return d.strftime('%Y-%m-%d') in ARIFE_DAYS
+
+def is_last_bist_day_of_month(d=None):
+    """Verilen gün, o ayın son BIST işlem günü mü?"""
+    if d is None: d = date.today()
+    check = d + timedelta(days=1)
+    while check.month == d.month:
+        if is_trading_day(check):
+            return False
+        check += timedelta(days=1)
+    return True
+
+def calc_monthly_kar(excel_date, overall, oh):
+    """
+    Aylık net karı hesaplar:
+    Bu ayın son günü overall'ı − Önceki ayın son günü overall'ı
+    """
+    month_key = excel_date[:7]                          # örn: '2026-03'
+    y, m = int(month_key[:4]), int(month_key[5:7])
+    if m == 1:
+        prev_key = f'{y-1}-12'
+    else:
+        prev_key = f'{y}-{m-1:02d}'
+    prev_entries = sorted(
+        [h for h in oh if h['date'].startswith(prev_key)],
+        key=lambda x: x['date']
+    )
+    if not prev_entries:
+        return None   # Önceki ay verisi yok, hesaplanamaz
+    prev_last = prev_entries[-1]['amount']
+    return round(overall - prev_last)
+
+def get_run_time(d=None):
+    if d is None: d = date.today()
+    h, m = HALF_DAY_CLOSE if is_arife(d) else NORMAL_CLOSE
+    total = h * 60 + m + OFFSET_MIN
+    return (total // 60, total % 60)
+
+def seconds_until_run():
+    now   = datetime.now()
+    today = now.date()
+    if is_trading_day(today):
+        rh, rm = get_run_time(today)
+        run_t  = now.replace(hour=rh, minute=rm, second=0, microsecond=0)
+        if now < run_t:
+            d = (run_t - now).total_seconds()
+            log.info(f"Bugün çalışma: {rh:02d}:{rm:02d} — {d/60:.1f} dk sonra")
+            return d
+    check = today + timedelta(days=1)
+    for _ in range(10):
+        if is_trading_day(check):
+            rh, rm = get_run_time(check)
+            nxt = datetime.combine(check, datetime.min.time()).replace(
+                hour=rh, minute=rm, second=0, microsecond=0)
+            d = (nxt - now).total_seconds()
+            log.info(f"Sonraki çalışma: {check} {rh:02d}:{rm:02d} — {d/3600:.1f} saat sonra")
+            return d
+        check += timedelta(days=1)
+    return 86400
+
+# ──────────────────────────────────────────────────────────
+#  EXCEL OKUMA
+# ──────────────────────────────────────────────────────────
+def sf(v, t=float, d=0.0):
+    try: return t(v) if v is not None else d
+    except: return d
+
+def ss(v, d=''):
+    try: return str(v).strip() if v is not None else d
+    except: return d
+
+def read_file1(path):
+    if not path.exists():
+        log.error(f"Dosya yok: {path}"); return []
+    wb = openpyxl.load_workbook(path, data_only=True)
+    ws = wb.active
+    rows = list(ws.iter_rows(values_only=True))
+    trades = []
+    for i, r in enumerate(rows):
+        if i == 0 or not r[5]: continue
+        raw_dt, raw_t = r[21], r[19]
+        if isinstance(raw_dt, datetime):
+            date_s = raw_dt.strftime('%Y-%m-%d')
+            dt_s   = raw_dt.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            s = ss(raw_dt); date_s = s[:10]; dt_s = s[:19]
+        time_s = raw_t.strftime('%H:%M:%S') if isinstance(raw_t, datetime) else ss(raw_t)[:8]
+
+        qty        = sf(r[8])
+        price      = sf(r[9])
+        exec_qty   = sf(r[12]) or qty
+        amount     = sf(r[14])
+        exec_price = sf(r[16]) or price
+        exec_amt   = sf(r[18]) or amount
+        comm       = round(exec_amt * COMMISSION_RATE, 6)
+
+        trades.append({
+            'symbol':     ss(r[5]).upper(),
+            'type':       ss(r[7]),          # 'Alış' veya 'Satış'
+            'qty':        int(qty),
+            'price':      price,
+            'status':     ss(r[10]),
+            'execQty':    int(exec_qty),
+            'amount':     amount,
+            'execPrice':  exec_price,
+            'execAmount': exec_amt,
+            'commission': comm,
+            'time':       time_s,
+            'date':       date_s,
+            'datetime':   dt_s,
+            'referans':   ss(r[6]),
+        })
+    log.info(f"Dosya 1: {len(trades)} işlem okundu")
+    return trades
+
+def read_file2(path):
+    if not path.exists():
+        log.error(f"Dosya yok: {path}"); return 0.0
+    wb = openpyxl.load_workbook(path, data_only=True)
+    ws = wb.active
+    for row in ws.iter_rows(values_only=True):
+        kod  = ss(row[0]).upper()
+        desc = ss(row[1]).lower()
+        val  = row[2]
+        if kod == 'OAL' or ('t2' in desc and 'overall' in desc):
+            v = sf(val)
+            if v: log.info(f"T2 Overall: {v:,.2f} ₺"); return v
+    for row in ws.iter_rows(values_only=True):
+        if ss(row[0]).upper() == 'OAC':
+            return sf(row[2])
+    log.warning("T2 Overall bulunamadı"); return 0.0
+
+# ──────────────────────────────────────────────────────────
+#  KAR HESAPLAMA
+# ──────────────────────────────────────────────────────────
+def calc_profit(trades, carried_over=None):
+    """
+    FIFO eşleştirme.
+    carried_over : {sembol: [önceki günden devredilen eşleşmemiş alış işlemleri]}
+    Kural: devredilen alışın komisyonu dünkü hesapta zaten düşüldü,
+           bugün tekrar sayılmaz; yalnızca bugünkü satış komisyonu sayılır.
+    """
+    if carried_over is None:
+        carried_over = {}
+
+    all_syms  = list(dict.fromkeys(
+        list(carried_over.keys()) + [t['symbol'] for t in trades]
+    ))
+    by_symbol = {}
+
+    for sym in all_syms:
+        sym_trades = sorted(
+            [t for t in trades if t['symbol'] == sym],
+            key=lambda x: x['datetime']
+        )
+        today_buys  = [t for t in sym_trades if t['type'] == 'Alış']
+        today_sells = [t for t in sym_trades if t['type'] == 'Satış']
+
+        # FIFO kuyruğu: önceki günden devredenler önce, sonra bugünkü alışlar
+        carried   = [dict(t, carryover=True)  for t in carried_over.get(sym, [])]
+        buy_queue = carried + list(today_buys)
+
+        pairs = []
+        for sell in today_sells:
+            sell_remaining = sell['execQty']
+            sell_cpl = sell['commission'] / sell['execQty']  # komisyon / lot
+
+            while sell_remaining > 0 and buy_queue:
+                buy       = buy_queue[0]
+                match_qty = min(buy['execQty'], sell_remaining)
+                gross     = (sell['execPrice'] - buy['execPrice']) * match_qty
+
+                # Orantılı komisyon: satış tarafı her zaman, alış tarafı devredilmemişse
+                buy_cpl  = buy['commission'] / buy['execQty']
+                pair_comm = sell_cpl * match_qty
+                if not buy.get('carryover'):
+                    pair_comm += buy_cpl * match_qty
+
+                pairs.append({
+                    'buyPrice':  round(buy['execPrice'],  4),
+                    'sellPrice': round(sell['execPrice'], 4),
+                    'qty':       match_qty,
+                    'gross':     round(gross,      4),
+                    'comm':      round(pair_comm,  4),
+                    'net':       round(gross - pair_comm, 4),
+                    'buyTime':   buy['time'],
+                    'sellTime':  sell['time'],
+                    'buyDate':   buy.get('date', ''),
+                    'carryover': bool(buy.get('carryover')),
+                })
+
+                sell_remaining -= match_qty
+
+                if match_qty >= buy['execQty']:
+                    buy_queue.pop(0)          # alış tamamen tükendi
+                else:
+                    # Alış kısmen tükendi → kalan miktarı güncelle
+                    buy_queue[0] = dict(buy,
+                        execQty=buy['execQty'] - match_qty,
+                        commission=buy_cpl * (buy['execQty'] - match_qty)
+                    )
+
+        # Bugünkü komisyon = sadece bugün gerçekleşen işlemler (devredilen alış hariç)
+        today_comm  = sum(t['commission'] for t in sym_trades)
+        gross_total = sum(p['gross'] for p in pairs)
+        net_total   = gross_total - today_comm
+
+        avg_buy  = (sum(t['execPrice'] for t in today_buys)  / len(today_buys))  if today_buys  else 0
+        avg_sell = (sum(t['execPrice'] for t in today_sells) / len(today_sells)) if today_sells else 0
+
+        # Kalan eşleşmemiş alışlar → ertesi güne devredilecek (carryover bayrağı sıfırlanır)
+        next_day_open = [dict(b, carryover=False) for b in buy_queue]
+
+        by_symbol[sym] = {
+            'symbol':        sym,
+            'buyCount':      len(today_buys),
+            'sellCount':     len(today_sells),
+            'pairCount':     len(pairs),
+            'openBuys':      sum(b['execQty'] for b in buy_queue if not b.get('carryover')),
+            'carriedIn':     sum(b['execQty'] for b in carried),   # bugüne devreden lot
+            'avgBuy':        round(avg_buy,  4),
+            'avgSell':       round(avg_sell, 4),
+            'grossProfit':   round(gross_total, 4),
+            'commission':    round(today_comm,  4),
+            'netProfit':     round(net_total,   4),
+            'pairs':         pairs,
+            'openPositions': next_day_open,         # yarına devredilecek
+        }
+
+    return {
+        'bySymbol':        by_symbol,
+        'totalGross':      round(sum(v['grossProfit'] for v in by_symbol.values()), 4),
+        'totalCommission': round(sum(v['commission']  for v in by_symbol.values()), 4),
+        'totalNet':        round(sum(v['netProfit']   for v in by_symbol.values()), 4),
+        # Tüm sembollerin açık pozisyonları (yarına devir)
+        'openPositions':   {sym: v['openPositions']
+                            for sym, v in by_symbol.items() if v['openPositions']},
+    }
+
+# ──────────────────────────────────────────────────────────
+#  FİREBASE
+# ──────────────────────────────────────────────────────────
+def firebase_write(payload):
+    """Veriyi Firebase Realtime Database'e yazar."""
+    try:
+        url  = f'{FIREBASE_URL}/gridtracker.json'
+        resp = requests.put(url, json=payload, timeout=15)
+        if resp.status_code == 200:
+            log.info('Firebase: veri yazıldı ✓')
+            return True
+        log.warning(f'Firebase yazma hatası: HTTP {resp.status_code}')
+    except Exception as e:
+        log.warning(f'Firebase bağlantı hatası: {e}')
+    return False
+
+def firebase_read():
+    """Firebase'den mevcut veriyi okur."""
+    try:
+        url  = f'{FIREBASE_URL}/gridtracker.json'
+        resp = requests.get(url, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data:
+                log.info('Firebase: mevcut veri okundu ✓')
+                return data
+    except Exception as e:
+        log.warning(f'Firebase okuma hatası: {e}')
+    return None
+
+# ──────────────────────────────────────────────────────────
+#  MEVCUT VERİYİ OKU (Firebase → HTML → data.json)
+# ──────────────────────────────────────────────────────────
+def load_existing():
+    # 1. Firebase (güncel kaynak)
+    fb = firebase_read()
+    if fb:
+        return fb
+    # 2. HTML içindeki gömülü veri
+    if HTML_FILE.exists():
+        html = HTML_FILE.read_text(encoding='utf-8')
+        m = re.search(
+            r'//\s*GRID_DATA_START\s*\n\s*window\.__GRID_DATA__\s*=\s*(\{.*?\});\s*\n\s*//\s*GRID_DATA_END',
+            html, re.DOTALL)
+        if m:
+            try:
+                return json.loads(m.group(1))
+            except Exception as e:
+                log.warning(f"HTML veri parse hatası: {e}")
+    # 3. Yedek: data.json
+    if DATA_JSON.exists():
+        try:
+            return json.loads(DATA_JSON.read_text(encoding='utf-8'))
+        except:
+            pass
+    return {}
+
+
+# ──────────────────────────────────────────────────────────
+#  HTML DOSYASINI OLUŞTUR / GÜNCELLE
+# ──────────────────────────────────────────────────────────
+def ensure_html():
+    """
+    HTML_TEMPLATE içeriğinden bist_tracker.html oluşturur.
+    Dosya yoksa sıfırdan yazar.
+    Dosya varsa şablon değişmişse günceller, mevcut veri bloğunu korur.
+    """
+    import hashlib
+    new_hash = hashlib.md5(HTML_TEMPLATE.encode('utf-8')).hexdigest()[:12]
+    ver_tag  = f'GT_TMPL_{new_hash}'
+
+    def build_html(data_block=None):
+        """Şablondan HTML oluşturur, varsa veri bloğunu geri koyar."""
+        out = HTML_TEMPLATE
+        if data_block:
+            out = re.sub(
+                r'// GRID_DATA_START.*?// GRID_DATA_END',
+                data_block, out, flags=re.DOTALL
+            )
+        out = out.replace(
+            '// ════ AUTO_DATA_INJECT ════',
+            f'// ════ AUTO_DATA_INJECT ════ {ver_tag}'
+        )
+        return out
+
+    if not HTML_FILE.exists():
+        HTML_FILE.write_text(build_html(), encoding='utf-8')
+        log.info(f"HTML oluşturuldu: {HTML_FILE.name}")
+        return
+
+    existing = HTML_FILE.read_text(encoding='utf-8')
+
+    # Şablon değişmemişse dokunma
+    if ver_tag in existing:
+        return
+
+    # Mevcut veri bloğunu kaydet
+    m = re.search(r'(// GRID_DATA_START.*?// GRID_DATA_END)', existing, re.DOTALL)
+    data_block = m.group(1) if m else None
+
+    HTML_FILE.write_text(build_html(data_block), encoding='utf-8')
+    log.info(f"HTML güncellendi (sürüm: {new_hash[:8]})")
+
+# ──────────────────────────────────────────────────────────
+#  HTML'E VERİ GÖM
+# ──────────────────────────────────────────────────────────
+def inject_into_html(payload):
+    if not HTML_FILE.exists():
+        log.error(f"HTML bulunamadı: {HTML_FILE}"); return False
+    html     = HTML_FILE.read_text(encoding='utf-8')
+    json_str = json.dumps(payload, ensure_ascii=False, indent=2)
+    new_block = (
+        "// GRID_DATA_START\n"
+        f"        window.__GRID_DATA__ = {json_str};\n"
+        "        // GRID_DATA_END"
+    )
+    pattern = r'//\s*GRID_DATA_START.*?//\s*GRID_DATA_END'
+    if re.search(pattern, html, re.DOTALL):
+        new_html = re.sub(pattern, new_block, html, flags=re.DOTALL)
+    else:
+        marker   = '// ════ AUTO_DATA_INJECT ════'
+        new_html = html.replace(marker, new_block + '\n        ' + marker)
+    HTML_FILE.write_text(new_html, encoding='utf-8')
+    log.info(f"HTML güncellendi → {HTML_FILE.name}")
+    return True
+
+# ──────────────────────────────────────────────────────────
+#  ANA FONKSİYON
+# ──────────────────────────────────────────────────────────
+def run_once(dry_run=False):
+    ensure_html()   # HTML şablonu güncel mi kontrol et
+    today_str = date.today().strftime('%Y-%m-%d')
+    log.info('=' * 55)
+    log.info(f'Grid Tracker calisiyor - {today_str}')
+    log.info('=' * 55)
+
+    existing = load_existing()
+    trades   = read_file1(FILE1)
+    overall  = read_file2(FILE2)
+
+    if not trades and not overall:
+        log.error("Her iki dosya da okunamadi."); return False
+
+    # Excel'deki tarihi kullan (günlük dosya, tüm satırlar aynı güne ait)
+    if trades:
+        excel_date = trades[0]['date']
+        log.info(f'Excel tarihi: {excel_date}')
+    else:
+        excel_date = today_str
+
+    today_trades = [t for t in trades if t['date'] == excel_date]
+
+    # Önceki günden devreden eşleşmemiş alışlar (FIFO kuyruğuna önce eklenir)
+    # Sadece önceki bir günden üretilmişse kullan (aynı günü yeniden işliyorsak kullanma)
+    op_data   = existing.get('openPositions', {})
+    op_date   = op_data.get('date', '')
+    prev_open = op_data.get('positions', {}) if op_date and op_date < excel_date else {}
+    if prev_open:
+        carried_syms = ', '.join(
+            f"{sym}({sum(p['execQty'] for p in pos)} lot)"
+            for sym, pos in prev_open.items()
+        )
+        log.info(f'Devreden acik pozisyonlar: {carried_syms}')
+
+    profit = calc_profit(today_trades, carried_over=prev_open)
+
+    # Overall geçmişi
+    oh = existing.get('overallHistory', [])
+    if overall and not any(h['date'] == excel_date for h in oh):
+        oh.append({'date': excel_date, 'amount': overall,
+                   'note': f'Otomatik - {datetime.now().strftime("%H:%M")}'})
+        oh.sort(key=lambda x: x['date'])
+
+    # Günlük log
+    dl = existing.get('dailyLog', {})
+    dl[excel_date] = {
+        'date':        excel_date,
+        'trades':      len(today_trades),
+        'sells':       sum(1 for t in today_trades if t['type'] == 'Satış'),
+        'buys':        sum(1 for t in today_trades if t['type'] == 'Alış'),
+        'grossProfit': profit['totalGross'],
+        'commission':  profit['totalCommission'],
+        'netProfit':   profit['totalNet'],
+        'overall':     overall,
+        'bySymbol':    profit['bySymbol'],
+        'updatedAt':   datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    }
+
+    # Tüm işlemler (geçmiş günler korunur)
+    all_trades = [t for t in existing.get('allTrades', []) if t['date'] != excel_date]
+    all_trades.extend(today_trades)
+    all_trades.sort(key=lambda x: x['datetime'], reverse=True)
+
+    settings = existing.get('settings', {
+        'commissionRate': 1, 'gridInterval': 0, 'lotTolerance': 0,
+        'costs': DEFAULT_COSTS,
+    })
+
+    # Aylık kar: ayın son BIST günündeyse otomatik hesapla ve kaydet
+    monthly_kar = existing.get('monthlyKar', [])
+    if overall and is_last_bist_day_of_month(date.fromisoformat(excel_date)):
+        mk_profit = calc_monthly_kar(excel_date, overall, oh)
+        if mk_profit is not None:
+            month_key = excel_date[:7]
+            monthly_kar = [m for m in monthly_kar if m['month'] != month_key]
+            monthly_kar.append({'month': month_key, 'profit': mk_profit})
+            monthly_kar.sort(key=lambda x: x['month'])
+            log.info(f'Aylık kar kaydedildi: {month_key} → {mk_profit:+,} ₺')
+
+    payload = {
+        'lastUpdated':    datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'today':          excel_date,
+        'todayOverall':   overall,
+        'todayProfit':    profit,
+        'allTrades':      all_trades,
+        'dailyLog':       dl,
+        'overallHistory': oh,
+        'monthlyKar':     monthly_kar,
+        # Açık pozisyon: hangi günden üretildiğini de saklıyoruz
+        'openPositions':  {
+            'date':      excel_date,
+            'positions': profit.get('openPositions', {}),
+        },
+        'settings':       settings,
+    }
+
+    inject_into_html(payload)
+    DATA_JSON.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
+    firebase_write(payload)
+
+    log.info(
+        f"{excel_date}: {len(today_trades)} islem | "
+        f"Brut: {profit['totalGross']:+.2f} TL | "
+        f"Komisyon: {profit['totalCommission']:.4f} TL | "
+        f"Net: {profit['totalNet']:+.2f} TL"
+    )
+
+    # Excel dosyalarını sil (--now / dry_run modunda silme)
+    if not dry_run:
+        delete_excel_files()
+    else:
+        log.info("Test modu: Excel dosyalari silinmedi.")
+    return True
+
+# ──────────────────────────────────────────────────────────
+#  EXCEL SİL  (işi biten günlük dosyaları temizle)
+# ──────────────────────────────────────────────────────────
+def delete_excel_files():
+    for f in [FILE1, FILE2]:
+        if not f.exists():
+            continue
+        try:
+            f.unlink()
+            log.info(f"Kalıcı silindi: {f.name}")
+        except Exception as e:
+            log.warning(f"Silinemedi ({f.name}): {e}")
+
+# ──────────────────────────────────────────────────────────
+#  GÖREV ZAMANLAYICI
+# ──────────────────────────────────────────────────────────
+def setup_task_scheduler():
+    # Bu script evening_automation.pyw tarafından çağrılır.
+    # Kendi başına görev oluşturmak çift çalışmaya neden olur.
+    log.error(
+        "Bu script doğrudan görev zamanlayıcıya EKLENMEZ. "
+        "Görev yönetimi için evening_automation.pyw --setup kullanın."
+    )
+
+# ──────────────────────────────────────────────────────────
+#  SERVİS DÖNGÜSÜ
+# ──────────────────────────────────────────────────────────
+def run_service():
+    log.info("Grid Bot Tracker Servisi başlatıldı")
+    log.info(f"Klasör : {SCRIPT_DIR}")
+    log.info(f"HTML   : {HTML_FILE}")
+    log.info(f"Excel 1: {FILE1}")
+    log.info(f"Excel 2: {FILE2}")
+    last_run = None
+    while True:
+        now   = datetime.now()
+        today = now.date()
+        if is_trading_day(today):
+            rh, rm   = get_run_time(today)
+            run_time = now.replace(hour=rh, minute=rm, second=0, microsecond=0)
+            if last_run != today and now >= run_time:
+                if run_once(): last_run = today
+                time.sleep(60); continue
+        time.sleep(min(seconds_until_run(), 3600))
+
+# ──────────────────────────────────────────────────────────
+#  GİRİŞ
+# ──────────────────────────────────────────────────────────
+if __name__ == '__main__':
+    p = argparse.ArgumentParser(description='BIST Grid Bot Tracker v2')
+    p.add_argument('--now',   action='store_true', help='Hemen çalıştır')
+    p.add_argument('--setup', action='store_true', help='Görev zamanlayıcıya ekle')
+    p.add_argument('--html',  action='store_true', help='Sadece HTML güncelle')
+    args = p.parse_args()
+    if args.setup:   setup_task_scheduler()
+    elif args.html:  ensure_html(); log.info('HTML guncellendi.')
+    elif args.now:   run_once(dry_run=False)   # Üretim: Excel dosyaları işlem sonrası silinir
+    else:            run_service()
