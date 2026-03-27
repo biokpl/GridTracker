@@ -89,14 +89,32 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);display:flex
 .nav::-webkit-scrollbar{display:none;}
 .nav-btn{
   flex:1;min-width:64px;
-  padding:7px 12px;border-radius:6px;border:none;
+  padding:7px 12px;border-radius:6px;border:1px solid transparent;
   background:transparent;color:var(--text3);
   font-family:var(--sans);font-size:12px;font-weight:500;
   cursor:pointer;transition:all .15s;white-space:nowrap;
   display:flex;align-items:center;justify-content:center;gap:5px;
+  position:relative;overflow:hidden;
 }
 .nav-btn:hover{color:var(--text2);background:var(--surface2);}
-.nav-btn.on{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.nav-btn.on{background:var(--surface2);}
+.nav-btn.on::before{
+  content:'';position:absolute;top:0;left:8%;right:8%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--tc),transparent);
+  opacity:.9;
+}
+.nav-btn.on::after{
+  content:'';position:absolute;bottom:0;left:18%;right:18%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--tc),transparent);
+  opacity:.35;
+}
+/* Sekme renkleri */
+.nav-btn:nth-child(1).on{color:#60a5fa;border-color:rgba(59,130,246,.22);background:rgba(59,130,246,.06);--tc:#3b82f6;}
+.nav-btn:nth-child(2).on{color:#4ade80;border-color:rgba(34,197,94,.22);background:rgba(34,197,94,.05);--tc:#22c55e;}
+.nav-btn:nth-child(3).on{color:#fbbf24;border-color:rgba(245,158,11,.22);background:rgba(245,158,11,.05);--tc:#f59e0b;}
+.nav-btn:nth-child(4).on{color:#c4b5fd;border-color:rgba(167,139,250,.22);background:rgba(167,139,250,.05);--tc:#a78bfa;}
+.nav-btn:nth-child(5).on{color:#5eead4;border-color:rgba(45,212,191,.22);background:rgba(45,212,191,.05);--tc:#2dd4bf;}
+.nav-btn:nth-child(6).on{color:#a1a1aa;border-color:rgba(113,113,122,.22);background:rgba(113,113,122,.05);--tc:#71717a;}
 .nav-icon{font-size:13px;}
 
 /* ── SCROLL AREA ── */
@@ -443,6 +461,30 @@ select.field-input option{background:var(--surface2);}
 }
 
 /* ── SERMAYe ── */
+.sr-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;}
+.sr-stat{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:14px 10px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.sr-stat::before{
+  content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--sc,#3b82f6),transparent);
+  opacity:.5;
+}
+.sr-stat::after{
+  content:'';position:absolute;bottom:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--sc,#3b82f6),transparent);
+  opacity:.2;
+}
+.sr-stat.blue{--sc:#3b82f6;background:linear-gradient(180deg,rgba(59,130,246,.04) 0%,var(--surface) 60%);}
+.sr-stat.teal{--sc:#2dd4bf;background:linear-gradient(180deg,rgba(45,212,191,.04) 0%,var(--surface) 60%);}
+.sr-stat-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#8b9ab5;margin-bottom:8px;}
+.sr-stat-sub{font-size:8px;color:var(--text3);margin-top:4px;}
+.sr-stat-val{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--text);}
+.sr-stat-val.pos{color:#4ade80;}
+.sr-stat-val.neg{color:#f87171;}
+.sr-stat-val.blue{color:#60a5fa;}
 .sr-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
 .btn-money-in{
   background:linear-gradient(135deg,#166534,#14532d);
@@ -763,16 +805,17 @@ select.field-input option{background:var(--surface2);}
 <!-- ══ SERMAYe ══ -->
 <div class="page" id="pg-sermaye">
 
-  <!-- Ana Para — portfolio kartı -->
-  <div class="portfolio-card" style="margin-bottom:10px">
-    <div class="pf-glow"></div>
-    <div class="pf-label">Ana Para</div>
-    <div class="pf-value" id="sr-ana">—</div>
-    <div style="font-size:9px;color:#6b7a92;font-family:var(--sans);margin-top:4px;position:relative">Net yatırılan sermaye</div>
-    <div class="pf-divider" style="margin:14px 0 10px"></div>
-    <div class="sr-bot-row">
-      <div class="sr-bot-label">GridBot Kazancı</div>
-      <div class="sr-bot-val" id="sr-bot">—</div>
+  <!-- Ana Para + GridBot Kazancı -->
+  <div class="sr-stats">
+    <div class="sr-stat blue">
+      <div class="sr-stat-lbl">Ana Para</div>
+      <div class="sr-stat-val blue" id="sr-ana">—</div>
+      <div class="sr-stat-sub">Net yatırılan sermaye</div>
+    </div>
+    <div class="sr-stat teal">
+      <div class="sr-stat-lbl">GridBot Kazancı</div>
+      <div class="sr-stat-val" id="sr-bot">—</div>
+      <div class="sr-stat-sub">Overall − Ana Para</div>
     </div>
   </div>
 
@@ -1381,12 +1424,11 @@ function calcSr(){
 function renderSermaye(){
   const{anaPara,totalIn,totalOut,botKar}=calcSr();
 
-  // Ana Para — portfolio-card pf-value stili
-  $('sr-ana').innerHTML=fxi(anaPara)+'<span style="font-size:22px;font-weight:400;-webkit-text-fill-color:rgba(148,163,184,.55);color:rgba(148,163,184,.55)"> ₺</span>';
+  $('sr-ana').textContent=fxSr(anaPara);
 
   const botEl=$('sr-bot');
-  botEl.textContent=(botKar>=0?'▲ ':' ▼ ')+fxSr(botKar);
-  botEl.className='sr-bot-val '+(botKar>=0?'pos':'neg');
+  botEl.textContent=(botKar>=0?'+':'-')+fxSr(botKar);
+  botEl.className='sr-stat-val '+(botKar>=0?'pos':'neg');
 
   $('sr-in').textContent=fxSr(totalIn);
   $('sr-out').textContent=fxSr(totalOut);
