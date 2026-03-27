@@ -1440,7 +1440,7 @@ async function loadAutoSettings(){
       if(val){ $('autoTime').value=val; $('autoWake').textContent=_wakeTime(val); }
       $('autoStatus').className='alert inf';
       $('autoStatus').textContent='• Saat değişikliği, Firebase ile PC\'ye iletilir (~1 dk gecikme)';
-      Object.assign($('autoStatus').style,{fontSize:'10px',fontStyle:'italic'});
+      Object.assign($('autoStatus').style,{fontSize:'10px',fontStyle:'italic',justifyContent:'center',color:'#52525b'});
       $('autoStatus').style.display='flex';
     }catch{
       $('autoStatus').className='alert warn';
