@@ -807,6 +807,22 @@ select.field-input option{background:var(--surface2);}
 //  FİREBASE
 // ════════════════════════════════════════════════════════
 const FIREBASE_URL='https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app';
+
+// BİST işlem günü olMAYAN hafta içi günleri (tatil + arefe)
+const BIST_HOLIDAYS=new Set([
+  // 2025 — resmi/dini tatil ve arefe
+  '2025-01-01','2025-03-28','2025-03-31','2025-04-23','2025-05-01','2025-05-19',
+  '2025-06-05','2025-06-06','2025-06-09','2025-07-15','2025-10-28','2025-10-29',
+  // 2026
+  '2026-01-01','2026-03-19','2026-03-20','2026-04-23','2026-05-01','2026-05-19',
+  '2026-05-26','2026-05-27','2026-05-28','2026-05-29','2026-07-15','2026-10-28','2026-10-29',
+  // 2027
+  '2027-01-01','2027-03-08','2027-03-09','2027-03-10','2027-03-11','2027-04-23',
+  '2027-05-17','2027-05-18','2027-05-19','2027-07-15','2027-08-30','2027-10-28','2027-10-29',
+  // 2028
+  '2028-02-25','2028-02-28','2028-05-01','2028-05-03','2028-05-04','2028-05-05',
+  '2028-05-19','2028-08-30',
+]);
 async function fbRead(){
   try{
     const r=await fetch(FIREBASE_URL+'/gridtracker.json');
@@ -1328,8 +1344,18 @@ function renderHome(){
   const now=new Date();
   const ms=getMonthStats(now.getFullYear(),now.getMonth());
   setpnl('h-mnet',ms.net);
-  // Ayın kaçıncı iş günündeyiz (Pzt-Cum, tatil dikkate almadan)
-  const _bd=(()=>{let c=0;for(let i=1;i<=now.getDate();i++){const d=new Date(now.getFullYear(),now.getMonth(),i).getDay();if(d>0&&d<6)c++;}return c;})();
+  // Ayın kaçıncı BİST işlem gününde? (Pzt-Cum && tatil/arefe değil)
+  const _bd=(()=>{
+    let c=0;const y=now.getFullYear(),mo=now.getMonth();
+    for(let i=1;i<=now.getDate();i++){
+      const dow=new Date(y,mo,i).getDay();
+      if(dow>0&&dow<6){
+        const ds=`${y}-${String(mo+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+        if(!BIST_HOLIDAYS.has(ds))c++;
+      }
+    }
+    return c;
+  })();
   $('h-mdays').textContent=_bd+'. iş günü';
 
   // Lisans
