@@ -1242,8 +1242,10 @@ function renderCostSummary(){
 //  SABAH OTOMASYONU AYARLARI
 // ════════════════════════════════════════════════════════
 const AUTO_API = 'http://localhost:5050';
+const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
 async function loadAutoSettings(){
+  if(!IS_LOCAL){ $('autoStatus').className='alert warn'; $('autoStatus').textContent='⚠ Otomasyon ayarları sadece yerel ağdan erişilebilir'; $('autoStatus').style.display='flex'; return; }
   try{
     const r = await fetch(AUTO_API+'/api/morning-settings');
     if(!r.ok) throw new Error();
@@ -1279,6 +1281,7 @@ async function saveAutoSettings(){
 }
 
 async function loadHolidays(){
+  if(!IS_LOCAL){ $('holidayList').innerHTML='<div style="font-size:11px;color:var(--text3)">Tatil listesi sadece yerel ağdan görüntülenebilir.</div>'; return; }
   const year = new Date().getFullYear();
   $('holYear').textContent = year;
   try{
@@ -1336,7 +1339,6 @@ document.addEventListener('DOMContentLoaded',async()=>{
   load();
   updateMarket(); setInterval(updateMarket,30000);
   $('oDate').value=new Date().toISOString().split('T')[0];
-  renderManualList();
 
   // Firebase'den güncel veriyi yükle
   const fb=await fbRead();

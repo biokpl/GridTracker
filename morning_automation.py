@@ -281,6 +281,10 @@ def bring_to_front(title):
     w = wins[0]
     hwnd = w._hWnd
     u32 = ctypes.windll.user32
+    # Minimize edilmişse önce normal boyuta getir
+    if win32gui.IsIconic(hwnd):
+        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
+        time.sleep(0.3)
     fg_hwnd = u32.GetForegroundWindow()
     fg_tid  = u32.GetWindowThreadProcessId(fg_hwnd, None)
     tgt_tid = u32.GetWindowThreadProcessId(hwnd, None)
@@ -291,6 +295,17 @@ def bring_to_front(title):
     time.sleep(0.5)
     log.info(f'One getirildi: {w.title}')
     return w
+
+
+def minimize_window(title):
+    """Başlıkta 'title' geçen pencereyi minimize eder."""
+    if DRY_RUN:
+        return
+    import win32gui, win32con
+    wins = [w for w in gw.getAllWindows() if title.lower() in w.title.lower()]
+    if wins:
+        win32gui.ShowWindow(wins[0]._hWnd, win32con.SW_MINIMIZE)
+        log.info(f'Minimize edildi: {wins[0].title}')
 
 
 def open_shortcut(path, required=True):
@@ -388,9 +403,11 @@ def navigate_to_ceptel():
 
 def click_infoyatirim():
     """
-    Google Messages sol panelinde INFOYATIRIM konuşmasını
-    locateOnScreen (görsel arama) ile bulur, yoksa pencereye göre
-    hesaplanan koordinat ile tıklar.
+    Google Messages sol panelinde INFOYATIRIM konuşmasını bulup tıklar.
+    Yöntem 1 (birincil): DevTools JS ile DOM'da 'INFOYATIRIM' metnini arar —
+                         konuşma listesinde nerede olursa olsun bulur.
+    Yöntem 2 (yedek):    locateOnScreen ile görsel arama.
+    Yöntem 3 (son çare): Pencereye göre sabit koordinat.
     """
     log.info('INFOYATIRIM konuşması aranıyor...')
     if DRY_RUN:
@@ -403,12 +420,22 @@ def click_infoyatirim():
         sys.exit(1)
     win = wins[0]
 
-    # Yöntem 1: locateOnScreen ile görsel arama
+    # Yöntem 1: DevTools JS — DOM'da metin arar, pozisyona bağımlı değil
+    result = _run_devtools_js(_JS_CLICK_INFOYATIRIM, wait=1.0)
+    if result.startswith('ok'):
+        log.info(f'INFOYATIRIM JS ile bulundu ve tıklandı: {result}')
+        log.info('Konuşma yükleniyor (4 saniye)...')
+        time.sleep(4)
+        return
+
+    log.warning(f'JS yöntemi başarısız ({result}), görsel aramaya geçiliyor...')
+
+    # Yöntem 2: locateOnScreen ile görsel arama
     template = SCRIPT_DIR / 'infoyatirim_template.png'
     clicked = False
     if template.exists():
         try:
-            import cv2  # noqa — opencv kontrolü
+            import cv2  # noqa
             center = pyautogui.locateCenterOnScreen(str(template), confidence=0.7)
             if center:
                 pyautogui.click(center)
@@ -417,7 +444,7 @@ def click_infoyatirim():
         except Exception as e:
             log.warning(f'locateOnScreen başarısız: {e}')
 
-    # Yöntem 2: Pencereye göre hesaplanan koordinat (pencere nereye giderse)
+    # Yöntem 3: Pencereye göre sabit koordinat
     if not clicked:
         cx = win.left + 167
         cy = win.top + 211
@@ -514,11 +541,15 @@ def run():
     # ── Adım 2: Pencere görünene kadar bekle ────────────────
     wait_for_window('MatriksIQ')
 
-    # ── Adım 3: Tam ekran + uygulama hazırlık süresi ────────
+    # ── Adım 3: Uygulama hazırlık süresi ────────────────────
     log.info('Uygulama hazırlık bekleniyor (45 saniye)...')
     time.sleep(45)
 
     # ── Adım 4: MatriksIQ ilk tıklamalar ───────────────────
+    # PC açılışında mouse sol üst köşede kalabilir → fail-safe tetiklenir
+    # İlk tıklamadan önce mouse'u güvenli bir konuma taşı
+    pyautogui.moveTo(960, 540, duration=0.3)
+    time.sleep(0.5)
     click(644,  42,  wait=2.0)
     click(2581, 701, wait=2.0)
 
