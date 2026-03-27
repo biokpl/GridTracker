@@ -1199,7 +1199,7 @@ function load(){ try{
 // ════════════════════════════════════════════════════════
 //  NAV
 // ════════════════════════════════════════════════════════
-const PAGES=['pg-home','pg-trades','pg-monthly','pg-overall','pg-sermaye','pg-settings'];
+const PAGES=['pg-home','pg-monthly','pg-trades','pg-overall','pg-sermaye','pg-settings'];
 function goById(id){
   const btn=[...document.querySelectorAll('.nav-btn')].find(b=>b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+id+"'"));
   if(btn) go(id,btn);
