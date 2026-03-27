@@ -717,64 +717,6 @@ select.field-input option{background:var(--surface2);}
 <!-- ══ İŞLEMLER ══ -->
 <div class="page" id="pg-trades">
 
-  <div class="s-head-c" style="margin-bottom:12px"><div class="s-rule"></div><div class="section-title s-title-c">İşlem Geçmişi</div><div class="s-rule"></div></div>
-
-  <div class="t-filter">
-    <div class="t-filter-group">
-      <div class="t-filter-label">🏷 Hisse</div>
-      <select id="fSym" onchange="renderTrades()">
-        <option value="">Tüm Hisseler</option>
-      </select>
-    </div>
-    <div class="t-filter-group">
-      <div class="t-filter-label">⇅ İşlem Tipi</div>
-      <select id="fType" onchange="renderTrades()">
-        <option value="">Alış &amp; Satış</option>
-        <option>Alış</option>
-        <option>Satış</option>
-      </select>
-    </div>
-    <div style="display:flex;align-items:flex-end;padding-bottom:1px">
-      <button class="btn btn-ghost btn-sm" onclick="exportCSV()" style="white-space:nowrap">↓ CSV</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="tbl-wrap">
-      <table class="ttbl">
-        <thead><tr><th>Saat</th><th>Hisse</th><th>İşlem</th><th>Lot</th><th>Fiyat</th><th>Tutar</th><th>Komisyon</th></tr></thead>
-        <tbody id="trades-tbl"><tr><td colspan="7"><div class="empty"><div class="empty-icon">↕</div><div class="empty-text">Veri yok</div></div></td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-</div><!-- /pg-trades -->
-
-<!-- ══ AYLIK ══ -->
-<div class="page" id="pg-monthly">
-
-  <!-- GridBot Aylık Kar -->
-  <div class="mk-stats">
-    <div class="mk-stat blue">
-      <div class="mk-stat-lbl">Toplam Kar</div>
-      <div class="mk-stat-val blue" id="mk-total">—</div>
-      <div class="mk-stat-sub" id="mk-period">— ay</div>
-    </div>
-    <div class="mk-stat green">
-      <div class="mk-stat-lbl">En İyi Ay</div>
-      <div class="mk-stat-val pos" id="mk-best-val">—</div>
-      <div class="mk-stat-sub" id="mk-best-lbl">—</div>
-    </div>
-    <div class="mk-stat amber">
-      <div class="mk-stat-lbl">Ort. Aylık</div>
-      <div class="mk-stat-val" id="mk-avg">—</div>
-      <div class="mk-stat-sub">aylık ortalama</div>
-    </div>
-  </div>
-
-  <div id="mk-list" class="mk-list"></div>
-  <div class="mk-divider"></div>
-
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">‹</button>
     <div class="month-label" id="monthLbl">—</div>
@@ -824,6 +766,32 @@ select.field-input option{background:var(--surface2);}
       </table>
     </div>
   </div>
+
+</div><!-- /pg-trades -->
+
+<!-- ══ AYLIK ══ -->
+<div class="page" id="pg-monthly">
+
+  <!-- GridBot Aylık Kar -->
+  <div class="mk-stats">
+    <div class="mk-stat blue">
+      <div class="mk-stat-lbl">Toplam Kar</div>
+      <div class="mk-stat-val blue" id="mk-total">—</div>
+      <div class="mk-stat-sub" id="mk-period">— ay</div>
+    </div>
+    <div class="mk-stat green">
+      <div class="mk-stat-lbl">En İyi Ay</div>
+      <div class="mk-stat-val pos" id="mk-best-val">—</div>
+      <div class="mk-stat-sub" id="mk-best-lbl">—</div>
+    </div>
+    <div class="mk-stat amber">
+      <div class="mk-stat-lbl">Ort. Aylık</div>
+      <div class="mk-stat-val" id="mk-avg">—</div>
+      <div class="mk-stat-sub">aylık ortalama</div>
+    </div>
+  </div>
+
+  <div id="mk-list" class="mk-list"></div>
 
 </div><!-- /pg-monthly -->
 
