@@ -1918,6 +1918,61 @@ if('serviceWorker' in navigator){
     if(next!==cur) goById(PAGES[next]);
   },{passive:true});
 })();
+
+// ── Pull-to-refresh ──────────────────────────────────
+(function(){
+  const THRESHOLD=130;
+  let sy=0,pulling=false,armed=false;
+
+  // İndikatör
+  const ind=document.createElement('div');
+  ind.style.cssText='position:fixed;top:0;left:50%;transform:translateX(-50%) translateY(-60px);z-index:9999;transition:transform .2s ease,opacity .2s ease;opacity:0;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);backdrop-filter:blur(8px);border-radius:999px;padding:8px 18px;font-size:12px;color:#60a5fa;font-weight:600;letter-spacing:.5px;white-space:nowrap;pointer-events:none;';
+  ind.textContent='↓ Yenilemek için çek';
+  document.body.appendChild(ind);
+
+  document.addEventListener('touchstart',e=>{
+    const el=e.target;
+    // Sadece sayfa en üstteyse tetikle
+    const page=document.querySelector('.page.on');
+    const scrollTop=page?page.scrollTop:window.scrollY;
+    if(scrollTop>4) return;
+    sy=e.touches[0].clientY;
+    pulling=true;
+    armed=false;
+  },{passive:true});
+
+  document.addEventListener('touchmove',e=>{
+    if(!pulling) return;
+    const dy=e.touches[0].clientY-sy;
+    if(dy<=0){pulling=false;ind.style.transform='translateX(-50%) translateY(-60px)';ind.style.opacity='0';return;}
+    const pct=Math.min(dy/THRESHOLD,1);
+    const ty=Math.min(dy*0.45,THRESHOLD*0.45);
+    ind.style.transform=`translateX(-50%) translateY(${ty}px)`;
+    ind.style.opacity=String(Math.min(pct*1.5,1));
+    if(dy>=THRESHOLD&&!armed){
+      armed=true;
+      ind.textContent='↑ Bırak — yenileniyor';
+      ind.style.background='rgba(59,130,246,.25)';
+      if(navigator.vibrate) navigator.vibrate(40);
+    } else if(dy<THRESHOLD&&armed){
+      armed=false;
+      ind.textContent='↓ Yenilemek için çek';
+      ind.style.background='rgba(59,130,246,.15)';
+    }
+  },{passive:true});
+
+  document.addEventListener('touchend',()=>{
+    if(!pulling) return;
+    pulling=false;
+    if(armed){
+      ind.textContent='↻ Yenileniyor...';
+      setTimeout(()=>location.reload(),300);
+    } else {
+      ind.style.transform='translateX(-50%) translateY(-60px)';
+      ind.style.opacity='0';
+    }
+  },{passive:true});
+})();
 </script>
 </body>
 </html>
