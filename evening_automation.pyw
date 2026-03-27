@@ -194,7 +194,7 @@ def run(mode='normal'):
 
     # ── Adım 3: Excel verilerini işle ve Firebase'e yaz ─────
     log.info('Excel verileri işleniyor ve Firebase güncelleniyor...')
-    grid_script = SCRIPT_DIR / 'grid_tracker_service.py'
+    grid_script = SCRIPT_DIR / 'grid_tracker_service.pyw'
     if grid_script.exists():
         result = subprocess.run(
             [sys.executable, str(grid_script), '--now'],
@@ -218,13 +218,18 @@ def run(mode='normal'):
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 def setup_tasks():
-    python = sys.executable
+    python = str(Path(sys.executable).parent / 'pythonw.exe')
     script = str(Path(__file__).resolve())
 
     tasks = [
         (TASK_NORMAL, '18:35', 'normal'),
         (TASK_AREFE,  '13:35', 'arefe'),
     ]
+
+    # Eski generic isimli görev varsa temizle (tekrar eklenmesin)
+    for old in ['MatriksIQ_Aksam_Otomasyonu', 'GridBotTracker']:
+        subprocess.run(f'schtasks /Delete /TN "{old}" /F',
+                       shell=True, capture_output=True)
 
     for name, st, mode in tasks:
         # Varsa sil

@@ -67,8 +67,8 @@ def _wake_time(time_str):
 
 def _update_task(time_str):
     """Task Scheduler görevini siler ve yeni saatle yeniden oluşturur."""
-    python = sys.executable
-    script = str(SCRIPT_DIR / 'morning_automation.py')
+    python = str(Path(sys.executable).parent / 'pythonw.exe')
+    script = str(SCRIPT_DIR / 'morning_automation.pyw')
 
     # Varsa sil
     subprocess.run(
@@ -151,7 +151,7 @@ def get_holidays(year):
 # ── Task Scheduler setup ───────────────────────────────────
 def setup_autostart():
     """Sunucuyu Windows oturumu açılışında otomatik başlatmak için görev ekler."""
-    python = sys.executable
+    python = str(Path(sys.executable).parent / 'pythonw.exe')
     script = str(Path(__file__).resolve())
     cmd = (
         f'schtasks /Create /TN "MatriksIQ_AyarlarSunucusu" '
