@@ -520,7 +520,7 @@ select.field-input option{background:var(--surface2);}
   background:linear-gradient(135deg,rgba(15,23,42,.6) 0%,var(--surface2) 100%);
   margin-bottom:5px;transition:border-color .15s;
 }
-.sr-tx-mid{flex:1;min-width:0;display:grid;grid-template-columns:1fr auto;align-items:center;gap:0 10px;}
+.sr-tx-mid{flex:1;min-width:0;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;gap:0 12px;}
 .sr-tx:hover{border-color:var(--border2);}
 .sr-tx-icon{
   width:28px;height:28px;border-radius:8px;
@@ -529,11 +529,19 @@ select.field-input option{background:var(--surface2);}
 }
 .sr-tx-icon.in{background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.05));color:#4ade80;border:1px solid rgba(34,197,94,.2);}
 .sr-tx-icon.out{background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(239,68,68,.05));color:#f87171;border:1px solid rgba(239,68,68,.2);}
-.sr-tx-note{font-size:11px;font-weight:500;color:#6e7a8f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.sr-tx-date{font-size:9px;color:#7090b0;margin-top:2px;font-family:var(--mono);}
-.sr-tx-amt{font-family:var(--mono);font-size:13px;font-weight:600;}
+.sr-tx-note{font-size:11px;font-weight:500;color:#6e7a8f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;align-self:end;}
+.sr-tx-date{font-size:9px;color:#7090b0;margin-top:1px;font-family:var(--mono);align-self:start;}
+.sr-tx-amt{
+  font-family:var(--mono);font-size:13px;font-weight:600;
+  grid-row:1/3;align-self:center;text-align:right;white-space:nowrap;
+}
 .sr-tx-amt.pos{color:#4ade80;}
 .sr-tx-amt.neg{color:#f87171;}
+#sr-list{max-height:275px;overflow-y:auto;padding-right:3px;}
+#sr-list::-webkit-scrollbar{width:3px;}
+#sr-list::-webkit-scrollbar-track{background:transparent;}
+#sr-list::-webkit-scrollbar-thumb{background:rgba(59,130,246,.25);border-radius:3px;}
+#sr-list::-webkit-scrollbar-thumb:hover{background:rgba(59,130,246,.45);}
 /* GridBot kazanç — portfolio-card altına eklenen özel alan */
 .sr-bot-row{
   display:flex;align-items:center;justify-content:center;gap:6px;
@@ -1508,7 +1516,7 @@ function renderSermaye(){
       <div class="sr-tx-icon ${isIn?'in':'out'}">${isIn?'▲':'▼'}</div>
       <div class="sr-tx-mid">
         <div class="sr-tx-note">${t.note||(isIn?'Para Girişi':'Para Çıkışı')}</div>
-        <div class="sr-tx-amt ${isIn?'pos':'neg'}" style="text-align:right">${isIn?'+':'-'}${fxSr(t.amount)}</div>
+        <div class="sr-tx-amt ${isIn?'pos':'neg'}">${isIn?'+':'-'}${fxSr(t.amount)}</div>
         <div class="sr-tx-date">${dateStr}</div>
       </div>
       <button class="btn btn-danger btn-xs" onclick="delBirikimTx('${t.id}')" style="padding:2px 6px;font-size:10px;opacity:.6;flex-shrink:0">✕</button>
