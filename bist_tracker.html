@@ -1207,9 +1207,17 @@ function saveOverall(){
   if(idx>=0) D.overallHistory[idx]={date,amount:amt,note};
   else D.overallHistory.push({date,amount:amt,note});
   D.overallHistory.sort((a,b)=>a.date.localeCompare(b.date));
-  $('oForm').style.display='none'; renderOverall(); toast('Kaydedildi','ok');
+  $('oForm').style.display='none'; renderOverall();
+  fbWrite('gridtracker/overallHistory',D.overallHistory)
+    .then(()=>toast('Kaydedildi','ok'))
+    .catch(()=>toast('Kaydedildi (Firebase hatası)','warn'));
 }
-function delOverall(date){ if(!D) return; D.overallHistory=D.overallHistory.filter(h=>h.date!==date); renderOverall(); }
+function delOverall(date){
+  if(!D) return;
+  D.overallHistory=D.overallHistory.filter(h=>h.date!==date);
+  renderOverall();
+  fbWrite('gridtracker/overallHistory',D.overallHistory);
+}
 
 // ════════════════════════════════════════════════════════
 //  BOT HİSSELERİ
