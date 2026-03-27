@@ -11,9 +11,11 @@ Kullanım:
   python automation_server.py --setup  # Görev zamanlayıcıya ekle (Windows login'de otomatik başlar)
 """
 
-import sys, os, re, json, subprocess, argparse, configparser
+import sys, os, re, json, subprocess, argparse, configparser, threading, time, urllib.request
 from pathlib import Path
 from datetime import date
+
+FIREBASE_URL = 'https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app'
 
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -164,6 +166,33 @@ def setup_autostart():
         print(f'Hata: {result.stdout}{result.stderr}')
 
 
+def firebase_watcher():
+    """
+    Firebase'deki /settings/schedule_time değerini 60 saniyede bir izler.
+    Değişirse yerel config + Task Scheduler güncellenir.
+    """
+    last = None
+    while True:
+        try:
+            req = urllib.request.urlopen(
+                f'{FIREBASE_URL}/settings/schedule_time.json', timeout=10)
+            val = json.loads(req.read().decode())
+            if val and isinstance(val, str) and re.match(r'^\d{2}:\d{2}$', val) and val != last:
+                cfg = _read_cfg()
+                current = cfg.get('schedule', 'time', fallback='09:15')
+                if val != current:
+                    if 'schedule' not in cfg:
+                        cfg.add_section('schedule')
+                    cfg.set('schedule', 'time', val)
+                    _write_cfg(cfg)
+                    ok, _ = _update_task(val)
+                    print(f'[Firebase] Saat güncellendi: {val}  (görev: {"OK" if ok else "HATA"})')
+                last = val
+        except Exception as e:
+            pass
+        time.sleep(60)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Otomasyon Ayarlar Sunucusu')
     parser.add_argument('--setup', action='store_true',
@@ -173,5 +202,9 @@ if __name__ == '__main__':
     if args.setup:
         setup_autostart()
     else:
+        # Firebase izleyiciyi arka planda başlat
+        t = threading.Thread(target=firebase_watcher, daemon=True)
+        t.start()
         print(f'Otomasyon ayarlar sunucusu başlatılıyor: http://localhost:{PORT}')
+        print(f'Firebase izleyici aktif (60s aralık)')
         app.run(host='127.0.0.1', port=PORT, debug=False)
