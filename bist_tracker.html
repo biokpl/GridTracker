@@ -1468,7 +1468,7 @@ function fxSr(n){
 }
 
 function calcSr(){
-  const txs=(D&&D.birikimTx)||[];
+  const txs=((D&&D.birikimTx)||[]).filter(t=>!t.exclude);
   const anaPara=txs.reduce((s,t)=>s+t.amount,0);
   const totalIn=txs.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
   const totalOut=txs.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
@@ -1508,10 +1508,12 @@ function renderSermaye(){
   list.innerHTML=filtered.map(t=>{
     const isIn=t.amount>0;
     const dateStr=t.date.split('-').reverse().join('.');
-    return `<div class="sr-tx">
+    const excStyle=t.exclude?'opacity:.45;':'';
+    const excBadge=t.exclude?'<span style="font-size:8px;background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.2);border-radius:4px;padding:1px 5px;margin-left:5px;letter-spacing:.4px">referans</span>':'';
+    return `<div class="sr-tx" style="${excStyle}">
       <div class="sr-tx-icon ${isIn?'in':'out'}">${isIn?'▲':'▼'}</div>
       <div style="flex:1;min-width:0">
-        <div class="sr-tx-note">${t.note||(isIn?'Para Girişi':'Para Çıkışı')}</div>
+        <div class="sr-tx-note">${t.note||(isIn?'Para Girişi':'Para Çıkışı')}${excBadge}</div>
         <div class="sr-tx-date">${dateStr}</div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;padding-right:2px">
