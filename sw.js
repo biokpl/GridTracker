@@ -1,4 +1,4 @@
-const CACHE = 'gridtracker-v1';
+const CACHE = 'gridtracker-v2';
 const ASSETS = ['./bist_tracker.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -14,6 +14,8 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Firebase ve diğer dış API'ler her zaman ağdan gitsin
+  if(!e.request.url.startsWith(self.location.origin)) return;
   e.respondWith(
     caches.match(e.request).then(r => r || fetch(e.request))
   );
