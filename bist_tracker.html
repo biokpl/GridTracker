@@ -443,34 +443,56 @@ select.field-input option{background:var(--surface2);}
 }
 
 /* ── SERMAYe ── */
-.sr-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
-.sr-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 10px;text-align:center;}
-.sr-stat-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;}
-.sr-stat-sub{font-size:8.5px;color:var(--text3);margin-top:3px;}
-.sr-stat-val{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--text);}
-.sr-stat-val.pos{color:var(--green);}
-.sr-stat-val.neg{color:var(--red);}
-.sr-stat-val.blue{color:var(--blue);}
-.sr-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:10px;}
 .sr-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
-.btn-money-in{background:linear-gradient(135deg,#16a34a,#166534);color:#fff;border:none;border-radius:8px;padding:10px;font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:opacity .15s;}
+.btn-money-in{
+  background:linear-gradient(135deg,#166534,#14532d);
+  color:#86efac;border:1px solid rgba(34,197,94,.25);border-radius:8px;
+  padding:11px;font-family:var(--sans);font-size:11px;font-weight:700;
+  cursor:pointer;letter-spacing:.8px;transition:opacity .15s;
+}
 .btn-money-in:active{opacity:.8;}
-.btn-money-out{background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;border:none;border-radius:8px;padding:10px;font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:opacity .15s;}
+.btn-money-out{
+  background:linear-gradient(135deg,#7f1d1d,#991b1b);
+  color:#fca5a5;border:1px solid rgba(239,68,68,.25);border-radius:8px;
+  padding:11px;font-family:var(--sans);font-size:11px;font-weight:700;
+  cursor:pointer;letter-spacing:.8px;transition:opacity .15s;
+}
 .btn-money-out:active{opacity:.8;}
-.sr-list-head{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+.sr-list-head{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
 .sr-ftab{padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text3);font-family:var(--sans);font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;}
 .sr-ftab.fa{background:rgba(59,130,246,.12);border-color:var(--blue);color:var(--blue);}
 .sr-ftab.fi{background:rgba(34,197,94,.1);border-color:var(--green);color:var(--green);}
 .sr-ftab.fo{background:rgba(239,68,68,.1);border-color:var(--red);color:var(--red);}
-.sr-tx{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);margin-bottom:5px;gap:8px;}
-.sr-tx-icon{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
-.sr-tx-icon.in{background:rgba(34,197,94,.1);color:var(--green);}
-.sr-tx-icon.out{background:rgba(239,68,68,.1);color:var(--red);}
-.sr-tx-note{font-size:11.5px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;}
-.sr-tx-date{font-size:9.5px;color:var(--text3);margin-top:2px;}
-.sr-tx-amt{font-family:var(--mono);font-size:12.5px;font-weight:600;}
-.sr-tx-amt.pos{color:var(--green);}
-.sr-tx-amt.neg{color:var(--red);}
+.sr-tx{
+  display:flex;align-items:center;padding:9px 12px;gap:10px;
+  border-radius:8px;border:1px solid var(--border);
+  background:linear-gradient(135deg,rgba(15,23,42,.6) 0%,var(--surface2) 100%);
+  margin-bottom:5px;transition:border-color .15s;
+}
+.sr-tx:hover{border-color:var(--border2);}
+.sr-tx-icon{
+  width:28px;height:28px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;flex-shrink:0;
+}
+.sr-tx-icon.in{background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.05));color:#4ade80;border:1px solid rgba(34,197,94,.2);}
+.sr-tx-icon.out{background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(239,68,68,.05));color:#f87171;border:1px solid rgba(239,68,68,.2);}
+.sr-tx-note{font-size:11.5px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+.sr-tx-date{font-size:9px;color:var(--text3);margin-top:2px;font-family:var(--mono);}
+.sr-tx-amt{font-family:var(--mono);font-size:13px;font-weight:600;}
+.sr-tx-amt.pos{color:#4ade80;}
+.sr-tx-amt.neg{color:#f87171;}
+/* GridBot kazanç — portfolio-card altına eklenen özel alan */
+.sr-bot-row{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px 0 0;margin-top:4px;
+  border-top:1px solid;
+  border-image:linear-gradient(90deg,transparent,#1e3a5f 20%,#3b82f6 50%,#1e3a5f 80%,transparent) 1;
+}
+.sr-bot-label{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#8b9ab5;}
+.sr-bot-val{font-family:var(--mono);font-size:18px;font-weight:600;}
+.sr-bot-val.pos{color:#4ade80;}
+.sr-bot-val.neg{color:#f87171;}
 
 /* ── DESKTOP: telefon çerçevesi ── */
 @media(min-width:720px){
@@ -741,40 +763,46 @@ select.field-input option{background:var(--surface2);}
 <!-- ══ SERMAYe ══ -->
 <div class="page" id="pg-sermaye">
 
-  <!-- Özet kartları -->
-  <div class="sr-stats">
-    <div class="sr-stat" style="border-color:rgba(59,130,246,.2)">
-      <div class="sr-stat-lbl">Ana Para</div>
-      <div class="sr-stat-val blue" id="sr-ana">—</div>
-      <div class="sr-stat-sub">Net yatırılan sermaye</div>
-    </div>
-    <div class="sr-stat">
-      <div class="sr-stat-lbl">GridBot Kazancı</div>
-      <div class="sr-stat-val" id="sr-bot">—</div>
-      <div class="sr-stat-sub">Overall − Ana Para</div>
+  <!-- Ana Para — portfolio kartı -->
+  <div class="portfolio-card" style="margin-bottom:10px">
+    <div class="pf-glow"></div>
+    <div class="pf-label">Ana Para</div>
+    <div class="pf-value" id="sr-ana">—</div>
+    <div style="font-size:9px;color:#6b7a92;font-family:var(--sans);margin-top:4px;position:relative">Net yatırılan sermaye</div>
+    <div class="pf-divider" style="margin:14px 0 10px"></div>
+    <div class="sr-bot-row">
+      <div class="sr-bot-label">GridBot Kazancı</div>
+      <div class="sr-bot-val" id="sr-bot">—</div>
     </div>
   </div>
-  <div class="sr-stats" style="margin-bottom:12px">
-    <div class="sr-stat">
-      <div class="sr-stat-lbl">Toplam Giriş</div>
-      <div class="sr-stat-val pos" id="sr-in">—</div>
+
+  <!-- Toplam Giriş / Çıkış -->
+  <div class="kpi-strip" style="margin-bottom:12px">
+    <div class="kpi g">
+      <div class="kpi-label"><span class="kpi-icon">▲</span>Toplam Giriş</div>
+      <div class="kpi-val pos" id="sr-in">—</div>
     </div>
-    <div class="sr-stat">
-      <div class="sr-stat-lbl">Toplam Çıkış</div>
-      <div class="sr-stat-val neg" id="sr-out">—</div>
+    <div class="kpi r">
+      <div class="kpi-label"><span class="kpi-icon">▼</span>Toplam Çıkış</div>
+      <div class="kpi-val neg" id="sr-out">—</div>
     </div>
   </div>
 
   <!-- Form -->
-  <div class="sr-form">
-    <div class="row-fields" style="margin-bottom:8px">
-      <div class="field"><div class="field-label">📅 Tarih</div><input class="field-input" id="srDate" type="date"></div>
-      <div class="field"><div class="field-label">₺ Miktar</div><input class="field-input" id="srAmt" type="text" inputmode="numeric" placeholder="0"></div>
-    </div>
-    <div class="field"><div class="field-label">💬 Not</div><input class="field-input" id="srNote" placeholder="İşlem açıklaması (opsiyonel)"></div>
-    <div class="sr-btn-row">
-      <button class="btn-money-in" onclick="addBirikimTx('in')">▲ Para Ekle</button>
-      <button class="btn-money-out" onclick="addBirikimTx('out')">▼ Para Çek</button>
+  <div class="card" style="margin-bottom:10px">
+    <div class="card-body">
+      <div class="row-fields" style="margin-bottom:8px">
+        <div class="field"><div class="field-label">📅 Tarih</div><input class="field-input" id="srDate" type="date"></div>
+        <div class="field"><div class="field-label">₺ Miktar</div><input class="field-input" id="srAmt" type="text" inputmode="numeric" placeholder="0"></div>
+      </div>
+      <div class="field" style="margin-bottom:10px">
+        <div class="field-label">💬 Not</div>
+        <input class="field-input" id="srNote" placeholder="İşlem açıklaması (opsiyonel)">
+      </div>
+      <div class="sr-btn-row">
+        <button class="btn-money-in"  onclick="addBirikimTx('in')">▲ Para Ekle</button>
+        <button class="btn-money-out" onclick="addBirikimTx('out')">▼ Para Çek</button>
+      </div>
     </div>
   </div>
 
@@ -1353,14 +1381,15 @@ function calcSr(){
 function renderSermaye(){
   const{anaPara,totalIn,totalOut,botKar}=calcSr();
 
-  $('sr-ana').textContent=fxSr(anaPara);
+  // Ana Para — portfolio-card pf-value stili
+  $('sr-ana').innerHTML=fxi(anaPara)+'<span style="font-size:22px;font-weight:400;-webkit-text-fill-color:rgba(148,163,184,.55);color:rgba(148,163,184,.55)"> ₺</span>';
 
   const botEl=$('sr-bot');
-  botEl.textContent=(botKar>=0?'+':'-')+fxSr(botKar);
-  botEl.className='sr-stat-val '+(botKar>=0?'pos':'neg');
+  botEl.textContent=(botKar>=0?'▲ ':' ▼ ')+fxSr(botKar);
+  botEl.className='sr-bot-val '+(botKar>=0?'pos':'neg');
 
-  $('sr-in').textContent='+'+fxSr(totalIn);
-  $('sr-out').textContent='-'+fxSr(totalOut);
+  $('sr-in').textContent=fxSr(totalIn);
+  $('sr-out').textContent=fxSr(totalOut);
 
   const txs=(D&&D.birikimTx)||[];
   const sorted=[...txs].sort((a,b)=>b.date.localeCompare(a.date));
@@ -1631,10 +1660,13 @@ document.addEventListener('DOMContentLoaded',async()=>{
   $('oDate').value=_today;
   $('srDate').value=_today;
 
-  // srAmt — sayısal maskeleme
+  // srAmt — sayısal maskeleme + Enter → Para Ekle
   $('srAmt').addEventListener('input',e=>{
     const v=e.target.value.replace(/[^\d]/g,'');
     e.target.value=v?Number(v).toLocaleString('tr-TR'):'';
+  });
+  $('srAmt').addEventListener('keydown',e=>{
+    if(e.key==='Enter'){ e.preventDefault(); addBirikimTx('in'); }
   });
 
   // Firebase'den güncel veriyi yükle
