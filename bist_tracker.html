@@ -1468,10 +1468,11 @@ function fxSr(n){
 }
 
 function calcSr(){
-  const txs=((D&&D.birikimTx)||[]).filter(t=>!t.exclude);
+  const txs=(D&&D.birikimTx)||[];
+  const active=txs.filter(t=>!t.exclude);
   const anaPara=txs.reduce((s,t)=>s+t.amount,0);
-  const totalIn=txs.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
-  const totalOut=txs.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+  const totalIn=active.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+  const totalOut=active.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
   const botKar=(D?D.todayOverall||0:0)-anaPara;
   return{anaPara,totalIn,totalOut,botKar};
 }
