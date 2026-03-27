@@ -647,20 +647,6 @@ select.field-input option{background:var(--surface2);}
     </div>
   </div>
 
-  <!-- Sermaye özeti -->
-  <div class="kpi-strip" style="margin-bottom:14px">
-    <div class="kpi" style="--kpi-accent:linear-gradient(90deg,transparent,#3b82f6,transparent);background:linear-gradient(180deg,rgba(59,130,246,.04) 0%,var(--surface) 60%)">
-      <div class="kpi-label"><span class="kpi-icon">💰</span>Ana Para</div>
-      <div class="kpi-val blue" id="h-ana-para">—</div>
-      <div class="kpi-sub">Net yatırılan</div>
-    </div>
-    <div class="kpi" style="--kpi-accent:linear-gradient(90deg,transparent,#2dd4bf,transparent);background:linear-gradient(180deg,rgba(45,212,191,.04) 0%,var(--surface) 60%)">
-      <div class="kpi-label"><span class="kpi-icon">🤖</span>GridBot Kazancı</div>
-      <div class="kpi-val" id="h-bot-kar">—</div>
-      <div class="kpi-sub">Overall − Ana Para</div>
-    </div>
-  </div>
-
   <!-- Lisans banner -->
   <div class="lic-banner lic-no" id="licBanner" style="display:none">
     <div class="lic-track"><div class="lic-glow" id="licBar" style="width:0%"></div></div>
@@ -1249,13 +1235,6 @@ function renderHome(){
   setpnl('h-mnet',ms.net);
   $('h-mdays').textContent=bistDayCount(now.getFullYear(),now.getMonth())+'. iş günü';
 
-  // Sermaye
-  const _sr=calcSr();
-  $('h-ana-para').textContent=fxSr(_sr.anaPara);
-  const _botEl=$('h-bot-kar');
-  _botEl.textContent=(_sr.botKar>=0?'+':'-')+fxSr(_sr.botKar);
-  _botEl.className='kpi-val '+(_sr.botKar>=0?'pos':'neg');
-
   // Lisans
   renderLicense(ms.comm);
 
@@ -1516,19 +1495,29 @@ function addBirikimTx(type){
   const tx={id:Date.now().toString(),date,amount,note};
   if(!D.birikimTx) D.birikimTx=[];
   D.birikimTx.push(tx);
+  D.todayOverall=(D.todayOverall||0)+amount;
   $('srAmt').value='';
   $('srNote').value='';
   renderSermaye();
-  fbWrite('gridtracker/birikimTx',D.birikimTx)
-    .then(()=>toast(type==='in'?'Para girişi kaydedildi':'Para çıkışı kaydedildi','ok'))
+  renderHome();
+  Promise.all([
+    fbWrite('gridtracker/birikimTx',D.birikimTx),
+    fbWrite('gridtracker/todayOverall',D.todayOverall),
+  ]).then(()=>toast(type==='in'?'Para girişi kaydedildi':'Para çıkışı kaydedildi','ok'))
     .catch(()=>toast('Kaydedildi (Firebase hatası)','warn'));
 }
 
 function delBirikimTx(id){
   if(!D||!D.birikimTx) return;
+  const tx=D.birikimTx.find(t=>t.id===id);
+  if(tx) D.todayOverall=(D.todayOverall||0)-tx.amount;
   D.birikimTx=D.birikimTx.filter(t=>t.id!==id);
   renderSermaye();
-  fbWrite('gridtracker/birikimTx',D.birikimTx);
+  renderHome();
+  Promise.all([
+    fbWrite('gridtracker/birikimTx',D.birikimTx),
+    fbWrite('gridtracker/todayOverall',D.todayOverall),
+  ]);
   toast('Silindi','ok',1500);
 }
 
