@@ -62,9 +62,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);display:flex
 .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite;}
 .dot.off{background:var(--red);animation:none;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.sync-time{text-align:right;line-height:1.3;margin-right:6px;}
-.sync-time .st-lbl{font-size:7.5px;color:#3a4e68;letter-spacing:.5px;font-style:italic;border-bottom:1px solid #243044;padding-bottom:2px;margin-bottom:2px;}
-.sync-time .st-val{font-family:var(--mono);font-size:9px;color:#4e6080;font-style:italic;}
+.sync-time{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.15);
+  border-radius:7px;padding:3px 8px;margin-right:6px;gap:2px;
+}
+.sync-time .st-lbl{
+  font-size:6.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;
+  color:rgba(59,130,246,.55);font-style:normal;white-space:nowrap;
+}
+.sync-time .st-val{
+  font-family:var(--mono);font-size:10px;font-weight:500;
+  color:#5a7498;font-style:normal;white-space:nowrap;letter-spacing:.3px;
+}
 
 /* ── NAV ── */
 .nav{
@@ -993,15 +1003,15 @@ function getMonthStats(y,mo){
 //  HOME
 // ════════════════════════════════════════════════════════
 function renderHome(){
-  if(!D){ $('syncTime').innerHTML=`<div class="st-lbl">Son Güncelleme</div><div class="st-val">—</div>`; return; }
+  if(!D){ $('syncTime').innerHTML=`<div class="st-lbl">Güncelleme</div><div class="st-val">—</div>`; return; }
 
   // Sync info
   if(D.lastUpdated){
     const lu=D.lastUpdated;
     const timePart=lu.length>=16?lu.slice(11,16):'—';
     const datePart=lu.length>=10?lu.slice(8,10)+'/'+lu.slice(5,7):'—';
-    $('syncTime').innerHTML=`<div class="st-lbl">Son Güncelleme</div><div class="st-val">${timePart} - ${datePart}</div>`;
-  } else { $('syncTime').innerHTML=`<div class="st-lbl">Son Güncelleme</div><div class="st-val">—</div>`; }
+    $('syncTime').innerHTML=`<div class="st-lbl">Güncelleme</div><div class="st-val">${timePart} · ${datePart}</div>`;
+  } else { $('syncTime').innerHTML=`<div class="st-lbl">Güncelleme</div><div class="st-val">—</div>`; }
 
   // Overall — yuvarlak, kuruşsuz
   const ov=D.todayOverall||0;
