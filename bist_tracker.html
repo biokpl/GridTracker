@@ -1225,7 +1225,7 @@ const fx=n=>(n==null||isNaN(n))?'—':Number(n).toLocaleString('tr-TR',{minimumF
 const fxi=n=>(n==null||isNaN(n))?'—':Math.round(Number(n)).toLocaleString('tr-TR'); // tam sayı, kuruşsuz
 const fxs=n=>n==null?'—':((n>=0?'+':'')+fx(n));
 const fxsi=n=>n==null?'—':((n>=0?'+':'')+fxi(Math.abs(n))); // tam sayı signed
-const setpnl=(id,v)=>{ const e=$(id); if(!e)return; e.textContent=fx(v)+' ₺'; e.className='kpi-val '+(v>0?'pos':v<0?'neg':''); };
+const setpnl=(id,v)=>{ const e=$(id); if(!e)return; e.textContent=v?fx(v)+' ₺':'—'; e.className='kpi-val '+(v>0?'pos':v<0?'neg':''); };
 
 function toast(msg,type='inf',dur=2800){
   const c=$('toasts'),d=document.createElement('div');
