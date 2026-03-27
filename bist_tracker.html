@@ -515,12 +515,12 @@ select.field-input option{background:var(--surface2);}
 .sr-ftab.fi{background:rgba(34,197,94,.1);border-color:var(--green);color:var(--green);}
 .sr-ftab.fo{background:rgba(239,68,68,.1);border-color:var(--red);color:var(--red);}
 .sr-tx{
-  display:grid;grid-template-columns:28px 110px 1fr 24px;
-  align-items:center;padding:9px 12px;gap:10px;
+  display:flex;align-items:center;padding:9px 12px;gap:10px;
   border-radius:8px;border:1px solid var(--border);
   background:linear-gradient(135deg,rgba(15,23,42,.6) 0%,var(--surface2) 100%);
   margin-bottom:5px;transition:border-color .15s;
 }
+.sr-tx-mid{flex:1;min-width:0;display:grid;grid-template-columns:1fr auto;align-items:center;gap:0 10px;}
 .sr-tx:hover{border-color:var(--border2);}
 .sr-tx-icon{
   width:28px;height:28px;border-radius:8px;
@@ -1506,12 +1506,12 @@ function renderSermaye(){
     const dateStr=t.date.split('-').reverse().join('.');
     return `<div class="sr-tx">
       <div class="sr-tx-icon ${isIn?'in':'out'}">${isIn?'▲':'▼'}</div>
-      <div class="sr-tx-amt ${isIn?'pos':'neg'}">${isIn?'+':'-'}${fxSr(t.amount)}</div>
-      <div style="min-width:0">
+      <div class="sr-tx-mid">
         <div class="sr-tx-note">${t.note||(isIn?'Para Girişi':'Para Çıkışı')}</div>
+        <div class="sr-tx-amt ${isIn?'pos':'neg'}" style="text-align:right">${isIn?'+':'-'}${fxSr(t.amount)}</div>
         <div class="sr-tx-date">${dateStr}</div>
       </div>
-      <button class="btn btn-danger btn-xs" onclick="delBirikimTx('${t.id}')" style="padding:2px 6px;font-size:10px;opacity:.6;justify-self:end">✕</button>
+      <button class="btn btn-danger btn-xs" onclick="delBirikimTx('${t.id}')" style="padding:2px 6px;font-size:10px;opacity:.6;flex-shrink:0">✕</button>
     </div>`;
   }).join('');
 }
