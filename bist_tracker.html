@@ -1439,7 +1439,7 @@ async function loadAutoSettings(){
       const val = await r.json();
       if(val){ $('autoTime').value=val; $('autoWake').textContent=_wakeTime(val); }
       $('autoStatus').className='alert inf';
-      $('autoStatus').textContent='ℹ Firebase üzerinden ev PC\'ye ~1 dk\'da iletilir';
+      $('autoStatus').textContent='• Saat değişikliği, Firebase ile PC\'ye iletilir (~1 dk gecikme)';
       Object.assign($('autoStatus').style,{fontSize:'10px',fontStyle:'italic'});
       $('autoStatus').style.display='flex';
     }catch{
