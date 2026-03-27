@@ -400,6 +400,41 @@ select.field-input option{background:var(--surface2);}
 .s-title-c{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#a1a1aa;white-space:nowrap;display:flex;align-items:center;gap:0;}
 
 /* ── MONTH NAV ── */
+.mk-stat{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r);padding:16px 12px;text-align:center;
+  position:relative;overflow:hidden;flex:1;
+}
+.mk-stat::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--msc,#3b82f6),transparent);opacity:.5;}
+.mk-stat::after{content:'';position:absolute;bottom:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--msc,#3b82f6),transparent);opacity:.2;}
+.mk-stat.blue{--msc:#3b82f6;background:linear-gradient(180deg,rgba(59,130,246,.04) 0%,var(--surface) 60%);}
+.mk-stat.green{--msc:#22c55e;background:linear-gradient(180deg,rgba(34,197,94,.04) 0%,var(--surface) 60%);}
+.mk-stat.amber{--msc:#f59e0b;background:linear-gradient(180deg,rgba(245,158,11,.04) 0%,var(--surface) 60%);}
+.mk-stat-lbl{font-size:8.5px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#8b9ab5;margin-bottom:8px;}
+.mk-stat-val{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--text);}
+.mk-stat-val.pos{color:#4ade80;}
+.mk-stat-val.neg{color:#f87171;}
+.mk-stat-val.blue{color:#60a5fa;}
+.mk-stat-sub{font-size:8px;color:#6b7a92;margin-top:5px;}
+.mk-stats{display:flex;gap:8px;margin-bottom:10px;}
+.mk-list{max-height:260px;overflow-y:auto;padding-right:3px;margin-bottom:14px;}
+.mk-list::-webkit-scrollbar{width:3px;}
+.mk-list::-webkit-scrollbar-track{background:transparent;}
+.mk-list::-webkit-scrollbar-thumb{background:rgba(59,130,246,.25);border-radius:3px;}
+.mk-row{
+  display:flex;align-items:center;padding:10px 14px;
+  border-radius:8px;border:1px solid var(--border);
+  background:linear-gradient(135deg,rgba(15,23,42,.6) 0%,var(--surface2) 100%);
+  margin-bottom:5px;border-left:3px solid;transition:border-color .15s;
+}
+.mk-row:hover{border-color:var(--border2);}
+.mk-row.pos{border-left-color:rgba(34,197,94,.45);}
+.mk-row.neg{border-left-color:rgba(239,68,68,.45);}
+.mk-row-month{font-size:12px;font-weight:600;color:#8fa8c8;flex:1;}
+.mk-row-amt{font-family:var(--mono);font-size:14px;font-weight:700;}
+.mk-row-amt.pos{color:#4ade80;}
+.mk-row-amt.neg{color:#f87171;}
+.mk-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);margin:4px 0 16px;}
 .month-nav{display:flex;align-items:center;gap:4px;margin-bottom:16px;}
 .month-btn{
   background:var(--surface2);border:1px solid var(--border);border-radius:7px;
@@ -727,6 +762,28 @@ select.field-input option{background:var(--surface2);}
 
 <!-- ══ AYLIK ══ -->
 <div class="page" id="pg-monthly">
+
+  <!-- GridBot Aylık Kar -->
+  <div class="mk-stats">
+    <div class="mk-stat blue">
+      <div class="mk-stat-lbl">Toplam Kar</div>
+      <div class="mk-stat-val blue" id="mk-total">—</div>
+      <div class="mk-stat-sub" id="mk-period">— ay</div>
+    </div>
+    <div class="mk-stat green">
+      <div class="mk-stat-lbl">En İyi Ay</div>
+      <div class="mk-stat-val pos" id="mk-best-val">—</div>
+      <div class="mk-stat-sub" id="mk-best-lbl">—</div>
+    </div>
+    <div class="mk-stat amber">
+      <div class="mk-stat-lbl">Ort. Aylık</div>
+      <div class="mk-stat-val" id="mk-avg">—</div>
+      <div class="mk-stat-sub">aylık ortalama</div>
+    </div>
+  </div>
+
+  <div id="mk-list" class="mk-list"></div>
+  <div class="mk-divider"></div>
 
   <div class="month-nav">
     <button class="month-btn" onclick="changeMonth(-1)">‹</button>
@@ -1380,7 +1437,35 @@ function exportCSV(){
 // ════════════════════════════════════════════════════════
 //  MONTHLY
 // ════════════════════════════════════════════════════════
+function renderMonthlyKar(){
+  const MN=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  const fmt=m=>{const[y,mo]=m.split('-');return MN[parseInt(mo)-1]+' '+y;};
+  const data=(D&&D.monthlyKar)||[];
+  const sorted=[...data].sort((a,b)=>b.month.localeCompare(a.month));
+  const total=data.reduce((s,d)=>s+d.profit,0);
+  const avg=data.length?Math.round(total/data.length):0;
+  const best=data.length?data.reduce((a,b)=>b.profit>a.profit?b:a):null;
+
+  const tv=$('mk-total');
+  if(tv){tv.textContent=(total>=0?'+':'')+fxi(total)+'₺';tv.className='mk-stat-val '+(total>0?'pos':total<0?'neg':'blue');}
+  const pp=$('mk-period');if(pp)pp.textContent=data.length+' aylık toplam';
+  const bv=$('mk-best-val');if(bv&&best){bv.textContent=(best.profit>=0?'+':'')+fxi(best.profit)+'₺';bv.className='mk-stat-val pos';}
+  const bl=$('mk-best-lbl');if(bl&&best)bl.textContent=fmt(best.month);
+  const av=$('mk-avg');
+  if(av){av.textContent=(avg>=0?'+':'')+fxi(avg)+'₺';av.className='mk-stat-val '+(avg>0?'pos':avg<0?'neg':'');}
+
+  const list=$('mk-list');if(!list)return;
+  if(!sorted.length){list.innerHTML='<div class="empty"><div class="empty-icon">📈</div><div class="empty-text">Henüz veri yok</div></div>';return;}
+  list.innerHTML=sorted.map(d=>{
+    const isPos=d.profit>=0;
+    return `<div class="mk-row ${isPos?'pos':'neg'}">
+      <div class="mk-row-month">${fmt(d.month)}</div>
+      <div class="mk-row-amt ${isPos?'pos':'neg'}">${isPos?'+':''}${fxi(d.profit)}₺</div>
+    </div>`;
+  }).join('');
+}
 function renderMonthly(){
+  renderMonthlyKar();
   const now=new Date();
   if(!S.month) S.month={y:now.getFullYear(),m:now.getMonth()};
   const MONTHS=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
