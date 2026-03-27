@@ -62,7 +62,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);display:flex
 .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite;}
 .dot.off{background:var(--red);animation:none;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.sync-time{font-family:var(--mono);font-size:10px;color:var(--text3);}
+.sync-time{font-family:var(--mono);font-size:9px;color:#4e6080;font-style:italic;}
 
 /* ── NAV ── */
 .nav{
@@ -476,11 +476,7 @@ select.field-input option{background:var(--surface2);}
         <div class="pf-stat-label">Önceki Güne Göre</div>
         <div class="pf-stat-val" id="h-overall-diff">—</div>
       </div>
-      <div class="pf-sep"></div>
-      <div class="pf-stat">
-        <div class="pf-stat-label">Tarih</div>
-        <div class="pf-stat-val" id="h-overall-date">—</div>
-      </div>
+
     </div>
   </div>
 
@@ -1002,7 +998,12 @@ function renderHome(){
   }
 
   // Sync info
-  $('syncTime').textContent=D.lastUpdated?D.lastUpdated.slice(11,16):'—';
+  if(D.lastUpdated){
+    const lu=D.lastUpdated;
+    const datePart=lu.length>=10?lu.slice(5,10).replace('-','.'):'';
+    const timePart=lu.length>=16?lu.slice(11,16):'';
+    $('syncTime').textContent='Son: '+(datePart&&timePart?datePart+' '+timePart:datePart||timePart||'—');
+  } else { $('syncTime').textContent='—'; }
   const stale=Math.floor((Date.now()-new Date(D.lastUpdated).getTime())/60000);
   const al=$('syncAlert');
   if(stale>120){
