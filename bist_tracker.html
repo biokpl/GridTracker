@@ -341,12 +341,18 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .field-label{font-size:10px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;color:var(--text3);}
 .field-input{
   background:var(--surface2);border:1px solid var(--border);border-radius:7px;
-  padding:0 12px;color:var(--text);font-family:var(--mono);font-size:13px;
+  padding:9px 12px;color:var(--text);font-family:var(--mono);font-size:13px;
   outline:none;transition:border-color .15s;width:100%;
-  height:40px;line-height:40px;box-sizing:border-box;
+  height:40px;box-sizing:border-box;
   -webkit-appearance:none;appearance:none;
 }
-.field-input[type=date]{line-height:normal;padding:0 10px;display:flex;align-items:center;}
+.field-input[type=date]{padding:0 10px;cursor:pointer;}
+.field-input[type=date]::-webkit-datetime-edit{padding:0;line-height:40px;}
+.field-input[type=date]::-webkit-datetime-edit-fields-wrapper{padding:0;}
+.field-input[type=date]::-webkit-inner-spin-button,
+.field-input[type=date]::-webkit-calendar-picker-indicator{
+  opacity:.4;cursor:pointer;filter:invert(.6);
+}
 .field-input:focus{border-color:var(--blue);}
 .field-input::placeholder{color:var(--text3);}
 .field-input[type=number]{-moz-appearance:textfield;}
