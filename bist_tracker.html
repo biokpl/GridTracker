@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Grid Tracker</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3b82f6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GridTracker">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -257,6 +264,8 @@ tr:hover td{background:rgba(255,255,255,.02);}
 @media(max-width:480px){
   .htbl .col-ort{display:none;}
   .htbl th,.htbl td{padding:7px 6px;font-size:10px;}
+  .ttbl th,.ttbl td{padding:5px 5px;font-size:10px;}
+  .ttbl .td-time,.ttbl .td-price,.ttbl .td-amount,.ttbl .td-lot{font-size:9.5px;}
 }
 .td-sell{color:#f87171;}
 .th-sell,.th-netkar{display:inline-block;position:relative;padding-bottom:4px;}
@@ -608,12 +617,12 @@ select.field-input option{background:var(--surface2);}
   <div class="kpi-strip" style="margin-bottom:16px">
     <div class="kpi" style="padding:0;display:flex;overflow:hidden">
       <div style="flex:1;padding:14px 10px 12px;text-align:center">
-        <div class="kpi-label">≈ Ort. Günlük Kar</div>
+        <div class="kpi-label">Ort. Günlük Kar</div>
         <div class="kpi-val kpi-muted" id="m-avg">—</div>
       </div>
       <div style="width:1px;background:rgba(255,255,255,.06);margin:10px 0"></div>
       <div style="flex:1;padding:14px 10px 12px;text-align:center">
-        <div class="kpi-label">≈ Ort. Aylık Kar</div>
+        <div class="kpi-label">Ort. Aylık Kar</div>
         <div class="kpi-val kpi-muted" id="m-mavg">—</div>
       </div>
     </div>
@@ -808,6 +817,22 @@ select.field-input option{background:var(--surface2);}
 // ════════════════════════════════════════════════════════
 const FIREBASE_URL='https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app';
 
+// BİST işlem günü sayacı — resmi/dini tatil OLMAYAN Pzt-Cum günlerini sayar
+function bistDayCount(y,mo){
+  const now=new Date();
+  const isCurrent=(y===now.getFullYear()&&mo===now.getMonth());
+  const last=isCurrent?now.getDate():new Date(y,mo+1,0).getDate();
+  let c=0;
+  for(let i=1;i<=last;i++){
+    const dow=new Date(y,mo,i).getDay();
+    if(dow>0&&dow<6){
+      const ds=`${y}-${String(mo+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+      if(!BIST_HOLIDAYS.has(ds))c++;
+    }
+  }
+  return c;
+}
+
 // BİST işlem günü olMAYAN hafta içi günleri (resmi/dini tatil — arefe dahil DEĞİL, yarım gün açık)
 const BIST_HOLIDAYS=new Set([
   // 2025
@@ -904,186 +929,8 @@ async function fbWrite(path,data){
       ]
     }
   },
-  "allTrades": [
-    {
-      "amount": 28.26,
-      "commission": 0.002826,
-      "date": "2026-03-24",
-      "datetime": "2026-03-24 10:44:32",
-      "execAmount": 28.26,
-      "execPrice": 28.26,
-      "execQty": 1,
-      "price": 28.26,
-      "qty": 1,
-      "referans": "772297521",
-      "status": "Gerçekleşti",
-      "symbol": "EREGL",
-      "time": "10:44:32",
-      "type": "Alış"
-    },
-    {
-      "amount": 28.24,
-      "commission": 0.002824,
-      "date": "2026-03-24",
-      "datetime": "2026-03-24 10:43:08",
-      "execAmount": 28.24,
-      "execPrice": 28.24,
-      "execQty": 1,
-      "price": 28.24,
-      "qty": 1,
-      "referans": "772292493",
-      "status": "Gerçekleşti",
-      "symbol": "EREGL",
-      "time": "10:43:08",
-      "type": "Satış"
-    },
-    {
-      "amount": 39.4,
-      "commission": 0.00394,
-      "date": "2026-03-24",
-      "datetime": "2026-03-24 10:42:08",
-      "execAmount": 39.4,
-      "execPrice": 39.4,
-      "execQty": 1,
-      "price": 39.4,
-      "qty": 1,
-      "referans": "772289225",
-      "status": "Gerçekleşti",
-      "symbol": "MIATK",
-      "time": "10:42:08",
-      "type": "Satış"
-    },
-    {
-      "amount": 39.36,
-      "commission": 0.003936,
-      "date": "2026-03-24",
-      "datetime": "2026-03-24 10:41:18",
-      "execAmount": 39.36,
-      "execPrice": 39.36,
-      "execQty": 1,
-      "price": 39.36,
-      "qty": 1,
-      "referans": "772281930",
-      "status": "Gerçekleşti",
-      "symbol": "MIATK",
-      "time": "10:41:18",
-      "type": "Alış"
-    },
-    {
-      "amount": 28.22,
-      "commission": 0.002822,
-      "date": "2026-03-24",
-      "datetime": "2026-03-24 10:39:48",
-      "execAmount": 28.22,
-      "execPrice": 28.22,
-      "execQty": 1,
-      "price": 28.22,
-      "qty": 1,
-      "referans": "772280405",
-      "status": "Gerçekleşti",
-      "symbol": "EREGL",
-      "time": "10:39:48",
-      "type": "Alış"
-    }
-  ],
+  "allTrades": [],
   "dailyLog": {
-    "2026-03-24": {
-      "buys": 3,
-      "bySymbol": {
-        "EREGL": {
-          "avgBuy": 28.24,
-          "avgSell": 28.24,
-          "buyCount": 2,
-          "carriedIn": 0,
-          "commission": 0.0085,
-          "grossProfit": 0.02,
-          "netProfit": 0.0115,
-          "openBuys": 1,
-          "openPositions": [
-            {
-              "amount": 28.26,
-              "carryover": false,
-              "commission": 0.002826,
-              "date": "2026-03-24",
-              "datetime": "2026-03-24 10:44:32",
-              "execAmount": 28.26,
-              "execPrice": 28.26,
-              "execQty": 1,
-              "price": 28.26,
-              "qty": 1,
-              "referans": "772297521",
-              "status": "Gerçekleşti",
-              "symbol": "EREGL",
-              "time": "10:44:32",
-              "type": "Alış"
-            }
-          ],
-          "pairCount": 1,
-          "pairs": [
-            {
-              "buyDate": "2026-03-24",
-              "buyPrice": 28.22,
-              "buyTime": "10:39:48",
-              "carryover": false,
-              "comm": 0.0056,
-              "gross": 0.02,
-              "net": 0.0144,
-              "qty": 1,
-              "sellPrice": 28.24,
-              "sellTime": "10:43:08"
-            }
-          ],
-          "sellCount": 1,
-          "symbol": "EREGL"
-        },
-        "MIATK": {
-          "avgBuy": 39.36,
-          "avgSell": 39.4,
-          "buyCount": 1,
-          "carriedIn": 0,
-          "commission": 0.0079,
-          "grossProfit": 0.04,
-          "netProfit": 0.0321,
-          "openBuys": 0,
-          "pairCount": 1,
-          "pairs": [
-            {
-              "buyDate": "2026-03-24",
-              "buyPrice": 39.36,
-              "buyTime": "10:41:18",
-              "carryover": false,
-              "comm": 0.0079,
-              "gross": 0.04,
-              "net": 0.0321,
-              "qty": 1,
-              "sellPrice": 39.4,
-              "sellTime": "10:42:08"
-            }
-          ],
-          "sellCount": 1,
-          "symbol": "MIATK"
-        }
-      },
-      "commission": 0.0164,
-      "date": "2026-03-24",
-      "grossProfit": 0.06,
-      "netProfit": 0.0436,
-      "overall": 1228294.17,
-      "sells": 2,
-      "trades": 5,
-      "updatedAt": "2026-03-25 01:05:02"
-    },
-    "2026-03-25": {
-      "buys": 0,
-      "commission": 0,
-      "date": "2026-03-25",
-      "grossProfit": 0,
-      "netProfit": 0,
-      "overall": 1228294.17,
-      "sells": 0,
-      "trades": 0,
-      "updatedAt": "2026-03-25 00:44:37"
-    },
     "2026-03-27": {
       "date": "2026-03-27",
       "trades": 0,
@@ -1132,16 +979,6 @@ async function fbWrite(path,data){
     }
   },
   "overallHistory": [
-    {
-      "amount": 1248469.61,
-      "date": "2026-03-24",
-      "note": "Test — 12:44"
-    },
-    {
-      "amount": 1228294.17,
-      "date": "2026-03-25",
-      "note": "Otomatik — 00:44"
-    },
     {
       "date": "2026-03-27",
       "amount": 1191353.06,
@@ -1343,19 +1180,7 @@ function renderHome(){
   const now=new Date();
   const ms=getMonthStats(now.getFullYear(),now.getMonth());
   setpnl('h-mnet',ms.net);
-  // Ayın kaçıncı BİST işlem gününde? (Pzt-Cum && tatil/arefe değil)
-  const _bd=(()=>{
-    let c=0;const y=now.getFullYear(),mo=now.getMonth();
-    for(let i=1;i<=now.getDate();i++){
-      const dow=new Date(y,mo,i).getDay();
-      if(dow>0&&dow<6){
-        const ds=`${y}-${String(mo+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-        if(!BIST_HOLIDAYS.has(ds))c++;
-      }
-    }
-    return c;
-  })();
-  $('h-mdays').textContent=_bd+'. iş günü';
+  $('h-mdays').textContent=bistDayCount(now.getFullYear(),now.getMonth())+'. iş günü';
 
   // Lisans
   renderLicense(ms.comm);
@@ -1462,7 +1287,7 @@ function renderMonthly(){
   const MONTHS=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
   $('monthLbl').innerHTML=`<span class="month-label-m">${MONTHS[S.month.m]}</span><span class="month-label-y">${S.month.y}</span>`;
   const st=getMonthStats(S.month.y,S.month.m);
-  $('m-days').textContent=st.tdays+'. işlem günü';
+  $('m-days').textContent=bistDayCount(S.month.y,S.month.m)+'. işlem günü';
   setpnl('m-gross',st.gross); $('m-comm').textContent=fx(st.comm)+' ₺'; setpnl('m-net',st.net);
   const avg=st.tdays?st.net/st.tdays:0;
   const ea=$('m-avg'); if(ea){ea.textContent=fx(avg)+' ₺';ea.className='kpi-val kpi-muted';}
@@ -1743,6 +1568,11 @@ document.addEventListener('DOMContentLoaded',async()=>{
 
   // ════ AUTO_DATA_INJECT ════ GT_TMPL_2dd2ff00c0e5
 });
+</script>
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>
