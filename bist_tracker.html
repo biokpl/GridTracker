@@ -417,14 +417,20 @@ select.field-input option{background:var(--surface2);}
 .mk-stats{display:flex;gap:8px;margin-bottom:12px;}
 .mk-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);margin:4px 0 16px;}
 .mk-th-yr,.mk-th-mo,.mk-th-net{position:relative;}
-.mk-th-yr{color:#818cf8;}
-.mk-th-yr::after{content:'';position:absolute;bottom:0;left:-10%;width:120%;height:1px;background:linear-gradient(90deg,transparent,#818cf8 40%,#818cf8 60%,transparent);opacity:.7;}
+.mk-th-yr{color:#a78bfa;}
+.mk-th-yr::after{content:'';position:absolute;bottom:0;left:-10%;width:120%;height:1px;background:linear-gradient(90deg,transparent,#a78bfa 40%,#a78bfa 60%,transparent);opacity:.7;}
 .mk-th-mo{color:#22d3ee;}
 .mk-th-mo::after{content:'';position:absolute;bottom:0;left:-10%;width:120%;height:1px;background:linear-gradient(90deg,transparent,#22d3ee 40%,#22d3ee 60%,transparent);opacity:.7;}
-.mk-th-net{color:#a78bfa;}
-.mk-th-net::after{content:'';position:absolute;bottom:0;left:-10%;width:120%;height:1px;background:linear-gradient(90deg,transparent,#a78bfa 40%,#a78bfa 60%,transparent);opacity:.7;}
-.mk-td-yr{color:#818cf8;}
+.mk-th-net{color:#4ade80;}
+.mk-th-net::after{content:'';position:absolute;bottom:0;left:-10%;width:120%;height:1px;background:linear-gradient(90deg,transparent,#4ade80 40%,#4ade80 60%,transparent);opacity:.7;}
+.mk-td-yr{color:#a78bfa;}
 .mk-td-mo{color:#22d3ee;}
+#mk-list{display:block;max-height:288px;overflow-y:auto;overflow-x:hidden;}
+#mk-list tr{display:table;width:100%;table-layout:fixed;}
+#mk-list::-webkit-scrollbar{width:3px;}
+#mk-list::-webkit-scrollbar-track{background:transparent;}
+#mk-list::-webkit-scrollbar-thumb{background:rgba(167,139,250,.3);border-radius:3px;}
+#mk-list::-webkit-scrollbar-thumb:hover{background:rgba(167,139,250,.55);}
 .month-nav{display:flex;align-items:center;gap:4px;margin-bottom:16px;}
 .month-btn{
   background:var(--surface2);border:1px solid var(--border);border-radius:7px;
@@ -644,26 +650,31 @@ select.field-input option{background:var(--surface2);}
     </div>
   </div>
 
-  <!-- Günlük P&L -->
+  <!-- Günlük & Aylık P&L -->
   <div class="kpi-strip" style="margin-bottom:10px">
     <div class="kpi">
       <div class="kpi-label"><span class="kpi-icon">💎</span>Günlük Net Kar</div>
       <div class="kpi-val" id="h-net">—</div>
       <div class="kpi-sub">₺ bugün</div>
     </div>
+    <div class="kpi">
+      <div class="kpi-label"><span class="kpi-icon">📅</span>Aylık Net Kar</div>
+      <div class="kpi-val" id="h-mnet">—</div>
+      <div class="kpi-sub" id="h-mdays">—</div>
+    </div>
   </div>
 
-  <!-- İşlem özeti -->
+  <!-- İşlem & Gerçek Kar -->
   <div class="kpi-strip" style="margin-bottom:14px">
     <div class="kpi pu">
       <div class="kpi-label"><span class="kpi-icon">⚡</span>Toplam İşlem</div>
       <div class="kpi-val pu" id="h-trades">—</div>
       <div class="kpi-sub" id="h-trades-sub">— alış · — satış</div>
     </div>
-    <div class="kpi">
-      <div class="kpi-label"><span class="kpi-icon">📅</span>Aylık Net Kar</div>
-      <div class="kpi-val" id="h-mnet">—</div>
-      <div class="kpi-sub" id="h-mdays">—</div>
+    <div class="kpi g">
+      <div class="kpi-label"><span class="kpi-icon">✦</span>Total Gerçek Kar</div>
+      <div class="kpi-val pos" id="h-totalkar">—</div>
+      <div class="kpi-sub">tüm zamanlar</div>
     </div>
   </div>
 
@@ -1297,6 +1308,12 @@ function renderHome(){
   const ms=getMonthStats(now.getFullYear(),now.getMonth());
   setpnl('h-mnet',ms.net);
   $('h-mdays').textContent=bistDayCount(now.getFullYear(),now.getMonth())+'. iş günü';
+
+  // Total Gerçek Kar
+  const mk=(D.monthlyKar||[]);
+  const totalKar=mk.reduce((s,d)=>s+d.profit,0);
+  const tk=$('h-totalkar');
+  if(tk){tk.textContent=totalKar?(((totalKar>=0?'+':'')+fxi(totalKar)+' ₺')):'—';tk.className='kpi-val '+(totalKar>0?'pos':totalKar<0?'neg':'');}
 
   // Lisans
   renderLicense(ms.comm);
