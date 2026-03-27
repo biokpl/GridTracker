@@ -1199,7 +1199,7 @@ function go(id,btn){
   if(id==='pg-settings'){ renderSettings(); loadAutoSettings(); loadHolidays(); }
   if(id==='pg-monthly') renderMonthly();
   if(id==='pg-overall') renderOverall();
-  if(id==='pg-trades') renderTrades();
+  if(id==='pg-trades') renderMonthly();
   if(id==='pg-sermaye') renderSermaye();
 }
 
@@ -1429,6 +1429,16 @@ function renderMonthly(){
   const MONTHS=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
   $('monthLbl').innerHTML=`<span class="month-label-m">${MONTHS[S.month.m]}</span><span class="month-label-y">${S.month.y}</span>`;
   const st=getMonthStats(S.month.y,S.month.m);
+  const tb=$('m-tbl');
+  if(!st.rows.length){
+    $('m-days').textContent='— işlem günü';
+    ['m-gross','m-net'].forEach(id=>{const e=$(id);if(e){e.textContent='—';e.className='kpi-val';}});
+    $('m-comm').textContent='—';
+    const ea=$('m-avg');if(ea){ea.textContent='—';ea.className='kpi-val kpi-muted';}
+    const em=$('m-mavg');if(em){em.textContent='—';em.className='kpi-val kpi-muted';}
+    const od=$('m-odiff');if(od){od.textContent='—';od.className='kpi-val';}
+    tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">◫</div><div class="empty-text">Bu ay veri yok</div></div></td></tr>`; return;
+  }
   $('m-days').textContent=bistDayCount(S.month.y,S.month.m)+'. işlem günü';
   setpnl('m-gross',st.gross); $('m-comm').textContent=fx(st.comm)+' ₺'; setpnl('m-net',st.net);
   const avg=st.tdays?st.net/st.tdays:0;
@@ -1436,8 +1446,6 @@ function renderMonthly(){
   const dl2=(D&&D.dailyLog)||{};const mmap={};Object.keys(dl2).forEach(dt=>{const mk=dt.slice(0,7);if(!mmap[mk])mmap[mk]=0;mmap[mk]+=(dl2[dt].netProfit||0);});const mvals=Object.values(mmap);const mavg=mvals.length?mvals.reduce((a,b)=>a+b,0)/mvals.length:0;
   const em=$('m-mavg'); if(em){em.textContent=fx(mavg)+' ₺';em.className='kpi-val kpi-muted';}
   const od=$('m-odiff'); od.textContent=(st.odiff>=0?'+':'')+fxi(st.odiff)+' ₺'; od.className='kpi-val '+(st.odiff>0?'pos':st.odiff<0?'neg':'');
-  const tb=$('m-tbl');
-  if(!st.rows.length){ tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">◫</div><div class="empty-text">Bu ay veri yok</div></div></td></tr>`; return; }
   tb.innerHTML=st.rows.map(d=>{
     const nc=d.netProfit>0?'td-pos':d.netProfit<0?'td-neg':'';
     return `<tr>
