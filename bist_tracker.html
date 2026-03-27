@@ -264,8 +264,8 @@ tr:hover td{background:rgba(255,255,255,.02);}
 @media(max-width:480px){
   .htbl .col-ort{display:none;}
   .htbl th,.htbl td{padding:7px 6px;font-size:10px;}
-  .ttbl th,.ttbl td{padding:5px 5px;font-size:10px;}
-  .ttbl .td-time,.ttbl .td-price,.ttbl .td-amount,.ttbl .td-lot{font-size:9.5px;}
+  .ttbl th,.ttbl td{padding:4px 3px;font-size:9px;}
+  table{font-size:9px;}
 }
 .td-sell{color:#f87171;}
 .th-sell,.th-netkar{display:inline-block;position:relative;padding-bottom:4px;}
@@ -1074,6 +1074,11 @@ function load(){ try{
 // ════════════════════════════════════════════════════════
 //  NAV
 // ════════════════════════════════════════════════════════
+const PAGES=['pg-home','pg-trades','pg-monthly','pg-overall','pg-settings'];
+function goById(id){
+  const btn=[...document.querySelectorAll('.nav-btn')].find(b=>b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+id+"'"));
+  if(btn) go(id,btn);
+}
 function go(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
@@ -1299,12 +1304,12 @@ function renderMonthly(){
   tb.innerHTML=st.rows.map(d=>{
     const nc=d.netProfit>0?'td-pos':d.netProfit<0?'td-neg':'';
     return `<tr>
-      <td style="color:#7b92b5;font-weight:600;font-size:11px">${d.date.slice(5).replace('-','.')}</td>
+      <td style="color:#7b92b5;font-weight:600">${d.date.slice(5).replace('-','.')}</td>
       <td class="td-dim">${d.trades}</td>
       <td class="${d.grossProfit>=0?'td-pos':'td-neg'}">${fxs(d.grossProfit)}</td>
       <td class="td-amb">${fx(d.commission)}</td>
       <td class="${nc}" style="font-weight:600">${fxs(d.netProfit)}</td>
-      <td style="color:#4e6080;font-size:10px">${d.overall?fx(d.overall)+' ₺':'—'}</td>
+      <td style="color:#4e6080">${d.overall?fxi(d.overall)+'₺':'—'}</td>
     </tr>`;
   }).join('');
 }
@@ -1329,10 +1334,10 @@ function renderOverall(){
     const dc=diff!==null?(diff>=0?'td-pos':'td-neg'):'';
     const diffTxt=diff!==null?(diff>=0?'+':'')+fxi(diff)+' ₺':'—';
     return `<tr>
-      <td style="color:#7b92b5;font-weight:600;font-size:11px">${h.date.split('-').reverse().join('.')}</td>
-      <td style="color:#c4cfe0;font-weight:600;font-family:var(--mono)">${fxi(h.amount)} ₺</td>
+      <td style="color:#7b92b5;font-weight:600">${h.date.split('-').reverse().join('.')}</td>
+      <td style="color:#c4cfe0;font-weight:600;font-family:var(--mono)">${fxi(h.amount)}₺</td>
       <td class="${dc}" style="font-weight:${diff!==null?'600':'400'}">${diffTxt}</td>
-      <td style="color:#4e6080;font-family:var(--sans);font-size:10px">${h.note||'—'}</td>
+      <td style="color:#4e6080;font-family:var(--sans)">${h.note||'—'}</td>
       <td><button class="btn btn-danger btn-xs" onclick="delOverall('${h.date}')" style="padding:2px 6px;font-size:10px;opacity:.6">✕</button></td>
     </tr>`;
   }).join('');
@@ -1573,6 +1578,33 @@ document.addEventListener('DOMContentLoaded',async()=>{
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js').catch(()=>{});
 }
+
+// ── Swipe navigasyon ──────────────────────────────────
+(function(){
+  let sx=0,sy=0,locked=false;
+  const content=document.querySelector('.content');
+  content.addEventListener('touchstart',e=>{
+    sx=e.touches[0].clientX;
+    sy=e.touches[0].clientY;
+    locked=false;
+  },{passive:true});
+  content.addEventListener('touchmove',e=>{
+    if(locked) return;
+    const dx=e.touches[0].clientX-sx;
+    const dy=e.touches[0].clientY-sy;
+    // Dikey kaydırma başladıysa swipe'ı kilitle
+    if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>8) locked=true;
+  },{passive:true});
+  content.addEventListener('touchend',e=>{
+    if(locked) return;
+    const dx=e.changedTouches[0].clientX-sx;
+    const dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx)*0.7) return;
+    const cur=PAGES.findIndex(p=>document.getElementById(p).classList.contains('on'));
+    const next=dx<0?Math.min(cur+1,PAGES.length-1):Math.max(cur-1,0);
+    if(next!==cur) goById(PAGES[next]);
+  },{passive:true});
+})();
 </script>
 </body>
 </html>
