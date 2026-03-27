@@ -442,6 +442,36 @@ select.field-input option{background:var(--surface2);}
   .kpi-strip.three .kpi-val{font-size:13px;}
 }
 
+/* ── SERMAYe ── */
+.sr-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.sr-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 10px;text-align:center;}
+.sr-stat-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;}
+.sr-stat-sub{font-size:8.5px;color:var(--text3);margin-top:3px;}
+.sr-stat-val{font-family:var(--mono);font-size:16px;font-weight:600;color:var(--text);}
+.sr-stat-val.pos{color:var(--green);}
+.sr-stat-val.neg{color:var(--red);}
+.sr-stat-val.blue{color:var(--blue);}
+.sr-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:10px;}
+.sr-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;}
+.btn-money-in{background:linear-gradient(135deg,#16a34a,#166534);color:#fff;border:none;border-radius:8px;padding:10px;font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:opacity .15s;}
+.btn-money-in:active{opacity:.8;}
+.btn-money-out{background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff;border:none;border-radius:8px;padding:10px;font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:opacity .15s;}
+.btn-money-out:active{opacity:.8;}
+.sr-list-head{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+.sr-ftab{padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text3);font-family:var(--sans);font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.sr-ftab.fa{background:rgba(59,130,246,.12);border-color:var(--blue);color:var(--blue);}
+.sr-ftab.fi{background:rgba(34,197,94,.1);border-color:var(--green);color:var(--green);}
+.sr-ftab.fo{background:rgba(239,68,68,.1);border-color:var(--red);color:var(--red);}
+.sr-tx{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);margin-bottom:5px;gap:8px;}
+.sr-tx-icon{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.sr-tx-icon.in{background:rgba(34,197,94,.1);color:var(--green);}
+.sr-tx-icon.out{background:rgba(239,68,68,.1);color:var(--red);}
+.sr-tx-note{font-size:11.5px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;}
+.sr-tx-date{font-size:9.5px;color:var(--text3);margin-top:2px;}
+.sr-tx-amt{font-family:var(--mono);font-size:12.5px;font-weight:600;}
+.sr-tx-amt.pos{color:var(--green);}
+.sr-tx-amt.neg{color:var(--red);}
+
 /* ── DESKTOP: telefon çerçevesi ── */
 @media(min-width:720px){
   html{
@@ -482,6 +512,7 @@ select.field-input option{background:var(--surface2);}
   <button class="nav-btn" onclick="go('pg-trades',this)"><span class="nav-icon">⇅</span>İşlemler</button>
   <button class="nav-btn" onclick="go('pg-monthly',this)"><span class="nav-icon">▦</span>Aylık</button>
   <button class="nav-btn" onclick="go('pg-overall',this)"><span class="nav-icon">◎</span>Overall</button>
+  <button class="nav-btn" onclick="go('pg-sermaye',this)"><span class="nav-icon">₺</span>Sermaye</button>
   <button class="nav-btn" onclick="go('pg-settings',this)"><span class="nav-icon">⚙</span>Ayarlar</button>
 </div>
 
@@ -707,6 +738,64 @@ select.field-input option{background:var(--surface2);}
 
 </div><!-- /pg-overall -->
 
+<!-- ══ SERMAYe ══ -->
+<div class="page" id="pg-sermaye">
+
+  <!-- Özet kartları -->
+  <div class="sr-stats">
+    <div class="sr-stat" style="border-color:rgba(59,130,246,.2)">
+      <div class="sr-stat-lbl">Ana Para</div>
+      <div class="sr-stat-val blue" id="sr-ana">—</div>
+      <div class="sr-stat-sub">Net yatırılan sermaye</div>
+    </div>
+    <div class="sr-stat">
+      <div class="sr-stat-lbl">GridBot Kazancı</div>
+      <div class="sr-stat-val" id="sr-bot">—</div>
+      <div class="sr-stat-sub">Overall − Ana Para</div>
+    </div>
+  </div>
+  <div class="sr-stats" style="margin-bottom:12px">
+    <div class="sr-stat">
+      <div class="sr-stat-lbl">Toplam Giriş</div>
+      <div class="sr-stat-val pos" id="sr-in">—</div>
+    </div>
+    <div class="sr-stat">
+      <div class="sr-stat-lbl">Toplam Çıkış</div>
+      <div class="sr-stat-val neg" id="sr-out">—</div>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="sr-form">
+    <div class="row-fields" style="margin-bottom:8px">
+      <div class="field"><div class="field-label">📅 Tarih</div><input class="field-input" id="srDate" type="date"></div>
+      <div class="field"><div class="field-label">₺ Miktar</div><input class="field-input" id="srAmt" type="text" inputmode="numeric" placeholder="0"></div>
+    </div>
+    <div class="field"><div class="field-label">💬 Not</div><input class="field-input" id="srNote" placeholder="İşlem açıklaması (opsiyonel)"></div>
+    <div class="sr-btn-row">
+      <button class="btn-money-in" onclick="addBirikimTx('in')">▲ Para Ekle</button>
+      <button class="btn-money-out" onclick="addBirikimTx('out')">▼ Para Çek</button>
+    </div>
+  </div>
+
+  <!-- Hareket listesi -->
+  <div class="card">
+    <div class="card-body">
+      <div class="sr-list-head">
+        <span style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3)">Hareketler</span>
+        <div style="display:flex;gap:4px;margin-left:auto">
+          <button class="sr-ftab fa" id="sr-tab-all" onclick="setSrFilter('all')">Tümü</button>
+          <button class="sr-ftab"    id="sr-tab-in"  onclick="setSrFilter('in')">↑ Giriş</button>
+          <button class="sr-ftab"    id="sr-tab-out" onclick="setSrFilter('out')">↓ Çıkış</button>
+        </div>
+        <span style="font-size:9px;color:var(--text3);margin-left:6px;white-space:nowrap" id="sr-count">0 kayıt</span>
+      </div>
+      <div id="sr-list"></div>
+    </div>
+  </div>
+
+</div><!-- /pg-sermaye -->
+
 <!-- ══ AYARLAR ══ -->
 <div class="page" id="pg-settings">
 
@@ -904,6 +993,7 @@ async function fbWrite(path,data){
   "allTrades": [],
   "dailyLog": {},
   "overallHistory": [],
+  "birikimTx": [],
   "openPositions": {
     "date": "2026-03-27",
     "positions": {}
@@ -955,7 +1045,7 @@ function load(){ try{
 // ════════════════════════════════════════════════════════
 //  NAV
 // ════════════════════════════════════════════════════════
-const PAGES=['pg-home','pg-trades','pg-monthly','pg-overall','pg-settings'];
+const PAGES=['pg-home','pg-trades','pg-monthly','pg-overall','pg-sermaye','pg-settings'];
 function goById(id){
   const btn=[...document.querySelectorAll('.nav-btn')].find(b=>b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+id+"'"));
   if(btn) go(id,btn);
@@ -969,6 +1059,7 @@ function go(id,btn){
   if(id==='pg-monthly') renderMonthly();
   if(id==='pg-overall') renderOverall();
   if(id==='pg-trades') renderTrades();
+  if(id==='pg-sermaye') renderSermaye();
 }
 
 // ════════════════════════════════════════════════════════
@@ -1242,6 +1333,105 @@ function delOverall(date){
 }
 
 // ════════════════════════════════════════════════════════
+//  SERMAYe
+// ════════════════════════════════════════════════════════
+let srFilter='all';
+
+function fxSr(n){
+  return Math.abs(Math.round(n)).toLocaleString('tr-TR')+'₺';
+}
+
+function calcSr(){
+  const txs=(D&&D.birikimTx)||[];
+  const anaPara=txs.reduce((s,t)=>s+t.amount,0);
+  const totalIn=txs.filter(t=>t.amount>0).reduce((s,t)=>s+t.amount,0);
+  const totalOut=txs.filter(t=>t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+  const botKar=(D?D.todayOverall||0:0)-anaPara;
+  return{anaPara,totalIn,totalOut,botKar};
+}
+
+function renderSermaye(){
+  const{anaPara,totalIn,totalOut,botKar}=calcSr();
+
+  $('sr-ana').textContent=fxSr(anaPara);
+
+  const botEl=$('sr-bot');
+  botEl.textContent=(botKar>=0?'+':'-')+fxSr(botKar);
+  botEl.className='sr-stat-val '+(botKar>=0?'pos':'neg');
+
+  $('sr-in').textContent='+'+fxSr(totalIn);
+  $('sr-out').textContent='-'+fxSr(totalOut);
+
+  const txs=(D&&D.birikimTx)||[];
+  const sorted=[...txs].sort((a,b)=>b.date.localeCompare(a.date));
+  const filtered=sorted.filter(t=>{
+    if(srFilter==='in') return t.amount>0;
+    if(srFilter==='out') return t.amount<0;
+    return true;
+  });
+
+  $('sr-count').textContent=filtered.length+' kayıt';
+  const list=$('sr-list');
+
+  if(!filtered.length){
+    const msg=srFilter==='in'?'Para girişi yok':srFilter==='out'?'Para çıkışı yok':'Henüz kayıt yok';
+    list.innerHTML=`<div class="empty"><div class="empty-icon">💰</div><div class="empty-text">${msg}</div></div>`;
+    return;
+  }
+
+  list.innerHTML=filtered.map(t=>{
+    const isIn=t.amount>0;
+    const dateStr=t.date.split('-').reverse().join('.');
+    return `<div class="sr-tx">
+      <div class="sr-tx-icon ${isIn?'in':'out'}">${isIn?'▲':'▼'}</div>
+      <div style="flex:1;min-width:0">
+        <div class="sr-tx-note">${t.note||(isIn?'Para Girişi':'Para Çıkışı')}</div>
+        <div class="sr-tx-date">${dateStr}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="sr-tx-amt ${isIn?'pos':'neg'}">${isIn?'+':'-'}${fxSr(t.amount)}</div>
+        <button class="btn btn-danger btn-xs" onclick="delBirikimTx('${t.id}')" style="padding:2px 6px;font-size:10px;opacity:.6">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setSrFilter(f){
+  srFilter=f;
+  ['all','in','out'].forEach(k=>{
+    $('sr-tab-'+k).className='sr-ftab'+(k===f?' f'+(k==='all'?'a':k==='in'?'i':'o'):'');
+  });
+  renderSermaye();
+}
+
+function addBirikimTx(type){
+  if(!D){ toast('Veri yüklenemedi','err'); return; }
+  const date=$('srDate').value;
+  const rawVal=$('srAmt').value.replace(/[^\d]/g,'');
+  const val=parseInt(rawVal)||0;
+  const note=$('srNote').value.trim();
+  if(!date||val<=0){ toast('Tarih ve miktar gerekli','err'); return; }
+  const amount=type==='in'?val:-val;
+  const tx={id:Date.now().toString(),date,amount,note};
+  if(!D.birikimTx) D.birikimTx=[];
+  D.birikimTx.push(tx);
+  $('srAmt').value='';
+  $('srNote').value='';
+  renderSermaye();
+  fbWrite('gridtracker/birikimTx',D.birikimTx)
+    .then(()=>toast(type==='in'?'Para girişi kaydedildi':'Para çıkışı kaydedildi','ok'))
+    .catch(()=>toast('Kaydedildi (Firebase hatası)','warn'));
+}
+
+function delBirikimTx(id){
+  if(!D||!D.birikimTx) return;
+  D.birikimTx=D.birikimTx.filter(t=>t.id!==id);
+  renderSermaye();
+  fbWrite('gridtracker/birikimTx',D.birikimTx);
+  toast('Silindi','ok',1500);
+}
+
+// ════════════════════════════════════════════════════════
 //  BOT HİSSELERİ
 // ════════════════════════════════════════════════════════
 function addBotSym(){
@@ -1437,12 +1627,21 @@ function clearAll(){
 document.addEventListener('DOMContentLoaded',async()=>{
   load();
   updateMarket(); setInterval(updateMarket,30000);
-  $('oDate').value=new Date().toISOString().split('T')[0];
+  const _today=new Date().toISOString().split('T')[0];
+  $('oDate').value=_today;
+  $('srDate').value=_today;
+
+  // srAmt — sayısal maskeleme
+  $('srAmt').addEventListener('input',e=>{
+    const v=e.target.value.replace(/[^\d]/g,'');
+    e.target.value=v?Number(v).toLocaleString('tr-TR'):'';
+  });
 
   // Firebase'den güncel veriyi yükle
   const fb=await fbRead();
   if(fb){
     D=fb;
+    if(!D.birikimTx) D.birikimTx=[];
     if(D.settings&&D.settings.costs) S.settings.costs=D.settings.costs;
   }
   renderHome();
