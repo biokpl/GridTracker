@@ -192,6 +192,22 @@ def run(mode='normal'):
     click(5106, 12,  wait=1)
     click(2681, 753, wait=0.5)
 
+    # ── Adım 3: Excel verilerini işle ve Firebase'e yaz ─────
+    log.info('Excel verileri işleniyor ve Firebase güncelleniyor...')
+    grid_script = SCRIPT_DIR / 'grid_tracker_service.py'
+    if grid_script.exists():
+        result = subprocess.run(
+            [sys.executable, str(grid_script), '--now'],
+            capture_output=True, text=True, encoding='utf-8', errors='replace',
+            cwd=str(SCRIPT_DIR)
+        )
+        if result.returncode == 0:
+            log.info('grid_tracker_service.py --now tamamlandı ✓')
+        else:
+            log.warning(f'grid_tracker_service.py hatası: {result.stderr[:200]}')
+    else:
+        log.warning(f'grid_tracker_service.py bulunamadı: {grid_script}')
+
     log.info('══════════════════════════════════════════')
     log.info('  AKSAM OTOMASYONU TAMAMLANDI')
     log.info('══════════════════════════════════════════')
