@@ -618,8 +618,8 @@ select.field-input option{background:var(--surface2);}
 <!-- NAV -->
 <div class="nav">
   <button class="nav-btn on" onclick="go('pg-home',this)"><span class="nav-icon">◆</span>Özet</button>
-  <button class="nav-btn" onclick="go('pg-trades',this)"><span class="nav-icon">⇅</span>İşlemler</button>
   <button class="nav-btn" onclick="go('pg-monthly',this)"><span class="nav-icon">▦</span>Aylık</button>
+  <button class="nav-btn" onclick="go('pg-trades',this)"><span class="nav-icon">⇅</span>İşlemler</button>
   <button class="nav-btn" onclick="go('pg-overall',this)"><span class="nav-icon">◎</span>Overall</button>
   <button class="nav-btn" onclick="go('pg-sermaye',this)"><span class="nav-icon">₺</span>Sermaye</button>
   <button class="nav-btn" onclick="go('pg-settings',this)"><span class="nav-icon">⚙</span>Ayarlar</button>
@@ -715,6 +715,44 @@ select.field-input option{background:var(--surface2);}
 
 </div><!-- /pg-home -->
 
+<!-- ══ AYLIK ══ -->
+<div class="page" id="pg-monthly">
+
+  <!-- GridBot Aylık Kar -->
+  <div class="kpi-strip three" style="margin-bottom:20px">
+    <div class="kpi">
+      <div class="kpi-label">6 Aylık Toplam</div>
+      <div class="kpi-val" id="mk-total">—</div>
+      <div class="kpi-sub" id="mk-period">son 6 ay</div>
+    </div>
+    <div class="kpi g">
+      <div class="kpi-label">En İyi Ay</div>
+      <div class="kpi-val pos" id="mk-best-val">—</div>
+      <div class="kpi-sub" id="mk-best-lbl">—</div>
+    </div>
+    <div class="kpi a">
+      <div class="kpi-label">Aylık Ortalama</div>
+      <div class="kpi-val" id="mk-avg">—</div>
+      <div class="kpi-sub">tüm zamanlar</div>
+    </div>
+  </div>
+
+  <div class="s-head-c" style="margin-bottom:10px"><div class="s-rule"></div><div class="section-title s-title-c">GridBot Aylık Kar</div><div class="s-rule"></div></div>
+  <div class="card">
+    <div class="tbl-wrap">
+      <table class="ttbl">
+        <thead><tr>
+          <th class="mk-th-yr">Yıl</th>
+          <th class="mk-th-mo">Ay</th>
+          <th class="mk-th-net">Net Kazanç</th>
+        </tr></thead>
+        <tbody id="mk-list"><tr><td colspan="3"><div class="empty"><div class="empty-icon">📈</div><div class="empty-text">Henüz veri yok</div></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /pg-monthly -->
+
 <!-- ══ İŞLEMLER ══ -->
 <div class="page" id="pg-trades">
 
@@ -769,44 +807,6 @@ select.field-input option{background:var(--surface2);}
   </div>
 
 </div><!-- /pg-trades -->
-
-<!-- ══ AYLIK ══ -->
-<div class="page" id="pg-monthly">
-
-  <!-- GridBot Aylık Kar -->
-  <div class="kpi-strip three" style="margin-bottom:20px">
-    <div class="kpi">
-      <div class="kpi-label">6 Aylık Toplam</div>
-      <div class="kpi-val" id="mk-total">—</div>
-      <div class="kpi-sub" id="mk-period">son 6 ay</div>
-    </div>
-    <div class="kpi g">
-      <div class="kpi-label">En İyi Ay</div>
-      <div class="kpi-val pos" id="mk-best-val">—</div>
-      <div class="kpi-sub" id="mk-best-lbl">—</div>
-    </div>
-    <div class="kpi a">
-      <div class="kpi-label">Aylık Ortalama</div>
-      <div class="kpi-val" id="mk-avg">—</div>
-      <div class="kpi-sub">tüm zamanlar</div>
-    </div>
-  </div>
-
-  <div class="s-head-c" style="margin-bottom:10px"><div class="s-rule"></div><div class="section-title s-title-c">GridBot Aylık Kar</div><div class="s-rule"></div></div>
-  <div class="card">
-    <div class="tbl-wrap">
-      <table class="ttbl">
-        <thead><tr>
-          <th class="mk-th-yr">Yıl</th>
-          <th class="mk-th-mo">Ay</th>
-          <th class="mk-th-net">Net Kazanç</th>
-        </tr></thead>
-        <tbody id="mk-list"><tr><td colspan="3"><div class="empty"><div class="empty-icon">📈</div><div class="empty-text">Henüz veri yok</div></div></td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-</div><!-- /pg-monthly -->
 
 <!-- ══ OVERALL ══ -->
 <div class="page" id="pg-overall">
