@@ -754,25 +754,26 @@ select.field-input option{background:var(--surface2);}
 <div class="page" id="pg-monthly">
 
   <!-- GridBot Aylık Kar -->
-  <div class="mk-stats">
-    <div class="mk-stat blue">
-      <div class="mk-stat-lbl">Toplam Kar</div>
-      <div class="mk-stat-val blue" id="mk-total">—</div>
-      <div class="mk-stat-sub" id="mk-period">— ay</div>
+  <div class="kpi-strip three" style="margin-bottom:12px">
+    <div class="kpi">
+      <div class="kpi-label">Toplam Kar</div>
+      <div class="kpi-val" id="mk-total">—</div>
+      <div class="kpi-sub" id="mk-period">— ay</div>
     </div>
-    <div class="mk-stat green">
-      <div class="mk-stat-lbl">En İyi Ay</div>
-      <div class="mk-stat-val pos" id="mk-best-val">—</div>
-      <div class="mk-stat-sub" id="mk-best-lbl">—</div>
+    <div class="kpi g">
+      <div class="kpi-label">En İyi Ay</div>
+      <div class="kpi-val pos" id="mk-best-val">—</div>
+      <div class="kpi-sub" id="mk-best-lbl">—</div>
     </div>
-    <div class="mk-stat amber">
-      <div class="mk-stat-lbl">Ort. Aylık</div>
-      <div class="mk-stat-val" id="mk-avg">—</div>
-      <div class="mk-stat-sub">aylık ortalama</div>
+    <div class="kpi a">
+      <div class="kpi-label">Ort. Aylık</div>
+      <div class="kpi-val" id="mk-avg">—</div>
+      <div class="kpi-sub">aylık ortalama</div>
     </div>
   </div>
 
-  <div class="card" style="margin-top:0">
+  <div class="s-head-c"><div class="s-rule"></div><div class="section-title s-title-c">GridBot Aylık Kar</div><div class="s-rule"></div></div>
+  <div class="card">
     <div class="tbl-wrap">
       <table class="ttbl">
         <thead><tr><th>Yıl</th><th>Ay</th><th style="text-align:right;padding-right:10px">Net Kazanç</th></tr></thead>
@@ -1393,12 +1394,12 @@ function renderMonthlyKar(){
   const best=data.length?data.reduce((a,b)=>b.profit>a.profit?b:a):null;
 
   const tv=$('mk-total');
-  if(tv){tv.textContent=(total>=0?'+':'')+fxi(total)+'₺';tv.className='mk-stat-val '+(total>0?'pos':total<0?'neg':'blue');}
+  if(tv){tv.textContent=(total>=0?'+':'')+fxi(total)+'₺';tv.className='kpi-val '+(total>0?'pos':total<0?'neg':'');}
   const pp=$('mk-period');if(pp)pp.textContent=data.length+' aylık toplam';
-  const bv=$('mk-best-val');if(bv&&best){bv.textContent=(best.profit>=0?'+':'')+fxi(best.profit)+'₺';bv.className='mk-stat-val pos';}
+  const bv=$('mk-best-val');if(bv&&best){bv.textContent=(best.profit>=0?'+':'')+fxi(best.profit)+'₺';bv.className='kpi-val pos';}
   const bl=$('mk-best-lbl');if(bl&&best)bl.textContent=fmt(best.month);
   const av=$('mk-avg');
-  if(av){av.textContent=(avg>=0?'+':'')+fxi(avg)+'₺';av.className='mk-stat-val '+(avg>0?'pos':avg<0?'neg':'');}
+  if(av){av.textContent=(avg>=0?'+':'')+fxi(avg)+'₺';av.className='kpi-val '+(avg>0?'pos':avg<0?'neg':'');}
 
   const list=$('mk-list');if(!list)return;
   if(!sorted.length){list.innerHTML='<tr><td colspan="3"><div class="empty"><div class="empty-icon">📈</div><div class="empty-text">Henüz veri yok</div></div></td></tr>';return;}
