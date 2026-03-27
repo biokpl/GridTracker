@@ -192,7 +192,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);display:flex
 .kpi.r{--kpi-accent:linear-gradient(90deg,transparent,var(--red),transparent);background:linear-gradient(180deg,rgba(239,68,68,.03) 0%,var(--surface) 55%);}
 .kpi.pu{--kpi-accent:linear-gradient(90deg,transparent,#a78bfa,transparent);background:linear-gradient(180deg,rgba(167,139,250,.03) 0%,var(--surface) 55%);}
 .kpi-icon{font-size:11px;display:inline;line-height:1;margin-right:4px;text-transform:none;letter-spacing:0;}
-.kpi-label{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#8b9ab5;margin-bottom:7px;display:flex;align-items:center;justify-content:center;gap:0;white-space:nowrap;}
+.kpi-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#8b9ab5;margin-bottom:7px;display:flex;align-items:center;justify-content:center;gap:0;}
 .kpi-val{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--text);line-height:1;}
 .kpi-val.pos{color:#4ade80;}
 .kpi-val.neg{color:var(--red);}
@@ -617,12 +617,12 @@ select.field-input option{background:var(--surface2);}
   <div class="kpi-strip" style="margin-bottom:16px">
     <div class="kpi" style="padding:0;display:flex;overflow:hidden">
       <div style="flex:1;padding:14px 10px 12px;text-align:center">
-        <div class="kpi-label">Ort. Günlük Kar</div>
+        <div class="kpi-label" style="font-size:7.5px">Ort. Günlük Kar</div>
         <div class="kpi-val kpi-muted" id="m-avg">—</div>
       </div>
       <div style="width:1px;background:rgba(255,255,255,.06);margin:10px 0"></div>
       <div style="flex:1;padding:14px 10px 12px;text-align:center">
-        <div class="kpi-label">Ort. Aylık Kar</div>
+        <div class="kpi-label" style="font-size:7.5px">Ort. Aylık Kar</div>
         <div class="kpi-val kpi-muted" id="m-mavg">—</div>
       </div>
     </div>
