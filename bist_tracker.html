@@ -529,7 +529,7 @@ select.field-input option{background:var(--surface2);}
 .sr-tx-icon.in{background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(34,197,94,.05));color:#4ade80;border:1px solid rgba(34,197,94,.2);}
 .sr-tx-icon.out{background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(239,68,68,.05));color:#f87171;border:1px solid rgba(239,68,68,.2);}
 .sr-tx-note{font-size:11.5px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
-.sr-tx-date{font-size:9px;color:var(--text3);margin-top:2px;font-family:var(--mono);}
+.sr-tx-date{font-size:9px;color:#7090b0;margin-top:2px;font-family:var(--mono);}
 .sr-tx-amt{font-family:var(--mono);font-size:13px;font-weight:600;}
 .sr-tx-amt.pos{color:#4ade80;}
 .sr-tx-amt.neg{color:#f87171;}
@@ -644,6 +644,20 @@ select.field-input option{background:var(--surface2);}
       <div class="kpi-label"><span class="kpi-icon">📅</span>Aylık Net Kar</div>
       <div class="kpi-val" id="h-mnet">—</div>
       <div class="kpi-sub" id="h-mdays">—</div>
+    </div>
+  </div>
+
+  <!-- Sermaye özeti -->
+  <div class="kpi-strip" style="margin-bottom:14px">
+    <div class="kpi" style="--kpi-accent:linear-gradient(90deg,transparent,#3b82f6,transparent);background:linear-gradient(180deg,rgba(59,130,246,.04) 0%,var(--surface) 60%)">
+      <div class="kpi-label"><span class="kpi-icon">💰</span>Ana Para</div>
+      <div class="kpi-val blue" id="h-ana-para">—</div>
+      <div class="kpi-sub">Net yatırılan</div>
+    </div>
+    <div class="kpi" style="--kpi-accent:linear-gradient(90deg,transparent,#2dd4bf,transparent);background:linear-gradient(180deg,rgba(45,212,191,.04) 0%,var(--surface) 60%)">
+      <div class="kpi-label"><span class="kpi-icon">🤖</span>GridBot Kazancı</div>
+      <div class="kpi-val" id="h-bot-kar">—</div>
+      <div class="kpi-sub">Overall − Ana Para</div>
     </div>
   </div>
 
@@ -1235,6 +1249,13 @@ function renderHome(){
   setpnl('h-mnet',ms.net);
   $('h-mdays').textContent=bistDayCount(now.getFullYear(),now.getMonth())+'. iş günü';
 
+  // Sermaye
+  const _sr=calcSr();
+  $('h-ana-para').textContent=fxSr(_sr.anaPara);
+  const _botEl=$('h-bot-kar');
+  _botEl.textContent=(_sr.botKar>=0?'+':'-')+fxSr(_sr.botKar);
+  _botEl.className='kpi-val '+(_sr.botKar>=0?'pos':'neg');
+
   // Lisans
   renderLicense(ms.comm);
 
@@ -1468,9 +1489,9 @@ function renderSermaye(){
         <div class="sr-tx-note">${t.note||(isIn?'Para Girişi':'Para Çıkışı')}</div>
         <div class="sr-tx-date">${dateStr}</div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:12px;padding-right:2px">
         <div class="sr-tx-amt ${isIn?'pos':'neg'}">${isIn?'+':'-'}${fxSr(t.amount)}</div>
-        <button class="btn btn-danger btn-xs" onclick="delBirikimTx('${t.id}')" style="padding:2px 6px;font-size:10px;opacity:.6">✕</button>
+        <button class="btn btn-danger btn-xs" onclick="delBirikimTx('${t.id}')" style="padding:2px 6px;font-size:10px;opacity:.6;flex-shrink:0">✕</button>
       </div>
     </div>`;
   }).join('');
