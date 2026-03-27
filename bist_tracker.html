@@ -1296,7 +1296,7 @@ function renderHome(){
   // P&L
   const tp=D.todayProfit||{};
   setpnl('h-gross',tp.totalGross||0);
-  $('h-comm').textContent=fx(tp.totalCommission||0)+' ₺';
+  const hc=$('h-comm');if(hc)hc.textContent=fx(tp.totalCommission||0)+' ₺';
   setpnl('h-net',tp.totalNet||0);
 
   // Trades
