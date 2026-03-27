@@ -416,6 +416,12 @@ select.field-input option{background:var(--surface2);}
 .mk-stat-sub{font-size:9px;color:var(--text3);}
 .mk-stats{display:flex;gap:8px;margin-bottom:12px;}
 .mk-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);margin:4px 0 16px;}
+.mk-th-yr{color:#818cf8;position:relative;}
+.mk-th-yr::after{content:'';position:absolute;bottom:0;left:-10%;width:120%;height:1px;background:linear-gradient(90deg,transparent,#818cf8 40%,#818cf8 60%,transparent);opacity:.7;}
+.mk-th-mo{color:#22d3ee;position:relative;}
+.mk-th-mo::after{content:'';position:absolute;bottom:0;left:-10%;width:120%;height:1px;background:linear-gradient(90deg,transparent,#22d3ee 40%,#22d3ee 60%,transparent);opacity:.7;}
+.mk-td-yr{color:#818cf8;font-weight:600;}
+.mk-td-mo{color:#22d3ee;font-weight:600;}
 .month-nav{display:flex;align-items:center;gap:4px;margin-bottom:16px;}
 .month-btn{
   background:var(--surface2);border:1px solid var(--border);border-radius:7px;
@@ -756,9 +762,9 @@ select.field-input option{background:var(--surface2);}
   <!-- GridBot Aylık Kar -->
   <div class="kpi-strip three" style="margin-bottom:12px">
     <div class="kpi">
-      <div class="kpi-label">Toplam Kar</div>
+      <div class="kpi-label">6 Aylık Toplam</div>
       <div class="kpi-val" id="mk-total">—</div>
-      <div class="kpi-sub" id="mk-period">— ay</div>
+      <div class="kpi-sub" id="mk-period">son 6 ay</div>
     </div>
     <div class="kpi g">
       <div class="kpi-label">En İyi Ay</div>
@@ -766,17 +772,21 @@ select.field-input option{background:var(--surface2);}
       <div class="kpi-sub" id="mk-best-lbl">—</div>
     </div>
     <div class="kpi a">
-      <div class="kpi-label">Ort. Aylık</div>
+      <div class="kpi-label">Aylık Ortalama</div>
       <div class="kpi-val" id="mk-avg">—</div>
-      <div class="kpi-sub">aylık ortalama</div>
+      <div class="kpi-sub">tüm zamanlar</div>
     </div>
   </div>
 
-  <div class="s-head-c"><div class="s-rule"></div><div class="section-title s-title-c">GridBot Aylık Kar</div><div class="s-rule"></div></div>
+  <div class="s-head-c" style="margin-bottom:10px"><div class="s-rule"></div><div class="section-title s-title-c">GridBot Aylık Kar</div><div class="s-rule"></div></div>
   <div class="card">
     <div class="tbl-wrap">
       <table class="ttbl">
-        <thead><tr><th>Yıl</th><th>Ay</th><th>Net Kazanç</th></tr></thead>
+        <thead><tr>
+          <th class="mk-th-yr">Yıl</th>
+          <th class="mk-th-mo">Ay</th>
+          <th>Net Kazanç</th>
+        </tr></thead>
         <tbody id="mk-list"><tr><td colspan="3"><div class="empty"><div class="empty-icon">📈</div><div class="empty-text">Henüz veri yok</div></div></td></tr></tbody>
       </table>
     </div>
@@ -1389,17 +1399,18 @@ function renderMonthlyKar(){
   const fmt=m=>{const[y,mo]=m.split('-');return MN[parseInt(mo)-1]+' '+y;};
   const data=(D&&D.monthlyKar)||[];
   const sorted=[...data].sort((a,b)=>b.month.localeCompare(a.month));
-  const total=data.reduce((s,d)=>s+d.profit,0);
-  const avg=data.length?Math.round(total/data.length):0;
+  const last6=sorted.slice(0,6);
+  const total6=last6.reduce((s,d)=>s+d.profit,0);
+  const totalAll=data.reduce((s,d)=>s+d.profit,0);
+  const avg=data.length?Math.round(totalAll/data.length):0;
   const best=data.length?data.reduce((a,b)=>b.profit>a.profit?b:a):null;
 
   const tv=$('mk-total');
-  if(tv){tv.textContent=(total>=0?'+':'')+fxi(total)+'₺';tv.className='kpi-val '+(total>0?'pos':total<0?'neg':'');}
-  const pp=$('mk-period');if(pp)pp.textContent=data.length+' aylık toplam';
+  if(tv){tv.textContent=total6?(((total6>=0?'+':'')+fxi(total6)+'₺')):'—';tv.className='kpi-val '+(total6>0?'pos':total6<0?'neg':'');}
   const bv=$('mk-best-val');if(bv&&best){bv.textContent=(best.profit>=0?'+':'')+fxi(best.profit)+'₺';bv.className='kpi-val pos';}
   const bl=$('mk-best-lbl');if(bl&&best)bl.textContent=fmt(best.month);
   const av=$('mk-avg');
-  if(av){av.textContent=(avg>=0?'+':'')+fxi(avg)+'₺';av.className='kpi-val '+(avg>0?'pos':avg<0?'neg':'');}
+  if(av){av.textContent=avg?(((avg>=0?'+':'')+fxi(avg)+'₺')):'—';av.className='kpi-val '+(avg>0?'pos':avg<0?'neg':'');}
 
   const list=$('mk-list');if(!list)return;
   if(!sorted.length){list.innerHTML='<tr><td colspan="3"><div class="empty"><div class="empty-icon">📈</div><div class="empty-text">Henüz veri yok</div></div></td></tr>';return;}
@@ -1407,8 +1418,8 @@ function renderMonthlyKar(){
     const[y,mo]=d.month.split('-');
     const isPos=d.profit>=0;
     return `<tr>
-      <td style="color:#6b7a92;font-weight:600">${y}</td>
-      <td style="color:#8fa8c8;font-weight:600">${MN[parseInt(mo)-1]}</td>
+      <td class="mk-td-yr">${y}</td>
+      <td class="mk-td-mo">${MN[parseInt(mo)-1]}</td>
       <td class="${isPos?'td-pos':'td-neg'}" style="font-weight:700">${isPos?'+':''}${fxi(d.profit)} ₺</td>
     </tr>`;
   }).join('');
