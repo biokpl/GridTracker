@@ -254,6 +254,10 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .td-amb{color:var(--amber);}
 .td-dim{color:var(--text3);}
 .htbl th,.htbl td{text-align:center;}
+@media(max-width:480px){
+  .htbl .col-ort{display:none;}
+  .htbl th,.htbl td{padding:7px 6px;font-size:10px;}
+}
 .td-sell{color:#f87171;}
 .th-sell,.th-netkar{display:inline-block;position:relative;padding-bottom:4px;}
 .th-sell::after{
@@ -532,7 +536,7 @@ select.field-input option{background:var(--surface2);}
     <div class="card">
       <div class="tbl-wrap">
         <table class="htbl">
-          <thead><tr><th>Hisse</th><th>Alış</th><th><span class="th-sell">Satış</span></th><th>Ort.Alış</th><th>Ort.Satış</th><th><span class="th-netkar">Net Kar</span></th></tr></thead>
+          <thead><tr><th>Hisse</th><th>Alış</th><th><span class="th-sell">Satış</span></th><th class="col-ort">Ort.Alış</th><th class="col-ort">Ort.Satış</th><th><span class="th-netkar">Net Kar</span></th></tr></thead>
           <tbody id="h-sym-tbl"><tr><td colspan="6"><div class="empty"><div class="empty-icon">📊</div><div class="empty-text">Veri bekleniyor</div></div></td></tr></tbody>
         </table>
       </div>
@@ -1317,14 +1321,16 @@ function renderHome(){
 
   // Trades
   const dl=(D.dailyLog||{})[D.today]||{};
-  $('h-trades').textContent=dl.trades||0;
+  $('h-trades').textContent=dl.sells||0;
   $('h-trades-sub').textContent=`${dl.buys||0} alış · ${dl.sells||0} satış`;
 
   // Monthly
   const now=new Date();
   const ms=getMonthStats(now.getFullYear(),now.getMonth());
   setpnl('h-mnet',ms.net);
-  $('h-mdays').textContent=ms.tdays+'. işlem günü';
+  // Ayın kaçıncı iş günündeyiz (Pzt-Cum, tatil dikkate almadan)
+  const _bd=(()=>{let c=0;for(let i=1;i<=now.getDate();i++){const d=new Date(now.getFullYear(),now.getMonth(),i).getDay();if(d>0&&d<6)c++;}return c;})();
+  $('h-mdays').textContent=_bd+'. iş günü';
 
   // Lisans
   renderLicense(ms.comm);
@@ -1379,8 +1385,8 @@ function renderSymTable(){
       <td class="td-sym">${k}</td>
       <td class="td-dim">${s.buyCount}</td>
       <td class="td-sell">${s.sellCount}</td>
-      <td>${fx(s.avgBuy)}</td>
-      <td>${fx(s.avgSell)}</td>
+      <td class="col-ort">${fx(s.avgBuy)}</td>
+      <td class="col-ort">${fx(s.avgSell)}</td>
       <td class="${nc}">${fxs(s.netProfit)} ₺</td>
     </tr>`;
   }).join('');
