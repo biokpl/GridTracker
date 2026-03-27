@@ -3,9 +3,9 @@
   "short_name": "GridTracker",
   "description": "BİST Grid Trading Takip Sistemi",
   "start_url": "./bist_tracker.html",
-  "display": "fullscreen",
+  "display": "standalone",
   "background_color": "#09090b",
-  "theme_color": "#3b82f6",
+  "theme_color": "#000000",
   "orientation": "portrait-primary",
   "icons": [
     {
