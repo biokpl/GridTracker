@@ -45,11 +45,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);display:flex
 .brand{display:flex;align-items:center;gap:10px;}
 .brand-mark{
   width:28px;height:28px;border-radius:7px;
-  background:linear-gradient(135deg,#3b82f6,#1d4ed8);
   display:flex;align-items:center;justify-content:center;
-  font-size:13px;font-weight:700;color:#fff;letter-spacing:-0.5px;
-  font-family:var(--mono);
+  overflow:hidden;
 }
+.brand-mark img{width:28px;height:28px;border-radius:7px;display:block;}
 .brand-name{font-size:13px;font-weight:600;letter-spacing:.5px;color:var(--text);}
 .brand-name span{color:var(--text3);font-weight:400;}
 .topbar-right{display:flex;align-items:center;gap:10px;}
@@ -603,7 +602,7 @@ select.field-input option{background:var(--surface2);}
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="brand">
-    <div class="brand-mark">G</div>
+    <div class="brand-mark"><img src="icon.svg" alt="GridTracker"></div>
     <div class="brand-name">Grid<span>Tracker</span></div>
   </div>
   <div class="topbar-right">
