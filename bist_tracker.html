@@ -1870,19 +1870,19 @@ function _wakeTime(t){ const[h,m]=t.split(':').map(Number); return `${String(m<5
 
 async function loadAutoSettings(){
   if(!IS_LOCAL){
-    // Uzaktan: Firebase'den oku
+    // Uzaktan: statü mesajını hemen göster
+    $('autoStatus').className='alert inf';
+    $('autoStatus').textContent='• Saat değişikliği, Firebase ile PC\'ye iletilir (~1 dk gecikme)';
+    Object.assign($('autoStatus').style,{fontSize:'10px',fontStyle:'italic',justifyContent:'center',color:'#4e6080'});
+    $('autoStatus').style.display='flex';
+    // Firebase'den saat değerini oku
     try{
       const r = await fetch(FIREBASE_URL+'/settings/schedule_time.json');
       const val = await r.json();
       if(val){ $('autoTime').value=val; $('autoWake').textContent=_wakeTime(val); }
-      $('autoStatus').className='alert inf';
-      $('autoStatus').textContent='• Saat değişikliği, Firebase ile PC\'ye iletilir (~1 dk gecikme)';
-      Object.assign($('autoStatus').style,{fontSize:'10px',fontStyle:'italic',justifyContent:'center',color:'#4e6080'});
-      $('autoStatus').style.display='flex';
     }catch{
       $('autoStatus').className='alert warn';
       $('autoStatus').textContent='⚠ Firebase\'e ulaşılamadı';
-      $('autoStatus').style.display='flex';
     }
     return;
   }
