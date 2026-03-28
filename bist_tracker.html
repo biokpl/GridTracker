@@ -1262,7 +1262,11 @@ function save(){ try{ localStorage.setItem('gt_s',JSON.stringify(S.settings)); }
 function load(){ try{
   const s=localStorage.getItem('gt_s'); if(s) S.settings={...S.settings,...JSON.parse(s)};
   if(!Array.isArray(S.settings.botSymbols)) S.settings.botSymbols=[];
-  if(D&&D.settings&&D.settings.costs) S.settings.costs=D.settings.costs;
+  if(D&&D.settings){
+    if(D.settings.costs) S.settings.costs=D.settings.costs;
+    if(D.settings.botSymbols) S.settings.botSymbols=D.settings.botSymbols;
+    if(D.settings.monthlyTarget!=null) S.settings.monthlyTarget=D.settings.monthlyTarget;
+  }
 }catch(e){} }
 
 // ════════════════════════════════════════════════════════
@@ -1765,10 +1769,17 @@ function addBotSym(){
   if((S.settings.botSymbols||[]).includes(sym)){ toast(`${sym} zaten listede`,'inf'); return; }
   if(!S.settings.botSymbols) S.settings.botSymbols=[];
   S.settings.botSymbols.push(sym);
+  if(D){if(!D.settings)D.settings={};D.settings.botSymbols=S.settings.botSymbols;}
   save(); renderBotSymList(); $('botSymInput').value='';
+  fbWrite('gridtracker/settings/botSymbols',S.settings.botSymbols);
   toast(`${sym} bot listesine eklendi`,'ok');
 }
-function removeBotSym(i){ S.settings.botSymbols.splice(i,1); save(); renderBotSymList(); renderSymTable(); }
+function removeBotSym(i){
+  S.settings.botSymbols.splice(i,1);
+  if(D){if(!D.settings)D.settings={};D.settings.botSymbols=S.settings.botSymbols;}
+  save(); renderBotSymList(); renderSymTable();
+  fbWrite('gridtracker/settings/botSymbols',S.settings.botSymbols);
+}
 function renderBotSymList(){
   const list=S.settings.botSymbols||[];
   const el=$('botSymList');
@@ -1797,7 +1808,9 @@ function saveSettings(){
   S.settings.gridInterval=parseFloat($('sGrid').value)||0;
   S.settings.lotTolerance=parseFloat($('sTol').value)||0;
   S.settings.monthlyTarget=parseFloat($('sMonthTarget').value)||0;
+  if(D){if(!D.settings)D.settings={};D.settings.monthlyTarget=S.settings.monthlyTarget;}
   save(); toast('Kaydedildi','ok'); renderHome();
+  fbWrite('gridtracker/settings/monthlyTarget',S.settings.monthlyTarget);
 }
 function renderCostList(){
   $('costList').innerHTML=S.settings.costs.map((c,i)=>`
@@ -1972,7 +1985,11 @@ document.addEventListener('DOMContentLoaded',async()=>{
   if(fb){
     D=fb;
     if(!D.birikimTx) D.birikimTx=[];
-    if(D.settings&&D.settings.costs) S.settings.costs=D.settings.costs;
+    if(D.settings){
+      if(D.settings.costs) S.settings.costs=D.settings.costs;
+      if(D.settings.botSymbols) S.settings.botSymbols=D.settings.botSymbols;
+      if(D.settings.monthlyTarget!=null) S.settings.monthlyTarget=D.settings.monthlyTarget;
+    }
   }
   renderHome();
 
@@ -1992,7 +2009,11 @@ document.addEventListener('DOMContentLoaded',async()=>{
           const prev=D?D.lastUpdated:null;
           D=data;
           if(!D.birikimTx) D.birikimTx=[];
-          if(D.settings&&D.settings.costs) S.settings.costs=D.settings.costs;
+          if(D.settings){
+            if(D.settings.costs) S.settings.costs=D.settings.costs;
+            if(D.settings.botSymbols) S.settings.botSymbols=D.settings.botSymbols;
+            if(D.settings.monthlyTarget!=null) S.settings.monthlyTarget=D.settings.monthlyTarget;
+          }
           renderAll(D.lastUpdated&&D.lastUpdated!==prev);
         } else {
           if(!D) return;
