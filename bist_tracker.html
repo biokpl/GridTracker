@@ -1995,11 +1995,11 @@ document.addEventListener('DOMContentLoaded',async()=>{
 
   // Firebase SSE — değişiklik anında yansır
   function syncSettings(){
-    if(D&&D.settings){
-      if(D.settings.costs) S.settings.costs=D.settings.costs;
-      if(D.settings.botSymbols) S.settings.botSymbols=D.settings.botSymbols;
-      if(D.settings.monthlyTarget!=null) S.settings.monthlyTarget=D.settings.monthlyTarget;
-    }
+    if(!D) return;
+    const ds=D.settings||{};
+    if(ds.costs) S.settings.costs=ds.costs;
+    S.settings.botSymbols=Array.isArray(ds.botSymbols)?ds.botSymbols:[];
+    S.settings.monthlyTarget=ds.monthlyTarget||0;
   }
   function renderAll(showToast){
     syncSettings();
