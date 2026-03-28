@@ -482,17 +482,19 @@ select.field-input option{background:var(--surface2);}
 .toast.inf{border-color:rgba(59,130,246,.4);color:#93c5fd;}
 @keyframes tin{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
 /* ── BAR CHART ── */
-.mk-chart{display:flex;align-items:flex-end;gap:5px;height:148px;padding:0 12px;margin-top:44px;margin-bottom:38px;position:relative;}
-.mk-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;}
-.mk-bar-col{flex:1;display:flex;align-items:flex-end;width:100%;}
-.mk-bar{width:100%;border-radius:5px 5px 0 0;position:relative;overflow:hidden;}
-.mk-bar.pos{background:linear-gradient(180deg,rgba(74,222,128,.34) 0%,rgba(34,197,94,.16) 55%,rgba(34,197,94,.04) 100%);box-shadow:inset 0 0 12px rgba(74,222,128,.06);}
+.mk-chart{display:flex;align-items:stretch;gap:5px;height:160px;padding:0 12px;margin-top:44px;margin-bottom:38px;position:relative;}
+.mk-chart::after{content:'';position:absolute;left:12px;right:12px;height:1px;top:var(--zero-y,50%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.2) 20%,rgba(255,255,255,.2) 80%,transparent);pointer-events:none;z-index:2;}
+.mk-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;}
+.mk-pos-area{width:100%;display:flex;align-items:flex-end;}
+.mk-neg-area{width:100%;display:flex;align-items:flex-start;}
+.mk-bar{width:100%;position:relative;overflow:hidden;min-height:3px;}
+.mk-bar.pos{border-radius:5px 5px 0 0;background:linear-gradient(180deg,rgba(74,222,128,.36) 0%,rgba(34,197,94,.16) 60%,rgba(34,197,94,.04) 100%);box-shadow:inset 0 0 12px rgba(74,222,128,.06);}
 .mk-bar.pos::before{content:'';position:absolute;top:0;left:6%;right:6%;height:2px;border-radius:0 0 2px 2px;background:linear-gradient(90deg,transparent,rgba(74,222,128,.95) 35%,rgba(74,222,128,.95) 65%,transparent);filter:drop-shadow(0 0 5px rgba(74,222,128,.9)) drop-shadow(0 0 12px rgba(74,222,128,.55));}
-.mk-bar.neg{background:linear-gradient(180deg,rgba(248,113,113,.3) 0%,rgba(239,68,68,.13) 55%,rgba(239,68,68,.03) 100%);box-shadow:inset 0 0 12px rgba(248,113,113,.05);}
-.mk-bar.neg::before{content:'';position:absolute;top:0;left:6%;right:6%;height:2px;border-radius:0 0 2px 2px;background:linear-gradient(90deg,transparent,rgba(248,113,113,.92) 35%,rgba(248,113,113,.92) 65%,transparent);filter:drop-shadow(0 0 5px rgba(248,113,113,.85)) drop-shadow(0 0 12px rgba(248,113,113,.4));}
-.mk-bar-val{position:absolute;top:7px;left:0;right:0;text-align:center;font-size:8px;font-family:var(--mono);font-weight:700;white-space:nowrap;letter-spacing:.2px;pointer-events:none;overflow:hidden;}
-.mk-bar.pos .mk-bar-val{color:rgba(134,239,172,.88);}
-.mk-bar.neg .mk-bar-val{color:rgba(252,165,165,.82);}
+.mk-bar.neg{border-radius:0 0 5px 5px;background:linear-gradient(0deg,rgba(248,113,113,.34) 0%,rgba(239,68,68,.15) 60%,rgba(239,68,68,.04) 100%);box-shadow:inset 0 0 12px rgba(248,113,113,.05);}
+.mk-bar.neg::before{content:'';position:absolute;bottom:0;left:6%;right:6%;height:2px;border-radius:2px 2px 0 0;background:linear-gradient(90deg,transparent,rgba(248,113,113,.92) 35%,rgba(248,113,113,.92) 65%,transparent);filter:drop-shadow(0 0 5px rgba(248,113,113,.85)) drop-shadow(0 0 12px rgba(248,113,113,.4));}
+.mk-bar-val{position:absolute;left:0;right:0;text-align:center;font-size:8px;font-family:var(--mono);font-weight:700;white-space:nowrap;letter-spacing:.2px;pointer-events:none;overflow:hidden;}
+.mk-bar.pos .mk-bar-val{top:7px;color:rgba(134,239,172,.88);}
+.mk-bar.neg .mk-bar-val{bottom:7px;color:rgba(252,165,165,.82);}
 .mk-bar-lbl{font-size:8px;color:#4e6080;white-space:nowrap;font-family:var(--mono);padding-top:6px;font-weight:500;letter-spacing:.5px;}
 /* ── TARGET BAR ── */
 .m-target{margin-bottom:14px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);}
@@ -1503,19 +1505,23 @@ function renderMonthlyChart(){
   const data=Array.isArray(rawMk)?rawMk:Object.values(rawMk);
   const sorted=[...data].sort((a,b)=>a.month.localeCompare(b.month)).slice(-6);
   if(!sorted.length){el.innerHTML='';return;}
-  const maxAbs=Math.max(...sorted.map(d=>Math.abs(d.profit)),1);
-  const H=112;
+  const maxPos=Math.max(1,...sorted.map(d=>d.profit>0?d.profit:0));
+  const maxNeg=Math.max(1,...sorted.map(d=>d.profit<0?-d.profit:0));
+  const CHART_H=136; const LABEL_H=24;
+  const posAreaH=sorted.some(d=>d.profit>0)?Math.round(maxPos/(maxPos+maxNeg)*CHART_H):0;
+  const negAreaH=CHART_H-posAreaH;
+  el.style.setProperty('--zero-y',posAreaH+'px');
   const fmtFull=v=>Math.abs(Math.round(v)).toLocaleString('tr-TR');
   el.innerHTML=sorted.map(d=>{
     const mo=d.month.split('-')[1];
-    const h=Math.max(6,Math.round(Math.abs(d.profit)/maxAbs*H));
     const isPos=d.profit>=0;
+    const barH=isPos
+      ?Math.max(4,Math.round(d.profit/maxPos*posAreaH))
+      :Math.max(4,Math.round(-d.profit/maxNeg*negAreaH));
+    const barHtml=`<div class="mk-bar ${isPos?'pos':'neg'}" style="height:${barH}px"><span class="mk-bar-val">${fmtFull(d.profit)}</span></div>`;
     return `<div class="mk-bar-wrap">
-      <div class="mk-bar-col">
-        <div class="mk-bar ${isPos?'pos':'neg'}" style="height:${h}px">
-          <span class="mk-bar-val">${fmtFull(d.profit)}</span>
-        </div>
-      </div>
+      <div class="mk-pos-area" style="height:${posAreaH}px">${isPos?barHtml:''}</div>
+      <div class="mk-neg-area" style="height:${negAreaH}px">${!isPos?barHtml:''}</div>
       <div class="mk-bar-lbl">${MN[parseInt(mo)-1]}</div>
     </div>`;
   }).join('');
