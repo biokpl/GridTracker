@@ -2014,27 +2014,33 @@ document.addEventListener('DOMContentLoaded',async()=>{
   function setNestedD(path,data){
     const keys=path.split('/');
     let obj=D;
-    for(let i=0;i<keys.length-1;i++){if(!obj[keys[i]])obj[keys[i]]={};obj=obj[keys[i]];}
-    obj[keys[keys.length-1]]=data;
+    for(let i=0;i<keys.length-1;i++){
+      if(obj[keys[i]]==null) obj[keys[i]]={};
+      obj=obj[keys[i]];
+    }
+    if(data===null) delete obj[keys[keys.length-1]];
+    else obj[keys[keys.length-1]]=data;
+  }
+  function handleSSEEvent(e){
+    try{
+      const {path,data}=JSON.parse(e.data);
+      if(path==='/'){
+        if(!data) return;
+        const prev=D?D.lastUpdated:null;
+        D=data;
+        if(!D.birikimTx) D.birikimTx=[];
+        renderAll(D.lastUpdated&&D.lastUpdated!==prev);
+      } else {
+        if(!D) return;
+        setNestedD(path.slice(1), data); // data null olabilir (Firebase boş array/objeyi siler)
+        renderAll(false);
+      }
+    }catch(_){}
   }
   function startFirebaseStream(){
     const es=new EventSource(FIREBASE_URL+'/gridtracker.json');
-    es.addEventListener('put',e=>{
-      try{
-        const {path,data}=JSON.parse(e.data);
-        if(!data) return;
-        if(path==='/'){
-          const prev=D?D.lastUpdated:null;
-          D=data;
-          if(!D.birikimTx) D.birikimTx=[];
-          renderAll(D.lastUpdated&&D.lastUpdated!==prev);
-        } else {
-          if(!D) return;
-          setNestedD(path.slice(1),data);
-          renderAll(false);
-        }
-      }catch(_){}
-    });
+    es.addEventListener('put', handleSSEEvent);
+    es.addEventListener('patch', handleSSEEvent);
     es.onerror=()=>{ es.close(); setTimeout(startFirebaseStream,5000); };
   }
   startFirebaseStream();
