@@ -468,7 +468,7 @@ select.field-input option{background:var(--surface2);}
 .cost-sum-val{font-family:var(--mono);font-size:13px;font-weight:600;}
 
 /* ── TOAST ── */
-.toasts{position:fixed;bottom:16px;right:16px;z-index:999;display:flex;flex-direction:column;gap:6px;}
+.toasts{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:999;display:flex;flex-direction:column;gap:6px;align-items:center;}
 .toast{
   background:var(--surface2);border:1px solid var(--border);
   padding:10px 14px;border-radius:8px;font-size:12px;
@@ -478,7 +478,32 @@ select.field-input option{background:var(--surface2);}
 .toast.ok{border-color:rgba(34,197,94,.4);color:#86efac;}
 .toast.err{border-color:rgba(239,68,68,.4);color:#fca5a5;}
 .toast.inf{border-color:rgba(59,130,246,.4);color:#93c5fd;}
-@keyframes tin{from{transform:translateX(20px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes tin{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
+/* ── BAR CHART ── */
+.mk-chart{display:flex;align-items:flex-end;gap:4px;height:100px;padding:0 110px;margin-top:36px;margin-bottom:36px;}
+.mk-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:0;height:100%;}
+.mk-bar-col{flex:1;display:flex;align-items:flex-end;width:100%;}
+.mk-bar{width:100%;border-radius:3px 3px 0 0;min-height:2px;}
+.mk-bar.pos{background:rgba(34,197,94,.3);border-top:1px solid rgba(34,197,94,.5);}
+.mk-bar.neg{background:rgba(239,68,68,.25);border-top:1px solid rgba(239,68,68,.4);}
+.mk-bar-lbl{font-size:8px;color:#4e6080;white-space:nowrap;font-family:var(--mono);padding-top:3px;}
+/* ── TARGET BAR ── */
+.m-target{margin-bottom:14px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);}
+.m-target-track{height:2px;background:rgba(255,255,255,.05);border-radius:2px;overflow:visible;margin-bottom:5px;}
+.m-target-fill{
+  height:2px;border-radius:2px;min-width:6px;
+  transition:width 1.2s cubic-bezier(.4,0,.2,1);
+  background:linear-gradient(90deg,rgba(59,130,246,0),rgba(37,99,235,.35) 15%,rgba(59,130,246,.78) 42%,rgba(96,165,250,.92) 50%,rgba(59,130,246,.78) 58%,rgba(37,99,235,.35) 85%,rgba(59,130,246,0));
+  filter:drop-shadow(0 0 4px rgba(59,130,246,.7)) drop-shadow(0 0 10px rgba(59,130,246,.3));
+}
+.m-target-fill.done{
+  background:linear-gradient(90deg,rgba(34,197,94,0),rgba(22,163,74,.35) 15%,rgba(34,197,94,.78) 42%,rgba(74,222,128,.92) 50%,rgba(34,197,94,.78) 58%,rgba(22,163,74,.35) 85%,rgba(34,197,94,0));
+  filter:drop-shadow(0 0 4px rgba(34,197,94,.7)) drop-shadow(0 0 10px rgba(34,197,94,.3));
+}
+.m-target-meta{display:flex;justify-content:space-between;align-items:center;}
+.m-target-txt{font-size:10px;color:#4e6080;}
+.m-target-pct{font-size:10px;font-family:var(--mono);color:#60a5fa;font-weight:600;}
+.m-target-pct.done{color:#4ade80;}
 
 /* ── INNER TABS ── */
 .itabs{display:flex;gap:4px;margin-bottom:12px;background:var(--surface2);border-radius:8px;padding:3px;}
@@ -563,11 +588,12 @@ select.field-input option{background:var(--surface2);}
 .sr-tx-amt{font-family:var(--mono);font-size:13px;font-weight:600;}
 .sr-tx-amt.pos{color:#4ade80;}
 .sr-tx-amt.neg{color:#f87171;}
-#sr-list{max-height:260px;overflow-y:auto;padding-right:3px;overflow-x:hidden;}
+#sr-list{max-height:260px;overflow-y:auto;padding-right:0;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:transparent transparent;}
 #sr-list::-webkit-scrollbar{width:3px;}
 #sr-list::-webkit-scrollbar-track{background:transparent;}
-#sr-list::-webkit-scrollbar-thumb{background:rgba(59,130,246,.25);border-radius:3px;}
-#sr-list::-webkit-scrollbar-thumb:hover{background:rgba(59,130,246,.45);}
+#sr-list::-webkit-scrollbar-thumb{background:transparent;border-radius:3px;}
+#sr-list:hover::-webkit-scrollbar-thumb{background:rgba(59,130,246,.25);}
+#sr-list:hover{scrollbar-color:rgba(59,130,246,.25) transparent;}
 /* GridBot kazanç — portfolio-card altına eklenen özel alan */
 .sr-bot-row{
   display:flex;align-items:center;justify-content:center;gap:6px;
@@ -737,6 +763,7 @@ select.field-input option{background:var(--surface2);}
   </div>
 
   <div class="s-head-c" style="margin-bottom:10px"><div class="s-rule"></div><div class="section-title s-title-c">GridBot Aylık Kar</div><div class="s-rule"></div></div>
+  <div id="mk-chart" class="mk-chart"></div>
   <div class="card mk-card">
     <div class="tbl-wrap">
       <table class="ttbl" style="table-layout:fixed">
@@ -777,7 +804,7 @@ select.field-input option{background:var(--surface2);}
     </div>
   </div>
 
-  <div class="kpi-strip" style="margin-bottom:16px">
+  <div class="kpi-strip three" style="margin-bottom:16px">
     <div class="kpi" style="padding:0;display:flex;overflow:hidden">
       <div style="flex:1;padding:14px 10px 12px;text-align:center">
         <div class="kpi-label" style="font-size:7.5px">Ort. Günlük Kar</div>
@@ -793,6 +820,19 @@ select.field-input option{background:var(--surface2);}
       <div class="kpi-label">Overall Değişimi</div>
       <div class="kpi-val" id="m-odiff">—</div>
       <div class="kpi-sub" id="m-days">— işlem günü</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Win Rate</div>
+      <div class="kpi-val" id="m-winrate">—</div>
+      <div class="kpi-sub" id="m-winrate-sub">karlı gün</div>
+    </div>
+  </div>
+
+  <div id="m-target" class="m-target" style="display:none">
+    <div class="m-target-track"><div class="m-target-fill" id="m-target-fill" style="width:0%"></div></div>
+    <div class="m-target-meta">
+      <span class="m-target-txt" id="m-target-txt">—</span>
+      <span class="m-target-pct" id="m-target-pct">%0</span>
     </div>
   </div>
 
@@ -929,22 +969,49 @@ select.field-input option{background:var(--surface2);}
     <input type="hidden" id="sTol" value="0">
   </div>
 
-  <!-- GridBot Hisseleri -->
-  <div class="section">
-    <div class="s-head-c"><div class="s-rule"></div><div class="section-title s-title-c">GridBot Hisseleri</div><div class="s-rule"></div></div>
-    <div class="card">
-      <div class="card-body" style="padding:10px 12px">
-        <div style="font-size:10px;color:#4e6080;margin-bottom:10px;text-align:center;font-style:italic">
-          Hisse Özeti'nde <strong style="color:#7aa6e0;font-style:normal">GridBot</strong> görünümü için filtrelenecek hisseler.
+  <!-- Aylık Hedef + GridBot Hisseleri yan yana -->
+  <div style="display:flex;gap:0;align-items:stretch;margin-bottom:16px">
+
+    <!-- Aylık Hedef -->
+    <div style="flex:1;min-width:0">
+      <div class="s-head-c"><div class="s-rule"></div><div class="section-title s-title-c">Aylık Hedef</div><div class="s-rule"></div></div>
+      <div class="card" style="height:calc(100% - 32px)">
+        <div class="card-body" style="padding:10px 12px;height:100%;display:flex;flex-direction:column;justify-content:center">
+          <div style="font-size:10px;color:#4e6080;margin-bottom:8px;text-align:center;font-style:italic">
+            İşlemler sayfasında ilerleme gösterilir
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+            <div style="position:relative;display:inline-block">
+              <input class="field-input" id="sMonthTarget" type="number" inputmode="numeric" enterkeyhint="done" placeholder="0" style="width:100px;padding:4px 22px 4px 7px;font-size:11px;height:auto;line-height:1.4" onkeydown="if(event.key==='Enter'){this.blur();saveSettings();}">
+              <span style="position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;color:#4e6080;pointer-events:none">₺</span>
+            </div>
+            <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:5px 32px" onclick="saveSettings()">Kaydet</button>
+          </div>
         </div>
-        <div style="display:flex;gap:6px;margin-bottom:8px">
-          <input class="field-input" id="botSymInput" placeholder="Hisse kodu" style="text-transform:uppercase;flex:1;padding:7px 10px;font-size:11px"
-            onkeydown="if(event.key==='Enter') addBotSym()">
-          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:0 12px" onclick="addBotSym()">+ Ekle</button>
-        </div>
-        <div id="botSymList"></div>
       </div>
     </div>
+
+    <!-- Dikey ışın -->
+    <div style="width:1px;background:linear-gradient(to bottom,transparent,rgba(59,130,246,.65) 30%,rgba(59,130,246,.65) 70%,transparent);margin:24px 10px 0;flex-shrink:0"></div>
+
+    <!-- GridBot Hisseleri -->
+    <div style="flex:1;min-width:0">
+      <div class="s-head-c"><div class="s-rule"></div><div class="section-title s-title-c">GridBot Hisseleri</div><div class="s-rule"></div></div>
+      <div class="card">
+        <div class="card-body" style="padding:10px 12px">
+          <div style="font-size:10px;color:#4e6080;margin-bottom:10px;text-align:center;font-style:italic">
+            Hisse Özeti'nde <strong style="color:#7aa6e0;font-style:normal">GridBot</strong> görünümü için filtrelenecek hisseler.
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <input class="field-input" id="botSymInput" placeholder="Hisse kodu" style="text-transform:uppercase;flex:1;padding:4px 7px;font-size:11px;height:auto;line-height:1.4"
+              onkeydown="if(event.key==='Enter') addBotSym()">
+            <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:0 12px" onclick="addBotSym()">+ Ekle</button>
+          </div>
+          <div id="botSymList"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- Lisans Giderleri -->
@@ -1415,6 +1482,22 @@ function exportCSV(){
 // ════════════════════════════════════════════════════════
 //  MONTHLY
 // ════════════════════════════════════════════════════════
+function renderMonthlyChart(){
+  const el=$('mk-chart'); if(!el) return;
+  const MN=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+  const rawMk=(D&&D.monthlyKar)||[];
+  const data=Array.isArray(rawMk)?rawMk:Object.values(rawMk);
+  const sorted=[...data].sort((a,b)=>a.month.localeCompare(b.month)).slice(-6);
+  if(!sorted.length){el.innerHTML='';return;}
+  const maxAbs=Math.max(...sorted.map(d=>Math.abs(d.profit)),1);
+  const H=90;
+  el.innerHTML=sorted.map(d=>{
+    const mo=d.month.split('-')[1];
+    const h=Math.max(2,Math.round(Math.abs(d.profit)/maxAbs*H));
+    const isPos=d.profit>=0;
+    return `<div class="mk-bar-wrap"><div class="mk-bar-col"><div class="mk-bar ${isPos?'pos':'neg'}" style="height:${h}px"></div></div><div class="mk-bar-lbl">${MN[parseInt(mo)-1]}</div></div>`;
+  }).join('');
+}
 function renderMonthlyKar(){
   const MN=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
   const fmt=m=>{const[y,mo]=m.split('-');return MN[parseInt(mo)-1]+' '+y;};
@@ -1445,6 +1528,7 @@ function renderMonthlyKar(){
       <td class="${isPos?'td-pos':'td-neg'}">${isPos?'+':''}${fxi(d.profit)} ₺</td>
     </tr>`;
   }).join('');
+  renderMonthlyChart();
 }
 function renderMonthly(){
   renderMonthlyKar();
@@ -1461,6 +1545,9 @@ function renderMonthly(){
     const ea=$('m-avg');if(ea){ea.textContent='—';ea.className='kpi-val kpi-muted';}
     const em=$('m-mavg');if(em){em.textContent='—';em.className='kpi-val kpi-muted';}
     const od=$('m-odiff');if(od){od.textContent='—';od.className='kpi-val';}
+    const wr=$('m-winrate');if(wr){wr.textContent='—';wr.className='kpi-val';}
+    const wrs=$('m-winrate-sub');if(wrs)wrs.textContent='karlı gün';
+    const mtt=$('m-target');if(mtt)mtt.style.display='none';
     tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">◫</div><div class="empty-text">Bu ay veri yok</div></div></td></tr>`; return;
   }
   $('m-days').textContent=bistDayCount(S.month.y,S.month.m)+'. işlem günü';
@@ -1471,10 +1558,41 @@ function renderMonthly(){
   const dl2=(D&&D.dailyLog)||{};const mmap={};Object.keys(dl2).forEach(dt=>{const mk=dt.slice(0,7);if(!mmap[mk])mmap[mk]=0;mmap[mk]+=(dl2[dt].netProfit||0);});const mvals=Object.values(mmap);const mavg=mvals.length?mvals.reduce((a,b)=>a+b,0)/mvals.length:0;
   const em=$('m-mavg'); if(em){em.textContent=mavg?fx(mavg)+' ₺':'—';em.className='kpi-val kpi-muted';}
   const od=$('m-odiff'); od.textContent=st.odiff?(((st.odiff>=0?'+':'')+fxi(st.odiff)+' ₺')):'—'; od.className='kpi-val '+(st.odiff>0?'pos':st.odiff<0?'neg':'');
+  // Win Rate
+  const tRows=st.rows.filter(d=>d.trades>0);
+  const winDays=tRows.filter(d=>d.netProfit>0).length;
+  const winRate=tRows.length?Math.round(winDays/tRows.length*100):null;
+  const wr=$('m-winrate');
+  if(wr){wr.textContent=winRate!==null?'%'+winRate:'—';wr.className='kpi-val '+(winRate===null?'':(winRate>=60?'pos':winRate>=40?'':'neg'));}
+  const wrs=$('m-winrate-sub');
+  if(wrs)wrs.textContent=tRows.length?(winDays+'/'+tRows.length+' gün'):'karlı gün';
+  // Target bar
+  const target=S.settings.monthlyTarget||0;
+  const mtt=$('m-target');
+  if(mtt){
+    if(target>0){
+      const rawPct=Math.round(st.net/target*100);
+      const pctClamped=Math.max(0,Math.min(rawPct,100));
+      const done=rawPct>=100;
+      $('m-target-fill').style.width=pctClamped+'%';
+      $('m-target-fill').className='m-target-fill'+(done?' done':'');
+      $('m-target-txt').textContent=done?'Hedefe ulaşıldı!':'Hedefe '+fxi(Math.max(0,target-st.net))+' ₺ kaldı';
+      $('m-target-pct').textContent='%'+rawPct;
+      $('m-target-pct').className='m-target-pct'+(done?' done':'');
+      mtt.style.display='block';
+    }else{mtt.style.display='none';}
+  }
+  // En iyi / en kötü gün
+  const bestD=tRows.length?tRows.reduce((a,b)=>b.netProfit>a.netProfit?b:a):null;
+  const worstD=tRows.length>1?tRows.reduce((a,b)=>b.netProfit<a.netProfit?b:a):null;
   tb.innerHTML=st.rows.map(d=>{
     const nc=d.netProfit>0?'td-pos':d.netProfit<0?'td-neg':'';
-    return `<tr>
-      <td style="color:#7b92b5;font-weight:600">${d.date.slice(5).replace('-','.')}</td>
+    const isBest=bestD&&d.date===bestD.date&&d.trades>0;
+    const isWorst=worstD&&d.date===worstD.date&&worstD.date!==bestD.date&&d.trades>0;
+    const rowBg=isBest?'background:rgba(34,197,94,.04)':isWorst?'background:rgba(239,68,68,.04)':'';
+    const badge=isBest?'<span style="font-size:7px;background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.2);border-radius:3px;padding:1px 4px;margin-left:4px;vertical-align:middle">EN İYİ</span>':isWorst?'<span style="font-size:7px;background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.2);border-radius:3px;padding:1px 4px;margin-left:4px;vertical-align:middle">EN KÖTÜ</span>':'';
+    return `<tr style="${rowBg}">
+      <td style="color:#7b92b5;font-weight:600">${d.date.slice(5).replace('-','.')}${badge}</td>
       <td class="td-dim">${d.trades||'—'}</td>
       <td class="${d.grossProfit>0?'td-pos':d.grossProfit<0?'td-neg':''}">${d.grossProfit?fxs(d.grossProfit):'—'}</td>
       <td class="td-amb">${d.commission?fx(d.commission):'—'}</td>
@@ -1669,12 +1787,14 @@ function renderSettings(){
   $('sComm').value=S.settings.commissionRate;
   $('sGrid').value=S.settings.gridInterval;
   $('sTol').value=S.settings.lotTolerance;
+  const mt=$('sMonthTarget');if(mt)mt.value=S.settings.monthlyTarget||'';
   renderCostList(); renderCostSummary(); renderBotSymList();
 }
 function saveSettings(){
   S.settings.commissionRate=parseFloat($('sComm').value)||1;
   S.settings.gridInterval=parseFloat($('sGrid').value)||0;
   S.settings.lotTolerance=parseFloat($('sTol').value)||0;
+  S.settings.monthlyTarget=parseFloat($('sMonthTarget').value)||0;
   save(); toast('Kaydedildi','ok'); renderHome();
 }
 function renderCostList(){
