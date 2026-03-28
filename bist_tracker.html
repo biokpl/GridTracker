@@ -32,7 +32,7 @@
   --r:10px;
 }
 html,body{height:100%;overflow:hidden;}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);display:flex;flex-direction:column;font-size:14px;}
+body{background:var(--bg) radial-gradient(ellipse at 50% 0%,rgba(29,78,216,.18) 0%,transparent 55%);color:var(--text);font-family:var(--sans);display:flex;flex-direction:column;font-size:14px;}
 
 /* ── TOPBAR ── */
 .topbar{
@@ -223,6 +223,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--sans);display:flex
 .kpi.a{--kpi-accent:linear-gradient(90deg,transparent,var(--amber),transparent);background:linear-gradient(180deg,rgba(245,158,11,.03) 0%,var(--surface) 55%);}
 .kpi.r{--kpi-accent:linear-gradient(90deg,transparent,var(--red),transparent);background:linear-gradient(180deg,rgba(239,68,68,.03) 0%,var(--surface) 55%);}
 .kpi.pu{--kpi-accent:linear-gradient(90deg,transparent,#a78bfa,transparent);background:linear-gradient(180deg,rgba(167,139,250,.03) 0%,var(--surface) 55%);}
+.kpi.hero::after{opacity:.8;}
+.kpi-hero-glow{position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:180px;height:80px;background:radial-gradient(ellipse,rgba(59,130,246,.22) 0%,transparent 70%);pointer-events:none;}
 .kpi-icon{font-size:11px;display:inline;line-height:1;margin-right:4px;text-transform:none;letter-spacing:0;}
 .kpi-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#8b9ab5;margin-bottom:7px;display:flex;align-items:center;justify-content:center;gap:0;}
 .kpi-val{font-family:var(--mono);font-size:18px;font-weight:500;color:var(--text);line-height:1;}
@@ -613,7 +615,7 @@ select.field-input option{background:var(--surface2);}
 /* ── DESKTOP: telefon çerçevesi ── */
 @media(min-width:720px){
   html{
-    background:#000 radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.22) 0%,transparent 55%);
+    background:#000;
     min-height:100vh;
   }
   body{
@@ -700,7 +702,8 @@ select.field-input option{background:var(--surface2);}
       <div class="kpi-val pu" id="h-trades">—</div>
       <div class="kpi-sub" id="h-trades-sub">— alış · — satış</div>
     </div>
-    <div class="kpi g">
+    <div class="kpi g hero">
+      <div class="kpi-hero-glow"></div>
       <div class="kpi-label"><span class="kpi-icon">✦</span>Total Gerçek Kar</div>
       <div class="kpi-val pos" id="h-totalkar">—</div>
       <div class="kpi-sub">tüm zamanlar</div>
