@@ -1994,10 +1994,28 @@ document.addEventListener('DOMContentLoaded',async()=>{
   renderHome();
 
   // Firebase SSE — değişiklik anında yansır
+  function syncSettings(){
+    if(D&&D.settings){
+      if(D.settings.costs) S.settings.costs=D.settings.costs;
+      if(D.settings.botSymbols) S.settings.botSymbols=D.settings.botSymbols;
+      if(D.settings.monthlyTarget!=null) S.settings.monthlyTarget=D.settings.monthlyTarget;
+    }
+  }
   function renderAll(showToast){
+    syncSettings();
     renderHome();
     renderSermaye();
+    const pid=document.querySelector('.page.on')?.id;
+    if(pid==='pg-monthly'||pid==='pg-trades') renderMonthly();
+    if(pid==='pg-overall') renderOverall();
+    if(pid==='pg-settings'){ renderSettings(); }
     if(showToast) toast('Veri güncellendi','ok',2000);
+  }
+  function setNestedD(path,data){
+    const keys=path.split('/');
+    let obj=D;
+    for(let i=0;i<keys.length-1;i++){if(!obj[keys[i]])obj[keys[i]]={};obj=obj[keys[i]];}
+    obj[keys[keys.length-1]]=data;
   }
   function startFirebaseStream(){
     const es=new EventSource(FIREBASE_URL+'/gridtracker.json');
@@ -2009,16 +2027,10 @@ document.addEventListener('DOMContentLoaded',async()=>{
           const prev=D?D.lastUpdated:null;
           D=data;
           if(!D.birikimTx) D.birikimTx=[];
-          if(D.settings){
-            if(D.settings.costs) S.settings.costs=D.settings.costs;
-            if(D.settings.botSymbols) S.settings.botSymbols=D.settings.botSymbols;
-            if(D.settings.monthlyTarget!=null) S.settings.monthlyTarget=D.settings.monthlyTarget;
-          }
           renderAll(D.lastUpdated&&D.lastUpdated!==prev);
         } else {
           if(!D) return;
-          const key=path.slice(1);
-          D[key]=data;
+          setNestedD(path.slice(1),data);
           renderAll(false);
         }
       }catch(_){}
