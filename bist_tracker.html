@@ -1653,8 +1653,10 @@ function renderOverall(){
     const diff=prev?h.amount-prev.amount:null;
     const dc=diff!==null?(diff>=0?'td-pos':'td-neg'):'';
     const diffTxt=diff!==null?(diff>=0?'+':'')+fxi(diff)+' ₺':'—';
+    const dp=h.date.split('-').reverse();
+    const dateFmt=`${dp[0]}.${dp[1]}.<span style="color:#4e6890">${dp[2].slice(2)}</span>`;
     return `<tr>
-      <td style="color:#7b92b5;font-weight:600">${h.date.split('-').reverse().join('.')}</td>
+      <td style="color:#7b92b5;font-weight:600">${dateFmt}</td>
       <td style="color:#c4cfe0;font-weight:600;font-family:var(--mono)">${fxi(h.amount)}₺</td>
       <td class="${dc}" style="font-weight:${diff!==null?'600':'400'}">${diffTxt}</td>
       <td style="color:#4e6080;font-family:var(--sans)">${h.note||'—'}</td>
