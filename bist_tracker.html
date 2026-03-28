@@ -332,6 +332,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 .t-filter select option{background:#1a1f2e;}
 /* trades table */
 .ttbl th,.ttbl td{text-align:center;}
+#pg-trades .ttbl td{font-size:12px;}
 .td-time{color:#4e6080;font-size:10px;font-family:var(--mono);}
 .td-lot{color:#c4cfe0;font-family:var(--mono);}
 .td-price{color:#8fa8c8;font-family:var(--mono);}
@@ -819,23 +820,23 @@ select.field-input option{background:var(--surface2);}
     <div class="kpi">
       <div class="kpi-label">Overall Değişimi</div>
       <div class="kpi-val" id="m-odiff">—</div>
-      <div class="kpi-sub" id="m-days">— işlem günü</div>
+      <div class="kpi-sub" id="m-days">— İşlem Günü</div>
     </div>
     <div class="kpi">
-      <div class="kpi-label">Win Rate</div>
+      <div class="kpi-label">Kazanma Oranı</div>
       <div class="kpi-val" id="m-winrate">—</div>
-      <div class="kpi-sub" id="m-winrate-sub">karlı gün</div>
+      <div class="kpi-sub" id="m-winrate-sub">Karlı Gün</div>
     </div>
   </div>
   <div style="display:flex;justify-content:center;margin-bottom:16px">
-    <div class="kpi" style="padding:0;display:flex;overflow:hidden;max-width:50%">
+    <div class="kpi" style="padding:0;display:flex;overflow:hidden;max-width:68%">
       <div style="flex:1;padding:14px 10px 12px;text-align:center">
-        <div class="kpi-label" style="font-size:7.5px">Ort. Günlük Kar</div>
+        <div class="kpi-label" style="font-size:9px">Ort. Günlük Kar</div>
         <div class="kpi-val kpi-muted" id="m-avg">—</div>
       </div>
       <div style="width:1px;background:rgba(255,255,255,.06);margin:10px 0"></div>
       <div style="flex:1;padding:14px 10px 12px;text-align:center">
-        <div class="kpi-label" style="font-size:7.5px">Ort. Aylık Kar</div>
+        <div class="kpi-label" style="font-size:9px">Ort. Aylık Kar</div>
         <div class="kpi-val kpi-muted" id="m-mavg">—</div>
       </div>
     </div>
@@ -1568,18 +1569,18 @@ function renderMonthly(){
   const st=getMonthStats(S.month.y,S.month.m);
   const tb=$('m-tbl');
   if(!st.rows.length){
-    $('m-days').textContent='— işlem günü';
+    $('m-days').textContent='— İşlem Günü';
     ['m-gross','m-net'].forEach(id=>{const e=$(id);if(e){e.textContent='—';e.className='kpi-val';}});
     $('m-comm').textContent='—';
     const ea=$('m-avg');if(ea){ea.textContent='—';ea.className='kpi-val kpi-muted';}
     const em=$('m-mavg');if(em){em.textContent='—';em.className='kpi-val kpi-muted';}
     const od=$('m-odiff');if(od){od.textContent='—';od.className='kpi-val';}
     const wr=$('m-winrate');if(wr){wr.textContent='—';wr.className='kpi-val';}
-    const wrs=$('m-winrate-sub');if(wrs)wrs.textContent='karlı gün';
+    const wrs=$('m-winrate-sub');if(wrs)wrs.textContent='Karlı Gün';
     const mtt=$('m-target');if(mtt)mtt.style.display='none';
     tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">◫</div><div class="empty-text">Bu ay veri yok</div></div></td></tr>`; return;
   }
-  $('m-days').textContent=bistDayCount(S.month.y,S.month.m)+'. işlem günü';
+  $('m-days').textContent=bistDayCount(S.month.y,S.month.m)+'. İşlem Günü';
   const mset=(id,v)=>{const e=$(id);if(!e)return;e.textContent=v?fx(v)+' ₺':'—';e.className='kpi-val '+(v>0?'pos':v<0?'neg':'');};
   mset('m-gross',st.gross); $('m-comm').textContent=st.comm?fx(st.comm)+' ₺':'—'; mset('m-net',st.net);
   const avg=st.tdays?st.net/st.tdays:0;
@@ -1594,7 +1595,7 @@ function renderMonthly(){
   const wr=$('m-winrate');
   if(wr){wr.textContent=winRate!==null?'%'+winRate:'—';wr.className='kpi-val '+(winRate===null?'':(winRate>=60?'pos':winRate>=40?'':'neg'));}
   const wrs=$('m-winrate-sub');
-  if(wrs)wrs.textContent=tRows.length?(winDays+'/'+tRows.length+' gün'):'karlı gün';
+  if(wrs)wrs.textContent=tRows.length?(winDays+'/'+tRows.length+' Gün'):'Karlı Gün';
   // Target bar
   const target=S.settings.monthlyTarget||0;
   const mtt=$('m-target');
