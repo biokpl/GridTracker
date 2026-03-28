@@ -482,7 +482,7 @@ select.field-input option{background:var(--surface2);}
 .toast.inf{border-color:rgba(59,130,246,.4);color:#93c5fd;}
 @keyframes tin{from{transform:translateY(12px);opacity:0}to{transform:translateY(0);opacity:1}}
 /* ── BAR CHART ── */
-.mk-chart{display:flex;align-items:stretch;gap:5px;height:160px;padding:0 12px;margin-top:44px;margin-bottom:38px;position:relative;}
+.mk-chart{display:flex;align-items:stretch;gap:5px;height:184px;padding:0 12px;margin-top:44px;margin-bottom:38px;position:relative;}
 .mk-chart::after{content:'';position:absolute;left:12px;right:12px;height:1px;top:var(--zero-y,50%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.2) 20%,rgba(255,255,255,.2) 80%,transparent);pointer-events:none;z-index:2;}
 .mk-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;}
 .mk-pos-area{width:100%;display:flex;align-items:flex-end;}
@@ -1507,7 +1507,7 @@ function renderMonthlyChart(){
   if(!sorted.length){el.innerHTML='';return;}
   const maxPos=Math.max(1,...sorted.map(d=>d.profit>0?d.profit:0));
   const maxNeg=Math.max(1,...sorted.map(d=>d.profit<0?-d.profit:0));
-  const CHART_H=136; const LABEL_H=24;
+  const CHART_H=156; const LABEL_H=28;
   const posAreaH=sorted.some(d=>d.profit>0)?Math.round(maxPos/(maxPos+maxNeg)*CHART_H):0;
   const negAreaH=CHART_H-posAreaH;
   el.style.setProperty('--zero-y',posAreaH+'px');
@@ -1516,8 +1516,8 @@ function renderMonthlyChart(){
     const mo=d.month.split('-')[1];
     const isPos=d.profit>=0;
     const barH=isPos
-      ?Math.max(4,Math.round(d.profit/maxPos*posAreaH))
-      :Math.max(4,Math.round(-d.profit/maxNeg*negAreaH));
+      ?Math.max(22,Math.round(d.profit/maxPos*posAreaH))
+      :Math.max(22,Math.round(-d.profit/maxNeg*negAreaH));
     const barHtml=`<div class="mk-bar ${isPos?'pos':'neg'}" style="height:${barH}px"><span class="mk-bar-val">${fmtFull(d.profit)}</span></div>`;
     return `<div class="mk-bar-wrap">
       <div class="mk-pos-area" style="height:${posAreaH}px">${isPos?barHtml:''}</div>
