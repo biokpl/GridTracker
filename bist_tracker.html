@@ -708,7 +708,7 @@ select.field-input option{background:var(--surface2);}
     <div class="kpi">
       <div class="kpi-label"><span class="kpi-icon">💎</span>Günlük Net Kar</div>
       <div class="kpi-val" id="h-net">—</div>
-      <div class="kpi-sub">₺ bugün</div>
+      <div class="kpi-sub">₺ Bugün</div>
     </div>
     <div class="kpi">
       <div class="kpi-label"><span class="kpi-icon">📅</span>Aylık Net Kar</div>
@@ -722,13 +722,13 @@ select.field-input option{background:var(--surface2);}
     <div class="kpi pu">
       <div class="kpi-label"><span class="kpi-icon">⚡</span>Toplam İşlem</div>
       <div class="kpi-val pu" id="h-trades">—</div>
-      <div class="kpi-sub" id="h-trades-sub">— alış · — satış</div>
+      <div class="kpi-sub" id="h-trades-sub">— Alış · — Satış</div>
     </div>
     <div class="kpi g hero">
       <div class="kpi-hero-glow"></div>
       <div class="kpi-label"><span class="kpi-icon">✦</span>Total Gerçek Kar</div>
       <div class="kpi-val pos" id="h-totalkar">—</div>
-      <div class="kpi-sub">tüm zamanlar</div>
+      <div class="kpi-sub">Tüm Zamanlar</div>
     </div>
   </div>
 
@@ -1405,13 +1405,13 @@ function renderHome(){
   // Trades
   const dl=(D.dailyLog||{})[D.today]||{};
   $('h-trades').textContent=dl.sells||'—';
-  $('h-trades-sub').textContent=(dl.buys||dl.sells)?`${dl.buys||0} alış · ${dl.sells||0} satış`:'— alış · — satış';
+  $('h-trades-sub').textContent=(dl.buys||dl.sells)?`${dl.buys||0} Alış · ${dl.sells||0} Satış`:'— Alış · — Satış';
 
   // Monthly
   const now=new Date();
   const ms=getMonthStats(now.getFullYear(),now.getMonth());
   setpnl('h-mnet',ms.net);
-  $('h-mdays').textContent=bistDayCount(now.getFullYear(),now.getMonth())+'. iş günü';
+  $('h-mdays').textContent=bistDayCount(now.getFullYear(),now.getMonth())+'. İş Günü';
 
   // Total Gerçek Kar
   const mkRaw=D.monthlyKar||[];
@@ -1441,7 +1441,7 @@ function renderLicense(monthComm){
   let cls,icon,title,sub;
   if(ratio>=1){ cls='lic-ok';icon='🏆';title='MatriksIQ Lisansı Ücretsiz!';sub=`🎉 MatriksIQ Terminal ve Lisans Ücretleriniz BEDAVA..!  ·  ${fx(monthComm)} ₺`; $('licBar').className='lic-glow'; }
   else if(ratio>=0.5){ cls='lic-partial';icon='⚡';title=`Hedefe ulaşıldı`;sub=`${fx(target-monthComm)} ₺ daha gerekiyor`; $('licBar').className='lic-glow'; }
-  else{ cls='lic-no';icon='◎';title=`Bu ay komisyon`;sub=`${fx(monthComm)} ₺ — ${fx(target-monthComm)} ₺ eksik`; $('licBar').className='lic-glow'; }
+  else{ cls='lic-no';icon='◎';title=`Bu ay komisyon`;sub=`${fx(monthComm)} ₺ — ${fx(target-monthComm)} ₺ eksik..`; $('licBar').className='lic-glow'; }
 
   b.className=`lic-banner ${cls}`;
   $('licIcon').textContent=icon; $('licTitle').textContent=title; $('licSub').textContent=sub;
