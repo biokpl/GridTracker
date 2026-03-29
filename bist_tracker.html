@@ -41,7 +41,9 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
   padding:0 16px;
   border-bottom:1px solid var(--border);
   background:var(--surface);
+  position:relative;
 }
+.sync-time-wrap{position:absolute;left:50%;transform:translateX(-50%);}
 .brand{display:flex;align-items:center;gap:10px;}
 .brand-mark{
   width:28px;height:28px;border-radius:7px;
@@ -65,7 +67,7 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:rgba(30,58,95,.25) radial-gradient(ellipse at 50% 120%,rgba(59,130,246,.18) 0%,transparent 70%);
   border:1px solid rgba(59,130,246,.22);
-  border-radius:7px;padding:4px 6px;margin-right:6px;gap:0;
+  border-radius:7px;padding:4px 6px;gap:0;
   position:relative;overflow:hidden;
 }
 .sync-time::after{content:'';position:absolute;bottom:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,rgba(59,130,246,.7) 35%,rgba(96,165,250,.9) 50%,rgba(59,130,246,.7) 65%,transparent);filter:drop-shadow(0 0 4px rgba(59,130,246,.6));}
@@ -507,12 +509,11 @@ select.field-input option{background:var(--surface2);}
 .mk-bar-lbl{font-size:10px;color:#7a90aa;white-space:nowrap;font-family:var(--mono);padding-top:6px;font-weight:600;letter-spacing:.5px;}
 /* ── TARGET BAR ── */
 .m-target{
-  margin-bottom:14px;padding:10px 14px;
-  background:var(--surface2) radial-gradient(ellipse at 50% 120%,rgba(59,130,246,.14) 0%,transparent 65%);
+  margin-bottom:14px;padding:6px 14px;
+  background:var(--surface);
   border:1px solid rgba(59,130,246,.2);border-radius:var(--r);
   position:relative;overflow:hidden;
 }
-.m-target::after{content:'';position:absolute;top:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,rgba(59,130,246,.65) 35%,rgba(96,165,250,.85) 50%,rgba(59,130,246,.65) 65%,transparent);filter:drop-shadow(0 0 4px rgba(59,130,246,.55));}
 .m-target::before{content:'';position:absolute;bottom:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,rgba(59,130,246,.65) 35%,rgba(96,165,250,.85) 50%,rgba(59,130,246,.65) 65%,transparent);filter:drop-shadow(0 0 4px rgba(59,130,246,.55));}
 .m-target-track{height:2px;background:rgba(255,255,255,.05);border-radius:2px;overflow:visible;margin-bottom:5px;}
 .m-target-fill{
@@ -656,8 +657,10 @@ select.field-input option{background:var(--surface2);}
     <div class="brand-mark"><img src="icon.svg" alt="GridTracker"></div>
     <div class="brand-name">Grid<span>Tracker</span></div>
   </div>
-  <div class="topbar-right">
+  <div class="sync-time-wrap">
     <div class="sync-time" id="syncTime">—</div>
+  </div>
+  <div class="topbar-right">
     <div class="market-pill">
       <div class="dot" id="mDot"></div>
       <span id="mTxt">—</span>
