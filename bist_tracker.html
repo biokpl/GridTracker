@@ -515,6 +515,7 @@ select.field-input option{background:var(--surface2);}
   position:relative;overflow:hidden;
 }
 .m-target::before{content:'';position:absolute;bottom:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,rgba(59,130,246,.65) 35%,rgba(96,165,250,.85) 50%,rgba(59,130,246,.65) 65%,transparent);filter:drop-shadow(0 0 4px rgba(59,130,246,.55));}
+.m-target::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:70%;height:100%;background:radial-gradient(ellipse 80% 60% at 50% 100%,rgba(59,130,246,.18) 0%,rgba(59,130,246,.07) 45%,transparent 75%);pointer-events:none;}
 .m-target-track{height:2px;background:rgba(255,255,255,.05);border-radius:2px;overflow:visible;margin-bottom:5px;}
 .m-target-fill{
   height:2px;border-radius:2px;min-width:6px;
