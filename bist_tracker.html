@@ -1275,6 +1275,8 @@ let S = {
 //  PERSIST
 // ════════════════════════════════════════════════════════
 function save(){ try{ localStorage.setItem('gt_s',JSON.stringify(S.settings)); }catch(e){} }
+function saveCache(){ try{ if(D) localStorage.setItem('gt_d',JSON.stringify(D)); }catch(e){} }
+function loadCache(){ try{ const c=localStorage.getItem('gt_d'); if(c){ D=JSON.parse(c); if(!D.birikimTx) D.birikimTx=[]; return true; } }catch(e){} return false; }
 function load(){ try{
   const s=localStorage.getItem('gt_s'); if(s) S.settings={...S.settings,...JSON.parse(s)};
   if(!Array.isArray(S.settings.botSymbols)) S.settings.botSymbols=[];
@@ -2059,6 +2061,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
         const prev=D?D.lastUpdated:null;
         D=data;
         if(!D.birikimTx) D.birikimTx=[];
+        saveCache();
         renderAll(D.lastUpdated&&D.lastUpdated!==prev);
       } else {
         if(!D) return;
@@ -2073,6 +2076,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
     es.addEventListener('patch', handleSSEEvent);
     es.onerror=()=>{ es.close(); setTimeout(startFirebaseStream,5000); };
   }
+  if(loadCache()){ load(); renderAll(false); }
   startFirebaseStream();
 
   // ════ AUTO_DATA_INJECT ════ GT_TMPL_2dd2ff00c0e5
