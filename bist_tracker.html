@@ -1998,6 +1998,7 @@ function clearAll(){
 // ════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded',async()=>{
   load();
+  if(loadCache()){ syncSettings(); renderAll(false); }
   updateMarket(); setInterval(updateMarket,30000);
   const _today=new Date().toISOString().split('T')[0];
   $('oDate').value=_today;
@@ -2076,7 +2077,6 @@ document.addEventListener('DOMContentLoaded',async()=>{
     es.addEventListener('patch', handleSSEEvent);
     es.onerror=()=>{ es.close(); setTimeout(startFirebaseStream,5000); };
   }
-  if(loadCache()){ load(); renderAll(false); }
   startFirebaseStream();
 
   // ════ AUTO_DATA_INJECT ════ GT_TMPL_2dd2ff00c0e5
