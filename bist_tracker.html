@@ -94,43 +94,43 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .nav::-webkit-scrollbar{display:none;}
 .nav-btn{
   flex:1;min-width:58px;
-  padding:9px 6px 7px;
-  border:none;border-bottom:2px solid transparent;
+  padding:8px 6px 0px;
+  border:none;border-bottom:none;
   background:transparent;color:rgba(82,82,91,.85);
   font-family:var(--sans);font-size:9.5px;font-weight:600;letter-spacing:.55px;text-transform:uppercase;
-  cursor:pointer;transition:color .2s ease,border-color .2s ease,background .2s ease;white-space:nowrap;
+  cursor:pointer;transition:color .2s ease,background .2s ease;white-space:nowrap;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
   position:relative;overflow:hidden;
 }
 .nav-btn:hover{color:rgba(161,161,170,.75);}
 .nav-icon{font-size:15px;line-height:1;transition:transform .2s ease,filter .2s ease;}
 .nav-btn.on .nav-icon{transform:scale(1.15);}
-/* Aktif arka plan ışıması — alttan yukarı radial */
+/* Alttan yukarı ışık hüzmesi */
 .nav-btn.on::before{
-  content:'';position:absolute;bottom:0;left:0;right:0;height:100%;
-  background:radial-gradient(ellipse 80% 55% at 50% 110%,var(--tc-a) 0%,transparent 70%);
+  content:'';position:absolute;bottom:0;left:-10%;right:-10%;height:100%;
+  background:radial-gradient(ellipse 70% 45% at 50% 100%,var(--tc-b) 0%,var(--tc-a) 30%,transparent 68%);
   pointer-events:none;
 }
-/* Aktif alt çizgi: keskin + glow katmanı */
+/* Alt ışın çizgisi — çok ince, parlak, yayılımlı */
 .nav-btn.on::after{
-  content:'';position:absolute;bottom:-1px;left:8%;right:8%;height:2px;
-  background:linear-gradient(90deg,transparent,var(--tc) 25%,var(--tc) 75%,transparent);
-  border-radius:2px 2px 0 0;
-  box-shadow:0 0 6px 1px var(--tc),0 0 14px 2px var(--tc-a);
+  content:'';position:absolute;bottom:0;left:15%;right:15%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--tc) 30%,var(--tc) 70%,transparent);
+  filter:blur(.4px);
+  box-shadow:0 0 8px 2px var(--tc),0 -2px 12px 1px var(--tc-a);
 }
 /* Sekme renkleri */
-.nav-btn:nth-child(1).on{color:#60a5fa;border-bottom-color:#3b82f6;--tc:#3b82f6;--tc-a:rgba(59,130,246,.18);}
-.nav-btn:nth-child(2).on{color:#4ade80;border-bottom-color:#22c55e;--tc:#22c55e;--tc-a:rgba(34,197,94,.15);}
-.nav-btn:nth-child(3).on{color:#fbbf24;border-bottom-color:#f59e0b;--tc:#f59e0b;--tc-a:rgba(245,158,11,.15);}
-.nav-btn:nth-child(4).on{color:#c4b5fd;border-bottom-color:#a78bfa;--tc:#a78bfa;--tc-a:rgba(167,139,250,.16);}
-.nav-btn:nth-child(5).on{color:#5eead4;border-bottom-color:#2dd4bf;--tc:#2dd4bf;--tc-a:rgba(45,212,191,.15);}
-.nav-btn:nth-child(6).on{color:#a1a1aa;border-bottom-color:#71717a;--tc:#71717a;--tc-a:rgba(113,113,122,.13);}
-.nav-btn:nth-child(1).on .nav-icon{filter:drop-shadow(0 0 5px rgba(59,130,246,.7));}
-.nav-btn:nth-child(2).on .nav-icon{filter:drop-shadow(0 0 5px rgba(34,197,94,.7));}
-.nav-btn:nth-child(3).on .nav-icon{filter:drop-shadow(0 0 5px rgba(245,158,11,.7));}
-.nav-btn:nth-child(4).on .nav-icon{filter:drop-shadow(0 0 5px rgba(167,139,250,.7));}
-.nav-btn:nth-child(5).on .nav-icon{filter:drop-shadow(0 0 5px rgba(45,212,191,.7));}
-.nav-btn:nth-child(6).on .nav-icon{filter:drop-shadow(0 0 5px rgba(113,113,122,.6));}
+.nav-btn:nth-child(1).on{color:#60a5fa;--tc:#3b82f6;--tc-a:rgba(59,130,246,.22);--tc-b:rgba(59,130,246,.38);}
+.nav-btn:nth-child(2).on{color:#4ade80;--tc:#22c55e;--tc-a:rgba(34,197,94,.18);--tc-b:rgba(34,197,94,.32);}
+.nav-btn:nth-child(3).on{color:#fbbf24;--tc:#f59e0b;--tc-a:rgba(245,158,11,.18);--tc-b:rgba(245,158,11,.32);}
+.nav-btn:nth-child(4).on{color:#c4b5fd;--tc:#a78bfa;--tc-a:rgba(167,139,250,.20);--tc-b:rgba(167,139,250,.35);}
+.nav-btn:nth-child(5).on{color:#5eead4;--tc:#2dd4bf;--tc-a:rgba(45,212,191,.18);--tc-b:rgba(45,212,191,.32);}
+.nav-btn:nth-child(6).on{color:#a1a1aa;--tc:#71717a;--tc-a:rgba(113,113,122,.15);--tc-b:rgba(113,113,122,.26);}
+.nav-btn:nth-child(1).on .nav-icon{filter:drop-shadow(0 0 5px rgba(59,130,246,.75));}
+.nav-btn:nth-child(2).on .nav-icon{filter:drop-shadow(0 0 5px rgba(34,197,94,.75));}
+.nav-btn:nth-child(3).on .nav-icon{filter:drop-shadow(0 0 5px rgba(245,158,11,.75));}
+.nav-btn:nth-child(4).on .nav-icon{filter:drop-shadow(0 0 5px rgba(167,139,250,.75));}
+.nav-btn:nth-child(5).on .nav-icon{filter:drop-shadow(0 0 5px rgba(45,212,191,.75));}
+.nav-btn:nth-child(6).on .nav-icon{filter:drop-shadow(0 0 5px rgba(113,113,122,.65));}
 
 /* ── SCROLL AREA ── */
 .content{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(59,130,246,.25) transparent;}
