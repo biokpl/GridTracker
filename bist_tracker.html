@@ -107,16 +107,16 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .nav-btn.on .nav-icon{transform:scale(1.15);}
 /* Alttan yukarı ışık hüzmesi */
 .nav-btn.on::before{
-  content:'';position:absolute;bottom:0;left:-10%;right:-10%;height:100%;
-  background:radial-gradient(ellipse 70% 45% at 50% 100%,var(--tc-b) 0%,var(--tc-a) 30%,transparent 68%);
+  content:'';position:absolute;bottom:0;left:0;right:0;height:100%;
+  background:radial-gradient(ellipse 65% 35% at 50% 100%,var(--tc-a) 0%,transparent 70%);
   pointer-events:none;
 }
-/* Alt ışın çizgisi — çok ince, parlak, yayılımlı */
+/* Alt çizgi — biraz kalın, yumuşak glow */
 .nav-btn.on::after{
-  content:'';position:absolute;bottom:0;left:15%;right:15%;height:1px;
+  content:'';position:absolute;bottom:0;left:10%;right:10%;height:2px;
   background:linear-gradient(90deg,transparent,var(--tc) 30%,var(--tc) 70%,transparent);
-  filter:blur(.4px);
-  box-shadow:0 0 8px 2px var(--tc),0 -2px 12px 1px var(--tc-a);
+  border-radius:2px 2px 0 0;
+  box-shadow:0 0 6px 1px var(--tc-a);
 }
 /* Sekme renkleri */
 .nav-btn:nth-child(1).on{color:#60a5fa;--tc:#3b82f6;--tc-a:rgba(59,130,246,.22);--tc-b:rgba(59,130,246,.38);}
