@@ -20,8 +20,10 @@ from pathlib import Path
 from datetime import date, datetime
 
 if sys.platform == 'win32':
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    if sys.stdout is not None:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    if sys.stderr is not None:
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
 for _pkg in ['pyautogui', 'pygetwindow', 'holidays']:
     try:
@@ -38,13 +40,13 @@ pyautogui.PAUSE    = 0.05
 SCRIPT_DIR = Path(__file__).parent
 LOG_FILE   = SCRIPT_DIR / 'evening_automation.log'
 
+_log_handlers = [logging.FileHandler(LOG_FILE, encoding='utf-8')]
+if sys.stdout is not None:
+    _log_handlers.append(logging.StreamHandler(sys.stdout))
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[
-        logging.FileHandler(LOG_FILE, encoding='utf-8'),
-        logging.StreamHandler(sys.stdout),
-    ]
+    handlers=_log_handlers,
 )
 log = logging.getLogger('EveningAuto')
 

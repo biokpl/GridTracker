@@ -13,10 +13,12 @@ Kullanım:
 import os, sys, time, logging, subprocess, argparse, configparser
 from pathlib import Path
 
-# Windows terminali UTF-8 olarak ayarla
+# Windows terminali UTF-8 olarak ayarla (pythonw.exe'de stdout/stderr None olabilir)
 if sys.platform == 'win32':
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    if sys.stdout is not None:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    if sys.stderr is not None:
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
 # ── Bağımlılıkları otomatik yükle ──────────────────────────────────────
 for _pkg in ['pyautogui', 'pygetwindow', 'pyperclip', 'pynput', 'holidays']:
@@ -71,13 +73,13 @@ pyautogui.PAUSE    = 0.05   # Her pyautogui çağrısı arasında 50ms
 SCRIPT_DIR = Path(__file__).parent
 LOG_FILE   = SCRIPT_DIR / 'morning_automation.log'
 
+_log_handlers = [logging.FileHandler(LOG_FILE, encoding='utf-8')]
+if sys.stdout is not None:
+    _log_handlers.append(logging.StreamHandler(sys.stdout))
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[
-        logging.FileHandler(LOG_FILE, encoding='utf-8'),
-        logging.StreamHandler(sys.stdout),
-    ]
+    handlers=_log_handlers,
 )
 log = logging.getLogger('MorningAuto')
 
