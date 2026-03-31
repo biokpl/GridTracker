@@ -56,6 +56,29 @@ _JS_CLICK_INFOYATIRIM = (
     "})())"
 )
 
+# Google Messages "Mobil veri kullanılıyor" banner'ını kapatır.
+# Banner içindeki mat-icon 'close' butonunu ya da aria-label="Kapat" butonunu tıklar.
+_JS_DISMISS_BANNER = (
+    "copy((function(){"
+    "var tw=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT,null);"
+    "var n;"
+    "while((n=tw.nextNode())){"
+    "if(n.nodeValue.includes('Mobil veri')||n.nodeValue.includes('mobile data')){"
+    "var el=n.parentElement;"
+    "for(var i=0;i<8;i++){"
+    "if(!el||el===document.body)break;"
+    "var btns=el.querySelectorAll('button,[role=\"button\"]');"
+    "for(var b of btns){"
+    "var ic=b.querySelector('mat-icon');"
+    "if(ic&&ic.textContent.trim()==='close'){b.click();return 'ok:mat-icon';}"
+    "if(b.getAttribute('aria-label')==='Kapat'||b.getAttribute('aria-label')==='Close'||b.textContent.trim()==='×'){b.click();return 'ok:aria';}"
+    "}"
+    "el=el.parentElement;}}"
+    "}"
+    "return 'no_banner';"
+    "})())"
+)
+
 # Sayfa metninde "123456 B001" formatı aranır, son eşleşmenin 6 haneli
 # sayısı DevTools copy() fonksiyonu ile clipboard'a yazılır.
 _JS_EXTRACT_B001 = (
@@ -403,6 +426,27 @@ def navigate_to_ceptel():
         log.info(f'Vivaldi sekme başlığı: {wins[0].title}')
 
 
+def dismiss_banner():
+    """
+    Google Messages 'Mobil veri kullanılıyor' gibi banner'ları kapatır.
+    Önce Escape dener, sonra JS ile banner içindeki close butonunu tıklar.
+    """
+    log.info('Banner kontrol ediliyor...')
+    if DRY_RUN:
+        log.info('[DRY] Banner kapatma atlandı')
+        return
+    # Escape ile dene (bazı banner'ları kapatır)
+    pyautogui.press('escape')
+    time.sleep(0.5)
+    # JS ile banner'ı bul ve kapat
+    result = _run_devtools_js(_JS_DISMISS_BANNER, wait=0.8)
+    if result == 'no_banner':
+        log.info('Banner bulunamadı, devam ediliyor')
+    else:
+        log.info(f'Banner kapatıldı: {result}')
+        time.sleep(1.0)
+
+
 def click_infoyatirim():
     """
     Google Messages sol panelinde INFOYATIRIM konuşmasını bulup tıklar.
@@ -581,6 +625,10 @@ def run():
     # ── Adım 6: CepTel_Mesajlar sayfasına git ──────────────
     # Koordinata bağlı değil — F2 Quick Commands ile açılır
     navigate_to_ceptel()
+
+    # ── Adım 6.5: Banner'ı kapat (varsa) ───────────────────
+    # "Mobil veri kullanılıyor" gibi banner'lar INFOYATIRIM'ı aşağı iter
+    dismiss_banner()
 
     # ── Adım 7: INFOYATIRIM konuşmasını bul ve tıkla ───────
     # Koordinata bağlı değil — DevTools JS ile bulunur
