@@ -2347,7 +2347,18 @@ function renderMonthly(){
     const od=$('m-odiff');if(od){od.textContent='—';od.className='kpi-val';}
     const wr=$('m-winrate');if(wr){wr.textContent='—';wr.className='kpi-val';}
     const wrs=$('m-winrate-sub');if(wrs)wrs.textContent='Karlı Gün';
-    const mtt=$('m-target');if(mtt)mtt.style.display='none';
+    const mtt=$('m-target');
+    if(mtt){
+      const target0=S.settings.monthlyTarget||0;
+      if(target0>0){
+        $('m-target-fill').style.width='0%';
+        $('m-target-fill').className='m-target-fill';
+        $('m-target-txt').textContent='Hedefe '+fxi(target0)+' ₺ kaldı';
+        $('m-target-pct').textContent='%0';
+        $('m-target-pct').className='m-target-pct';
+        mtt.style.display='block';
+      }else{mtt.style.display='none';}
+    }
     tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">◫</div><div class="empty-text">Bu ay veri yok</div></div></td></tr>`; return;
   }
   $('m-days').textContent=bistDayCount(S.month.y,S.month.m)+'. İşlem Günü';
