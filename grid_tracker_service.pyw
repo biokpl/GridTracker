@@ -1943,6 +1943,8 @@ def run_once(dry_run=False):
             'positions': profit.get('openPositions', {}),
         },
         'settings':       settings,
+        # Sermaye hareketleri — kullanıcı tarafından girilir, asla sıfırlanmaz
+        'birikimTx':      existing.get('birikimTx', []),
     }
 
     inject_into_html(payload)
