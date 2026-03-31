@@ -1492,10 +1492,11 @@ def is_last_bist_day_of_month(d=None):
         check += timedelta(days=1)
     return True
 
-def calc_monthly_kar(excel_date, overall, oh):
+def calc_monthly_kar(excel_date, overall, oh, birikim_tx=None):
     """
     Aylık net karı hesaplar:
-    Bu ayın son günü overall'ı − Önceki ayın son günü overall'ı
+    Bu ayın son günü overall'ı − Önceki ayın son günü overall'ı − O ay net sermaye hareketi
+    2026-03'ten itibaren sermaye hareketleri (birikimTx) hesaba katılır.
     """
     month_key = excel_date[:7]                          # örn: '2026-03'
     y, m = int(month_key[:4]), int(month_key[5:7])
@@ -1510,7 +1511,27 @@ def calc_monthly_kar(excel_date, overall, oh):
     if not prev_entries:
         return None   # Önceki ay verisi yok, hesaplanamaz
     prev_last = prev_entries[-1]['amount']
-    return round(overall - prev_last)
+    raw_change = overall - prev_last
+
+    # 2026-03'ten itibaren sermaye hareketlerini çıkar
+    net_capital = 0
+    if birikim_tx and month_key >= '2026-03':
+        for tx in birikim_tx:
+            if tx.get('exclude'):
+                continue
+            tx_date = tx.get('date', '')
+            if not tx_date.startswith(month_key):
+                continue
+            tip = tx.get('tip', '')
+            miktar = tx.get('miktar', 0)
+            if tip == 'giriş':
+                net_capital += miktar
+            elif tip == 'çıkış':
+                net_capital -= miktar
+        if net_capital:
+            log.info(f'Sermaye düzeltmesi ({month_key}): net={net_capital:+,} ₺')
+
+    return round(raw_change - net_capital)
 
 def get_run_time(d=None):
     if d is None: d = date.today()
@@ -1920,7 +1941,7 @@ def run_once(dry_run=False):
     # Aylık kar: ayın son BIST günündeyse otomatik hesapla ve kaydet
     monthly_kar = existing.get('monthlyKar', [])
     if overall and is_last_bist_day_of_month(date.fromisoformat(excel_date)):
-        mk_profit = calc_monthly_kar(excel_date, overall, oh)
+        mk_profit = calc_monthly_kar(excel_date, overall, oh, existing.get('birikimTx', []))
         if mk_profit is not None:
             month_key = excel_date[:7]
             monthly_kar = [m for m in monthly_kar if m['month'] != month_key]
