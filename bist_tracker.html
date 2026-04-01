@@ -2604,7 +2604,7 @@ function renderHome(){
   const de=$('h-overall-diff');
   if(prev){
     const diff=ov-prev.amount;
-    de.textContent=fxsi(diff)+' ₺';
+    de.textContent=fxi(Math.abs(diff))+' ₺';
     de.className='pf-stat-val '+(diff>0?'pos':diff<0?'neg':'');
   }else{ de.textContent='—'; de.className='pf-stat-val'; }
 
