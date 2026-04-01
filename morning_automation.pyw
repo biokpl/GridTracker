@@ -390,19 +390,18 @@ def _run_devtools_js(js_code, wait=0.8):
     pyautogui.hotkey('ctrl', 'shift', 'j')   # DevTools kapat
     time.sleep(0.5)
 
-    return pyperclip.paste().strip()
+    result = pyperclip.paste().strip()
+    # Clipboard hala JS kodunu içeriyorsa DevTools çalışmadı demektir
+    if result == js_code.strip():
+        log.warning('DevTools JS çalışmadı (clipboard değişmedi), hata döndürülüyor')
+        return 'devtools_error'
+    return result
 
 
 def navigate_to_ceptel():
     """
-    Vivaldi adres çubuğu (Ctrl+L) autocomplete ile CepTel_Mesajlar
-    speed dial sayfasına gider.
-
-    Autocomplete sırası genellikle:
-      [0] Google ile ara: CepTel_Mesajlar   ← Down ile atlanır
-      [1] CepTel_Mesajlar (speed dial)      ← bu seçilir
-
-    Eğer sayfa açılmıyorsa CEPTEL_DOWN_COUNT değerini artır (1 → 2 gibi).
+    Vivaldi adres çubuğu (Ctrl+L) ile Google Messages sayfasına gider.
+    Sayfa yüklenemezse 3 kez dener.
     """
     MESSAGES_URL = 'https://messages.google.com/web/conversations'
 
@@ -411,19 +410,28 @@ def navigate_to_ceptel():
         log.info('[DRY] CepTel_Mesajlar açıldı')
         return
 
-    pyautogui.hotkey('ctrl', 'l')        # Adres çubuğuna odaklan
-    time.sleep(0.6)
-    pyautogui.hotkey('ctrl', 'a')        # Mevcut URL'yi seç
-    pyautogui.write(MESSAGES_URL, interval=0.03)
-    time.sleep(0.3)
-    pyautogui.press('enter')
-    log.info('Sayfa yükleniyor (8 saniye)...')
-    time.sleep(8)
+    for attempt in range(3):
+        bring_to_front('Vivaldi')
+        time.sleep(0.5)
+        pyautogui.hotkey('ctrl', 'l')        # Adres çubuğuna odaklan
+        time.sleep(0.8)
+        pyautogui.hotkey('ctrl', 'a')        # Mevcut URL'yi seç
+        pyautogui.typewrite(MESSAGES_URL, interval=0.03)
+        time.sleep(0.3)
+        pyautogui.press('enter')
+        log.info(f'Sayfa yükleniyor (10 saniye)... (deneme {attempt+1}/3)')
+        time.sleep(10)
 
-    # Sayfa başlığını logla — navigasyon doğrulama
-    wins = gw.getWindowsWithTitle('Vivaldi')
-    if wins:
-        log.info(f'Vivaldi sekme başlığı: {wins[0].title}')
+        wins = gw.getWindowsWithTitle('Vivaldi')
+        if wins:
+            title = wins[0].title
+            log.info(f'Vivaldi sekme başlığı: {title}')
+            if 'mesaj' in title.lower() or 'message' in title.lower():
+                log.info('Google Messages başarıyla yüklendi.')
+                return
+            log.warning(f'Sayfa yüklenmedi, tekrar deneniyor...')
+
+    log.error('Google Messages 3 denemede de yüklenemedi, devam ediliyor...')
 
 
 def dismiss_banner():
