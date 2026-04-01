@@ -455,13 +455,39 @@ def dismiss_banner():
         time.sleep(1.0)
 
 
+def search_infoyatirim(win):
+    """
+    Google Messages arama kutusu ile INFOYATIRIM konuşmasını bulup tıklar.
+    Arama simgesi sol panel başlığının sağ üstündedir — pozisyona bağımsız çalışır.
+    """
+    log.info('Google Messages arama ile INFOYATIRIM aranıyor...')
+
+    # Arama simgesine tıkla (sol panelin başlık alanı, sağ tarafı)
+    search_x = win.left + 330
+    search_y = win.top + 68
+    pyautogui.click(search_x, search_y)
+    log.info(f'Arama simgesi tıklandı: ({search_x}, {search_y})')
+    time.sleep(1.5)
+
+    # INFOYATIRIM yaz
+    pyautogui.write('INFOYATIRIM', interval=0.07)
+    log.info('Arama metni yazıldı: INFOYATIRIM')
+    time.sleep(2.5)   # Sonuçlar yüklensin
+
+    # İlk sonucu tıkla (listenin en üstü)
+    result_x = win.left + 180
+    result_y = win.top + 155
+    pyautogui.click(result_x, result_y)
+    log.info(f'İlk arama sonucu tıklandı: ({result_x}, {result_y})')
+    time.sleep(3.0)
+
+
 def click_infoyatirim():
     """
     Google Messages sol panelinde INFOYATIRIM konuşmasını bulup tıklar.
-    Yöntem 1 (birincil): DevTools JS ile DOM'da 'INFOYATIRIM' metnini arar —
-                         konuşma listesinde nerede olursa olsun bulur.
-    Yöntem 2 (yedek):    locateOnScreen ile görsel arama.
-    Yöntem 3 (son çare): Pencereye göre sabit koordinat.
+    Yöntem 1 (birincil): DevTools JS ile DOM'da 'INFOYATIRIM' metnini arar.
+    Yöntem 2 (yedek):    Google Messages arama kutusunu kullanır — pozisyona bağımsız.
+    Yöntem 3 (son çare): locateOnScreen ile görsel arama.
     """
     log.info('INFOYATIRIM konuşması aranıyor...')
     if DRY_RUN:
@@ -474,7 +500,7 @@ def click_infoyatirim():
         sys.exit(1)
     win = wins[0]
 
-    # Yöntem 1: DevTools JS — DOM'da metin arar, pozisyona bağımlı değil
+    # Yöntem 1: DevTools JS
     result = _run_devtools_js(_JS_CLICK_INFOYATIRIM, wait=1.0)
     if result.startswith('ok'):
         log.info(f'INFOYATIRIM JS ile bulundu ve tıklandı: {result}')
@@ -482,31 +508,27 @@ def click_infoyatirim():
         time.sleep(4)
         return
 
-    log.warning(f'JS yöntemi başarısız ({result}), görsel aramaya geçiliyor...')
+    log.warning(f'JS yöntemi başarısız ({result}), arama yöntemine geçiliyor...')
 
-    # Yöntem 2: locateOnScreen ile görsel arama
+    # Yöntem 2: Google Messages arama kutusu
+    search_infoyatirim(win)
+    log.info('Konuşma yükleniyor (arama yöntemi)...')
+    return
+
+    # Yöntem 3: locateOnScreen (yedek — yukarıdaki return'den ulaşılamaz,
+    #            sadece search_infoyatirim kaldırılırsa devreye girer)
     template = SCRIPT_DIR / 'infoyatirim_template.png'
-    clicked = False
     if template.exists():
         try:
             import cv2  # noqa
             center = pyautogui.locateCenterOnScreen(str(template), confidence=0.7)
             if center:
                 pyautogui.click(center)
-                log.info(f'INFOYATIRIM görsel olarak bulundu ve tıklandı: {center}')
-                clicked = True
+                log.info(f'INFOYATIRIM görsel olarak bulundu: {center}')
+                time.sleep(4)
+                return
         except Exception as e:
             log.warning(f'locateOnScreen başarısız: {e}')
-
-    # Yöntem 3: Pencereye göre sabit koordinat
-    if not clicked:
-        cx = win.left + 167
-        cy = win.top + 211
-        pyautogui.click(cx, cy)
-        log.info(f'INFOYATIRIM pencere-göreceli koordinata tıklandı: ({cx}, {cy})')
-
-    log.info('Konuşma yükleniyor (4 saniye)...')
-    time.sleep(4)
 
 
 def extract_b001():
