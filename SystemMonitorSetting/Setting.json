@@ -1,0 +1,31 @@
+{
+    "InternetConnectionChecklist": [       
+            "www.google.com"                    		
+    ],
+	"InternetConnectionInterval": "30000",
+	"ReconnectSecond": 10,
+    "SystemSetting": [
+        {
+            "Component": "CPU",
+            "Percentage": "90",
+            "Interval": "5000"
+        },
+        {
+            "Component": "RAM",
+            "Percentage": "50",
+            "Interval": "5000"
+        }
+    ],
+    "MatriksIqs": [
+        {
+            "Component": "CPU",
+            "Percentage": "50",
+            "Interval": "5000"
+        },
+        {
+            "Component": "RAM",
+            "Percentage": "50",
+            "Interval": "5000"
+        }
+    ]
+}
