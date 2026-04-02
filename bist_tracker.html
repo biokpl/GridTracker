@@ -3184,30 +3184,23 @@ async function gcFetchATR(){
   btn.innerHTML='<span class="gc-spin"></span>Getiriliyor';
   msg.style.display='none';
   try{
-    const yahooUrl='https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'.IS?interval=1d&range=20d';
-    const proxy='https://corsproxy.io/?'+encodeURIComponent(yahooUrl);
-    const r=await fetch(proxy);
+    // Local automation_server.pyw üzerinden fetch (CORS sorunu yok)
+    const r=await fetch('http://127.0.0.1:5050/api/atr/'+sym);
     if(!r.ok) throw new Error('HTTP '+r.status);
     const json=await r.json();
-    const result=json.chart.result[0];
-    const quote=result.indicators.quote[0];
-    const highs=quote.high.filter(v=>v!=null).slice(-14);
-    const lows=quote.low.filter(v=>v!=null).slice(-14);
-    const closes=quote.close.filter(v=>v!=null);
-    const n=Math.min(highs.length,lows.length);
-    if(n<2) throw new Error('Yetersiz veri');
-    let sum=0;for(let i=0;i<n;i++)sum+=(highs[i]-lows[i]);
-    const atr=+(sum/n).toFixed(4);
-    const price=+closes.at(-1).toFixed(4);
+    if(json.error) throw new Error(json.error);
+    const atr=json.atr;
+    const price=json.price;
+    const days=json.days||7;
     $('gc-atr').value=atr;
     $('gc-atr').readOnly=false;
     msg.className='gc-alert ok';
-    msg.textContent='ATR(14): '+atr.toFixed(4)+' ₺  |  Güncel Fiyat: '+price.toFixed(2)+' ₺';
+    msg.textContent='Ort. Günlük Hareket ('+days+' gün): '+atr.toFixed(4)+' ₺'+(price?' | Güncel: '+price.toFixed(2)+' ₺':'');
     msg.style.display='block';
   }catch(e){
     $('gc-atr').readOnly=false;
     msg.className='gc-alert warn';
-    msg.textContent='ATR otomatik alınamadı — lütfen manuel girin.';
+    msg.textContent='Otomatik alınamadı (sunucu çalışıyor mu?) — lütfen manuel girin.';
     msg.style.display='block';
   }
   btn.disabled=false;

@@ -148,6 +148,33 @@ def get_holidays(year):
     return _cors(jsonify(items))
 
 
+# ── GET /api/atr/<symbol> ─────────────────────────────────
+@app.route('/api/atr/<symbol>', methods=['GET', 'OPTIONS'])
+def get_atr(symbol):
+    if request.method == 'OPTIONS':
+        return _cors(Response('', 204))
+    try:
+        import urllib.request as ur, json as _json
+        ticker = symbol.upper() + '.IS'
+        url = f'https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=10d'
+        req = ur.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with ur.urlopen(req, timeout=8) as resp:
+            data = _json.loads(resp.read())
+        result = data['chart']['result'][0]
+        quote  = result['indicators']['quote'][0]
+        highs  = [v for v in quote['high']  if v is not None][-7:]
+        lows   = [v for v in quote['low']   if v is not None][-7:]
+        closes = [v for v in quote['close'] if v is not None]
+        n = min(len(highs), len(lows))
+        if n < 1:
+            return _cors(jsonify({'error': 'Yetersiz veri'})), 400
+        atr = sum(highs[i] - lows[i] for i in range(n)) / n
+        price = closes[-1] if closes else None
+        return _cors(jsonify({'atr': round(atr, 4), 'price': round(price, 4) if price else None, 'days': n}))
+    except Exception as e:
+        return _cors(jsonify({'error': str(e)})), 500
+
+
 # ── Task Scheduler setup ───────────────────────────────────
 def setup_autostart():
     """Sunucuyu Windows oturumu açılışında otomatik başlatmak için görev ekler."""
