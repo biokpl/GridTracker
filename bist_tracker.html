@@ -569,7 +569,7 @@ select.field-input option{background:var(--surface2);}
 }
 .h-track::before{content:'';position:absolute;bottom:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,rgba(20,184,166,.65) 35%,rgba(45,212,191,.85) 50%,rgba(20,184,166,.65) 65%,transparent);filter:drop-shadow(0 0 4px rgba(20,184,166,.55));}
 .h-track::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:70%;height:100%;background:radial-gradient(ellipse 80% 65% at 50% 100%,rgba(20,184,166,.13) 0%,rgba(20,184,166,.05) 45%,transparent 75%);pointer-events:none;}
-.h-track-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.h-track-header{position:relative;text-align:center;margin-bottom:5px;}
 .h-track-label{font-size:10px;color:#3d9e96;font-weight:600;letter-spacing:.4px;}
 .h-track-reset{font-size:9px;color:#4e6080;background:none;border:1px solid rgba(78,96,128,.3);border-radius:4px;padding:2px 7px;cursor:pointer;line-height:1.4;}
 .h-track-reset:active{background:rgba(255,255,255,.05);}
@@ -930,7 +930,7 @@ select.field-input option{background:var(--surface2);}
   <div id="h-track" class="h-track" style="display:none">
     <div class="h-track-header">
       <span class="h-track-label" id="h-track-label">HISSE</span>
-      <button class="h-track-reset" onclick="resetTrackAccum()">Sıfırla</button>
+      <button class="h-track-reset" style="position:absolute;right:0;top:50%;transform:translateY(-50%)" onclick="resetTrackAccum()">Sıfırla</button>
     </div>
     <div class="h-track-track"><div class="h-track-fill" id="h-track-fill" style="width:0%"></div></div>
     <div class="h-track-meta">
@@ -2978,7 +2978,8 @@ function renderHTrack(){
   $('h-track-label').textContent=sym+' TAKİP';
   $('h-track-fill').style.width=pctClamped+'%';
   $('h-track-fill').className='h-track-fill'+(done?' done':'');
-  $('h-track-txt').textContent=done?'Hedefe ulaşıldı!':fxi(Math.round(total))+' / '+fxi(trackTarget)+' ₺';
+  const tv=Math.round(total)||0;
+  $('h-track-txt').textContent=done?'Hedefe ulaşıldı!':fxi(tv)+' / '+fxi(trackTarget)+' ₺';
   $('h-track-pct').textContent='%'+rawPct;
   $('h-track-pct').className='h-track-pct'+(done?' done':'');
   ht.style.display='block';
