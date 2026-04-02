@@ -1938,6 +1938,16 @@ def run_once(dry_run=False):
         'costs': DEFAULT_COSTS,
     })
 
+    # Hisse takip: günlük sembol karını birikimli olarak kaydet
+    track_sym = settings.get('trackSymbol', '').upper().strip()
+    track_last = settings.get('trackLastDate', '')
+    if track_sym and excel_date > track_last:
+        sym_net = profit.get('bySymbol', {}).get(track_sym, {}).get('netProfit', 0)
+        old_accum = settings.get('trackAccum', 0) or 0
+        settings['trackAccum'] = round(old_accum + sym_net, 4)
+        settings['trackLastDate'] = excel_date
+        log.info(f'Hisse takip: {track_sym} +{sym_net:+.2f} → birikim: {settings["trackAccum"]:+.2f} ₺')
+
     # Aylık kar: ayın son BIST günündeyse otomatik hesapla ve kaydet
     monthly_kar = existing.get('monthlyKar', [])
     if overall and is_last_bist_day_of_month(date.fromisoformat(excel_date)):

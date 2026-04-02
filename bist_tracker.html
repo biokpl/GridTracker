@@ -560,6 +560,34 @@ select.field-input option{background:var(--surface2);}
 .m-target-txt{font-size:10px;color:#7c6a9a;}
 .m-target-pct{font-size:10px;font-family:var(--mono);color:#a78bfa;font-weight:600;}
 .m-target-pct.done{color:#4ade80;}
+/* ── HISSE TRACK BAR ── */
+.h-track{
+  margin-bottom:14px;padding:6px 14px;
+  background:var(--surface);
+  border:1px solid rgba(20,184,166,.25);border-radius:var(--r);
+  position:relative;overflow:hidden;
+}
+.h-track::before{content:'';position:absolute;bottom:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,rgba(20,184,166,.65) 35%,rgba(45,212,191,.85) 50%,rgba(20,184,166,.65) 65%,transparent);filter:drop-shadow(0 0 4px rgba(20,184,166,.55));}
+.h-track::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:70%;height:100%;background:radial-gradient(ellipse 80% 65% at 50% 100%,rgba(20,184,166,.13) 0%,rgba(20,184,166,.05) 45%,transparent 75%);pointer-events:none;}
+.h-track-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.h-track-label{font-size:10px;color:#3d9e96;font-weight:600;letter-spacing:.4px;}
+.h-track-reset{font-size:9px;color:#4e6080;background:none;border:1px solid rgba(78,96,128,.3);border-radius:4px;padding:2px 7px;cursor:pointer;line-height:1.4;}
+.h-track-reset:active{background:rgba(255,255,255,.05);}
+.h-track-track{height:2px;background:rgba(255,255,255,.05);border-radius:2px;overflow:visible;margin-bottom:5px;}
+.h-track-fill{
+  height:2px;border-radius:2px;min-width:6px;
+  transition:width 1.2s cubic-bezier(.4,0,.2,1);
+  background:linear-gradient(90deg,rgba(20,184,166,0),rgba(13,148,136,.35) 15%,rgba(20,184,166,.78) 42%,rgba(45,212,191,.92) 50%,rgba(20,184,166,.78) 58%,rgba(13,148,136,.35) 85%,rgba(20,184,166,0));
+  filter:drop-shadow(0 0 4px rgba(20,184,166,.7)) drop-shadow(0 0 10px rgba(20,184,166,.3));
+}
+.h-track-fill.done{
+  background:linear-gradient(90deg,rgba(34,197,94,0),rgba(22,163,74,.35) 15%,rgba(34,197,94,.78) 42%,rgba(74,222,128,.92) 50%,rgba(34,197,94,.78) 58%,rgba(22,163,74,.35) 85%,rgba(34,197,94,0));
+  filter:drop-shadow(0 0 4px rgba(34,197,94,.7)) drop-shadow(0 0 10px rgba(34,197,94,.3));
+}
+.h-track-meta{display:flex;justify-content:center;align-items:center;gap:8px;}
+.h-track-txt{font-size:10px;color:#3d7a76;}
+.h-track-pct{font-size:10px;font-family:var(--mono);color:#2dd4bf;font-weight:600;}
+.h-track-pct.done{color:#4ade80;}
 
 /* ── INNER TABS ── */
 .itabs{display:flex;gap:4px;margin-bottom:12px;background:var(--surface2);border-radius:8px;padding:3px;}
@@ -899,6 +927,18 @@ select.field-input option{background:var(--surface2);}
     </div>
   </div>
 
+  <div id="h-track" class="h-track" style="display:none">
+    <div class="h-track-header">
+      <span class="h-track-label" id="h-track-label">HISSE</span>
+      <button class="h-track-reset" onclick="resetTrackAccum()">Sıfırla</button>
+    </div>
+    <div class="h-track-track"><div class="h-track-fill" id="h-track-fill" style="width:0%"></div></div>
+    <div class="h-track-meta">
+      <span class="h-track-txt" id="h-track-txt">—</span>
+      <span class="h-track-pct" id="h-track-pct">%0</span>
+    </div>
+  </div>
+
   <div class="s-head-c"><div class="s-rule"></div><div class="section-title s-title-c">Günlük Detay</div><div class="s-rule"></div></div>
   <div class="card">
     <div class="tbl-wrap">
@@ -1077,6 +1117,35 @@ select.field-input option{background:var(--surface2);}
 
   </div>
 
+  <!-- Hisse Takip -->
+  <div class="section">
+    <div class="s-head-c"><div class="s-rule"></div><div class="section-title s-title-c">Hisse Takip</div><div class="s-rule"></div></div>
+    <div class="card">
+      <div class="card-body" style="padding:10px 12px">
+        <div style="font-size:10px;color:#4e6080;margin-bottom:10px;text-align:center;font-style:italic">
+          Seçilen hisseden elde edilen net kar birikimli takip edilir
+        </div>
+        <div style="display:flex;gap:8px;align-items:flex-end;justify-content:center;flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="font-size:9px;color:#4e6080;letter-spacing:.3px">Hisse Kodu</span>
+            <input class="field-input" id="sTrackSym" type="text" inputmode="text" placeholder="SASA" style="width:72px;padding:4px 7px;font-size:11px;height:auto;line-height:1.4;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+            <span style="font-size:9px;color:#4e6080;letter-spacing:.3px">Hedef (₺)</span>
+            <div style="position:relative;display:inline-block">
+              <input class="field-input" id="sTrackTarget" type="text" inputmode="numeric" placeholder="0" style="width:90px;padding:4px 22px 4px 7px;font-size:11px;height:auto;line-height:1.4" oninput="const r=this.value.replace(/[^\d]/g,'');this.value=r?parseInt(r).toLocaleString('tr-TR'):'';" onkeydown="if(event.key==='Enter'){this.blur();saveSettings();}">
+              <span style="position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;color:#4e6080;pointer-events:none">₺</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;justify-content:center;margin-top:10px">
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:5px 20px" onclick="saveSettings()">Kaydet</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:5px 16px;border-color:rgba(239,68,68,.3);color:#f87171" onclick="resetTrackAccum()">Sıfırla</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Lisans Giderleri -->
   <div class="section">
     <div class="s-head-c" style="position:relative">
@@ -1223,225 +1292,176 @@ async function fbWrite(path,data){
 // ════════════════════════════════════════════════════════
                 // GRID_DATA_START
         window.__GRID_DATA__ = {
-  "lastUpdated": "2026-04-01 18:35:23",
-  "today": "2026-04-01",
-  "todayOverall": 1262235.02,
+  "lastUpdated": "2026-04-02 18:35:23",
+  "today": "2026-04-02",
+  "todayOverall": 1239798.9,
   "todayProfit": {
     "bySymbol": {
-      "EREGL": {
-        "symbol": "EREGL",
-        "buyCount": 3,
-        "sellCount": 3,
-        "pairCount": 3,
-        "openBuys": 0,
-        "carriedIn": 0,
-        "avgBuy": 28.72,
-        "avgSell": 28.8467,
-        "grossProfit": 0.38,
-        "commission": 0.0173,
-        "netProfit": 0.3627,
-        "pairs": [
-          {
-            "buyPrice": 28.86,
-            "sellPrice": 28.96,
-            "qty": 1,
-            "gross": 0.1,
-            "comm": 0.0058,
-            "net": 0.0942,
-            "buyTime": "10:50:01",
-            "sellTime": "11:34:49",
-            "buyDate": "2026-04-01",
-            "carryover": false
-          },
-          {
-            "buyPrice": 28.68,
-            "sellPrice": 28.78,
-            "qty": 1,
-            "gross": 0.1,
-            "comm": 0.0057,
-            "net": 0.0943,
-            "buyTime": "14:33:57",
-            "sellTime": "15:29:39",
-            "buyDate": "2026-04-01",
-            "carryover": false
-          },
-          {
-            "buyPrice": 28.62,
-            "sellPrice": 28.8,
-            "qty": 1,
-            "gross": 0.18,
-            "comm": 0.0057,
-            "net": 0.1743,
-            "buyTime": "14:50:07",
-            "sellTime": "16:23:23",
-            "buyDate": "2026-04-01",
-            "carryover": false
-          }
-        ],
-        "openPositions": []
-      },
       "MIATK": {
         "symbol": "MIATK",
-        "buyCount": 1,
+        "buyCount": 0,
         "sellCount": 1,
-        "pairCount": 1,
+        "pairCount": 0,
         "openBuys": 0,
         "carriedIn": 0,
-        "avgBuy": 41.82,
-        "avgSell": 42.58,
-        "grossProfit": 0.76,
-        "commission": 0.0084,
-        "netProfit": 0.7516,
-        "pairs": [
-          {
-            "buyPrice": 41.82,
-            "sellPrice": 42.58,
-            "qty": 1,
-            "gross": 0.76,
-            "comm": 0.0084,
-            "net": 0.7516,
-            "buyTime": "11:03:47",
-            "sellTime": "13:13:04",
-            "buyDate": "2026-04-01",
-            "carryover": false
-          }
-        ],
+        "avgBuy": 0,
+        "avgSell": 43.6,
+        "grossProfit": 0,
+        "commission": 0.0959,
+        "netProfit": -0.0959,
+        "pairs": [],
         "openPositions": []
       }
     },
-    "totalGross": 1.14,
-    "totalCommission": 0.0257,
-    "totalNet": 1.1143,
+    "totalGross": 0,
+    "totalCommission": 0.0959,
+    "totalNet": -0.0959,
     "openPositions": {}
   },
   "allTrades": [
     {
-      "symbol": "EREGL",
+      "symbol": "MIATK",
       "type": "Satış",
-      "qty": 1,
-      "price": 28.8,
+      "qty": 22,
+      "price": 43.6,
       "status": "Gerçekleşti",
-      "execQty": 1,
+      "execQty": 22,
+      "amount": 959.2,
+      "execPrice": 43.6,
+      "execAmount": 959.2,
+      "commission": 0.09592,
+      "time": "14:42:34",
+      "date": "2026-04-02",
+      "datetime": "2026-04-02 14:42:34",
+      "referans": "784487824"
+    },
+    {
       "amount": 28.8,
-      "execPrice": 28.8,
-      "execAmount": 28.8,
       "commission": 0.00288,
-      "time": "16:23:23",
       "date": "2026-04-01",
       "datetime": "2026-04-01 16:23:23",
-      "referans": "783196717"
+      "execAmount": 28.8,
+      "execPrice": 28.8,
+      "execQty": 1,
+      "price": 28.8,
+      "qty": 1,
+      "referans": "783196717",
+      "status": "Gerçekleşti",
+      "symbol": "EREGL",
+      "time": "16:23:23",
+      "type": "Satış"
     },
     {
-      "symbol": "EREGL",
-      "type": "Satış",
-      "qty": 1,
-      "price": 28.78,
-      "status": "Gerçekleşti",
-      "execQty": 1,
       "amount": 28.78,
-      "execPrice": 28.78,
-      "execAmount": 28.78,
       "commission": 0.002878,
-      "time": "15:29:39",
       "date": "2026-04-01",
       "datetime": "2026-04-01 15:29:39",
-      "referans": "783167046"
+      "execAmount": 28.78,
+      "execPrice": 28.78,
+      "execQty": 1,
+      "price": 28.78,
+      "qty": 1,
+      "referans": "783167046",
+      "status": "Gerçekleşti",
+      "symbol": "EREGL",
+      "time": "15:29:39",
+      "type": "Satış"
     },
     {
-      "symbol": "EREGL",
-      "type": "Alış",
-      "qty": 1,
-      "price": 28.62,
-      "status": "Gerçekleşti",
-      "execQty": 1,
       "amount": 28.62,
-      "execPrice": 28.62,
-      "execAmount": 28.62,
       "commission": 0.002862,
-      "time": "14:50:07",
       "date": "2026-04-01",
       "datetime": "2026-04-01 14:50:07",
-      "referans": "783195281"
+      "execAmount": 28.62,
+      "execPrice": 28.62,
+      "execQty": 1,
+      "price": 28.62,
+      "qty": 1,
+      "referans": "783195281",
+      "status": "Gerçekleşti",
+      "symbol": "EREGL",
+      "time": "14:50:07",
+      "type": "Alış"
     },
     {
-      "symbol": "EREGL",
-      "type": "Alış",
-      "qty": 1,
-      "price": 28.68,
-      "status": "Gerçekleşti",
-      "execQty": 1,
       "amount": 28.68,
-      "execPrice": 28.68,
-      "execAmount": 28.68,
       "commission": 0.002868,
-      "time": "14:33:57",
       "date": "2026-04-01",
       "datetime": "2026-04-01 14:33:57",
-      "referans": "783091070"
+      "execAmount": 28.68,
+      "execPrice": 28.68,
+      "execQty": 1,
+      "price": 28.68,
+      "qty": 1,
+      "referans": "783091070",
+      "status": "Gerçekleşti",
+      "symbol": "EREGL",
+      "time": "14:33:57",
+      "type": "Alış"
     },
     {
-      "symbol": "MIATK",
-      "type": "Satış",
-      "qty": 1,
-      "price": 42.58,
-      "status": "Gerçekleşti",
-      "execQty": 1,
       "amount": 42.58,
-      "execPrice": 42.58,
-      "execAmount": 42.58,
       "commission": 0.004258,
-      "time": "13:13:04",
       "date": "2026-04-01",
       "datetime": "2026-04-01 13:13:04",
-      "referans": "783027240"
+      "execAmount": 42.58,
+      "execPrice": 42.58,
+      "execQty": 1,
+      "price": 42.58,
+      "qty": 1,
+      "referans": "783027240",
+      "status": "Gerçekleşti",
+      "symbol": "MIATK",
+      "time": "13:13:04",
+      "type": "Satış"
     },
     {
-      "symbol": "EREGL",
-      "type": "Satış",
-      "qty": 1,
-      "price": 28.96,
-      "status": "Gerçekleşti",
-      "execQty": 1,
       "amount": 28.96,
-      "execPrice": 28.96,
-      "execAmount": 28.96,
       "commission": 0.002896,
-      "time": "11:34:49",
       "date": "2026-04-01",
       "datetime": "2026-04-01 11:34:49",
-      "referans": "782715743"
+      "execAmount": 28.96,
+      "execPrice": 28.96,
+      "execQty": 1,
+      "price": 28.96,
+      "qty": 1,
+      "referans": "782715743",
+      "status": "Gerçekleşti",
+      "symbol": "EREGL",
+      "time": "11:34:49",
+      "type": "Satış"
     },
     {
-      "symbol": "MIATK",
-      "type": "Alış",
-      "qty": 1,
-      "price": 41.82,
-      "status": "Gerçekleşti",
-      "execQty": 1,
       "amount": 41.82,
-      "execPrice": 41.82,
-      "execAmount": 41.82,
       "commission": 0.004182,
-      "time": "11:03:47",
       "date": "2026-04-01",
       "datetime": "2026-04-01 11:03:47",
-      "referans": "782568439"
+      "execAmount": 41.82,
+      "execPrice": 41.82,
+      "execQty": 1,
+      "price": 41.82,
+      "qty": 1,
+      "referans": "782568439",
+      "status": "Gerçekleşti",
+      "symbol": "MIATK",
+      "time": "11:03:47",
+      "type": "Alış"
     },
     {
-      "symbol": "EREGL",
-      "type": "Alış",
-      "qty": 1,
-      "price": 28.86,
-      "status": "Gerçekleşti",
-      "execQty": 1,
       "amount": 28.86,
-      "execPrice": 28.86,
-      "execAmount": 28.86,
       "commission": 0.002886,
-      "time": "10:50:01",
       "date": "2026-04-01",
       "datetime": "2026-04-01 10:50:01",
-      "referans": "782565187"
+      "execAmount": 28.86,
+      "execPrice": 28.86,
+      "execQty": 1,
+      "price": 28.86,
+      "qty": 1,
+      "referans": "782565187",
+      "status": "Gerçekleşti",
+      "symbol": "EREGL",
+      "time": "10:50:01",
+      "type": "Alış"
     },
     {
       "amount": 256.5,
@@ -2057,97 +2077,123 @@ async function fbWrite(path,data){
       "updatedAt": "2026-03-31 18:49:55"
     },
     "2026-04-01": {
-      "date": "2026-04-01",
-      "trades": 8,
-      "sells": 4,
       "buys": 4,
-      "grossProfit": 1.14,
-      "commission": 0.0257,
-      "netProfit": 1.1143,
-      "overall": 1262235.02,
       "bySymbol": {
         "EREGL": {
-          "symbol": "EREGL",
-          "buyCount": 3,
-          "sellCount": 3,
-          "pairCount": 3,
-          "openBuys": 0,
-          "carriedIn": 0,
           "avgBuy": 28.72,
           "avgSell": 28.8467,
-          "grossProfit": 0.38,
+          "buyCount": 3,
+          "carriedIn": 0,
           "commission": 0.0173,
+          "grossProfit": 0.38,
           "netProfit": 0.3627,
+          "openBuys": 0,
+          "pairCount": 3,
           "pairs": [
             {
+              "buyDate": "2026-04-01",
               "buyPrice": 28.86,
-              "sellPrice": 28.96,
-              "qty": 1,
-              "gross": 0.1,
-              "comm": 0.0058,
-              "net": 0.0942,
               "buyTime": "10:50:01",
-              "sellTime": "11:34:49",
-              "buyDate": "2026-04-01",
-              "carryover": false
-            },
-            {
-              "buyPrice": 28.68,
-              "sellPrice": 28.78,
-              "qty": 1,
+              "carryover": false,
+              "comm": 0.0058,
               "gross": 0.1,
-              "comm": 0.0057,
-              "net": 0.0943,
-              "buyTime": "14:33:57",
-              "sellTime": "15:29:39",
-              "buyDate": "2026-04-01",
-              "carryover": false
+              "net": 0.0942,
+              "qty": 1,
+              "sellPrice": 28.96,
+              "sellTime": "11:34:49"
             },
             {
-              "buyPrice": 28.62,
-              "sellPrice": 28.8,
-              "qty": 1,
-              "gross": 0.18,
-              "comm": 0.0057,
-              "net": 0.1743,
-              "buyTime": "14:50:07",
-              "sellTime": "16:23:23",
               "buyDate": "2026-04-01",
-              "carryover": false
+              "buyPrice": 28.68,
+              "buyTime": "14:33:57",
+              "carryover": false,
+              "comm": 0.0057,
+              "gross": 0.1,
+              "net": 0.0943,
+              "qty": 1,
+              "sellPrice": 28.78,
+              "sellTime": "15:29:39"
+            },
+            {
+              "buyDate": "2026-04-01",
+              "buyPrice": 28.62,
+              "buyTime": "14:50:07",
+              "carryover": false,
+              "comm": 0.0057,
+              "gross": 0.18,
+              "net": 0.1743,
+              "qty": 1,
+              "sellPrice": 28.8,
+              "sellTime": "16:23:23"
             }
           ],
-          "openPositions": []
+          "sellCount": 3,
+          "symbol": "EREGL"
         },
         "MIATK": {
-          "symbol": "MIATK",
-          "buyCount": 1,
-          "sellCount": 1,
-          "pairCount": 1,
-          "openBuys": 0,
-          "carriedIn": 0,
           "avgBuy": 41.82,
           "avgSell": 42.58,
-          "grossProfit": 0.76,
+          "buyCount": 1,
+          "carriedIn": 0,
           "commission": 0.0084,
+          "grossProfit": 0.76,
           "netProfit": 0.7516,
+          "openBuys": 0,
+          "pairCount": 1,
           "pairs": [
             {
-              "buyPrice": 41.82,
-              "sellPrice": 42.58,
-              "qty": 1,
-              "gross": 0.76,
-              "comm": 0.0084,
-              "net": 0.7516,
-              "buyTime": "11:03:47",
-              "sellTime": "13:13:04",
               "buyDate": "2026-04-01",
-              "carryover": false
+              "buyPrice": 41.82,
+              "buyTime": "11:03:47",
+              "carryover": false,
+              "comm": 0.0084,
+              "gross": 0.76,
+              "net": 0.7516,
+              "qty": 1,
+              "sellPrice": 42.58,
+              "sellTime": "13:13:04"
             }
           ],
+          "sellCount": 1,
+          "symbol": "MIATK"
+        }
+      },
+      "commission": 0.0257,
+      "date": "2026-04-01",
+      "grossProfit": 1.14,
+      "netProfit": 1.1143,
+      "overall": 1262235.02,
+      "sells": 4,
+      "trades": 8,
+      "updatedAt": "2026-04-01 18:35:23"
+    },
+    "2026-04-02": {
+      "date": "2026-04-02",
+      "trades": 1,
+      "sells": 1,
+      "buys": 0,
+      "grossProfit": 0,
+      "commission": 0.0959,
+      "netProfit": -0.0959,
+      "overall": 1239798.9,
+      "bySymbol": {
+        "MIATK": {
+          "symbol": "MIATK",
+          "buyCount": 0,
+          "sellCount": 1,
+          "pairCount": 0,
+          "openBuys": 0,
+          "carriedIn": 0,
+          "avgBuy": 0,
+          "avgSell": 43.6,
+          "grossProfit": 0,
+          "commission": 0.0959,
+          "netProfit": -0.0959,
+          "pairs": [],
           "openPositions": []
         }
       },
-      "updatedAt": "2026-04-01 18:35:23"
+      "updatedAt": "2026-04-02 18:35:23"
     }
   },
   "overallHistory": [
@@ -2177,8 +2223,13 @@ async function fbWrite(path,data){
       "note": "Otomatik - 18:49"
     },
     {
-      "date": "2026-04-01",
       "amount": 1262235.02,
+      "date": "2026-04-01",
+      "note": "Otomatik - 18:35"
+    },
+    {
+      "date": "2026-04-02",
+      "amount": 1239798.9,
       "note": "Otomatik - 18:35"
     }
   ],
@@ -2213,7 +2264,7 @@ async function fbWrite(path,data){
     }
   ],
   "openPositions": {
-    "date": "2026-04-01",
+    "date": "2026-04-02",
     "positions": {}
   },
   "settings": {
@@ -2493,6 +2544,12 @@ async function fbWrite(path,data){
       "date": "2026-04-01",
       "id": "1775027151902",
       "note": ""
+    },
+    {
+      "amount": 2000,
+      "date": "2026-04-02",
+      "id": "1775114962579",
+      "note": ""
     }
   ]
 };
@@ -2507,6 +2564,7 @@ let S = {
   settings: {
     commissionRate: 1, gridInterval: 0, lotTolerance: 0,
     botSymbols: [],
+    trackSymbol: '', trackTarget: 0, trackAccum: 0, trackLastDate: '',
     costs: [
       {name:'Hesap İşletim Ücreti',amount:95},{name:'Algo',amount:1095},
       {name:'IQ Terminal',amount:980},{name:'Tek Kademe',amount:282},
@@ -2529,6 +2587,10 @@ function load(){ try{
     if(D.settings.costs) S.settings.costs=D.settings.costs;
     if(D.settings.botSymbols) S.settings.botSymbols=D.settings.botSymbols;
     if(D.settings.monthlyTarget!=null) S.settings.monthlyTarget=D.settings.monthlyTarget;
+    if(D.settings.trackSymbol!=null) S.settings.trackSymbol=D.settings.trackSymbol;
+    if(D.settings.trackTarget!=null) S.settings.trackTarget=D.settings.trackTarget;
+    if(D.settings.trackAccum!=null) S.settings.trackAccum=D.settings.trackAccum;
+    if(D.settings.trackLastDate!=null) S.settings.trackLastDate=D.settings.trackLastDate;
   }
 }catch(e){} }
 
@@ -2850,6 +2912,7 @@ function renderMonthly(){
         mtt.style.display='block';
       }else{mtt.style.display='none';}
     }
+    renderHTrack();
     tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">◫</div><div class="empty-text">Bu ay veri yok</div></div></td></tr>`; return;
   }
   $('m-days').textContent=bistDayCount(S.month.y,S.month.m)+'. İşlem Günü';
@@ -2884,6 +2947,7 @@ function renderMonthly(){
       mtt.style.display='block';
     }else{mtt.style.display='none';}
   }
+  renderHTrack();
   // En iyi / en kötü gün
   const bestD=tRows.length?tRows.reduce((a,b)=>b.netProfit>a.netProfit?b:a):null;
   const worstD=tRows.length>1?tRows.reduce((a,b)=>b.netProfit<a.netProfit?b:a):null;
@@ -2902,6 +2966,41 @@ function renderMonthly(){
       <td style="color:#4e6080">${d.overall?fxi(d.overall)+'₺':'—'}</td>
     </tr>`;
   }).join('');
+}
+function renderHTrack(){
+  const ht=$('h-track');
+  if(!ht) return;
+  const sym=(S.settings.trackSymbol||'').toUpperCase();
+  const trackTarget=S.settings.trackTarget||0;
+  if(!sym||trackTarget<=0){ht.style.display='none';return;}
+  const today=D?D.today||'':'';
+  const accum=S.settings.trackAccum||0;
+  const lastDate=S.settings.trackLastDate||'';
+  const todaySymNet=(D&&D.todayProfit&&D.todayProfit.bySymbol&&D.todayProfit.bySymbol[sym]&&today>lastDate)?(D.todayProfit.bySymbol[sym].netProfit||0):0;
+  const total=accum+todaySymNet;
+  const rawPct=Math.round(total/trackTarget*100);
+  const pctClamped=Math.max(0,Math.min(rawPct,100));
+  const done=rawPct>=100;
+  $('h-track-label').textContent=sym+' TAKİP';
+  $('h-track-fill').style.width=pctClamped+'%';
+  $('h-track-fill').className='h-track-fill'+(done?' done':'');
+  $('h-track-txt').textContent=done?'Hedefe ulaşıldı!':fxi(Math.round(total))+' / '+fxi(trackTarget)+' ₺';
+  $('h-track-pct').textContent='%'+rawPct;
+  $('h-track-pct').className='h-track-pct'+(done?' done':'');
+  ht.style.display='block';
+  if(done&&rawPct>=100&&!(S._trackAlerted)){S._trackAlerted=true;toast(sym+' hedefine ulaşıldı! 🎯','ok',4000);}
+  if(!done) S._trackAlerted=false;
+}
+function resetTrackAccum(){
+  S.settings.trackAccum=0;
+  S.settings.trackLastDate='';
+  S._trackAlerted=false;
+  if(D){if(!D.settings)D.settings={};D.settings.trackAccum=0;D.settings.trackLastDate='';}
+  save();
+  fbWrite('gridtracker/settings/trackAccum',0);
+  fbWrite('gridtracker/settings/trackLastDate','');
+  renderHTrack();
+  toast('Sıfırlandı','ok');
 }
 function changeMonth(dir){
   S.month.m+=dir;
@@ -3099,6 +3198,8 @@ function renderSettings(){
   $('sGrid').value=S.settings.gridInterval;
   $('sTol').value=S.settings.lotTolerance;
   const mt=$('sMonthTarget');if(mt)mt.value=S.settings.monthlyTarget?S.settings.monthlyTarget.toLocaleString('tr-TR'):'';
+  const ts=$('sTrackSym');if(ts)ts.value=S.settings.trackSymbol||'';
+  const tt=$('sTrackTarget');if(tt)tt.value=S.settings.trackTarget?S.settings.trackTarget.toLocaleString('tr-TR'):'';
   renderCostList(); renderCostSummary(); renderBotSymList();
 }
 function saveSettings(){
@@ -3106,9 +3207,13 @@ function saveSettings(){
   S.settings.gridInterval=parseFloat($('sGrid').value)||0;
   S.settings.lotTolerance=parseFloat($('sTol').value)||0;
   S.settings.monthlyTarget=parseInt(($('sMonthTarget').value||'').replace(/[^\d]/g,''))||0;
-  if(D){if(!D.settings)D.settings={};D.settings.monthlyTarget=S.settings.monthlyTarget;}
+  S.settings.trackSymbol=(($('sTrackSym').value||'').toUpperCase().trim());
+  S.settings.trackTarget=parseInt(($('sTrackTarget').value||'').replace(/[^\d]/g,''))||0;
+  if(D){if(!D.settings)D.settings={};D.settings.monthlyTarget=S.settings.monthlyTarget;D.settings.trackSymbol=S.settings.trackSymbol;D.settings.trackTarget=S.settings.trackTarget;}
   save(); toast('Kaydedildi','ok'); renderHome();
   fbWrite('gridtracker/settings/monthlyTarget',S.settings.monthlyTarget);
+  fbWrite('gridtracker/settings/trackSymbol',S.settings.trackSymbol);
+  fbWrite('gridtracker/settings/trackTarget',S.settings.trackTarget);
 }
 function renderCostList(){
   $('costList').innerHTML=S.settings.costs.map((c,i)=>`
@@ -3288,6 +3393,10 @@ document.addEventListener('DOMContentLoaded',async()=>{
       if(D.settings.costs) S.settings.costs=D.settings.costs;
       if(D.settings.botSymbols) S.settings.botSymbols=D.settings.botSymbols;
       if(D.settings.monthlyTarget!=null) S.settings.monthlyTarget=D.settings.monthlyTarget;
+      if(D.settings.trackSymbol!=null) S.settings.trackSymbol=D.settings.trackSymbol;
+      if(D.settings.trackTarget!=null) S.settings.trackTarget=D.settings.trackTarget;
+      if(D.settings.trackAccum!=null) S.settings.trackAccum=D.settings.trackAccum;
+      if(D.settings.trackLastDate!=null) S.settings.trackLastDate=D.settings.trackLastDate;
     }
   }
   renderHome();
@@ -3299,6 +3408,10 @@ document.addEventListener('DOMContentLoaded',async()=>{
     if(ds.costs) S.settings.costs=ds.costs;
     S.settings.botSymbols=Array.isArray(ds.botSymbols)?ds.botSymbols:[];
     S.settings.monthlyTarget=ds.monthlyTarget||0;
+    if(ds.trackSymbol!=null) S.settings.trackSymbol=ds.trackSymbol;
+    if(ds.trackTarget!=null) S.settings.trackTarget=ds.trackTarget;
+    if(ds.trackAccum!=null) S.settings.trackAccum=ds.trackAccum;
+    if(ds.trackLastDate!=null) S.settings.trackLastDate=ds.trackLastDate;
   }
   function renderAll(showToast){
     syncSettings();
