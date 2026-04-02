@@ -1126,7 +1126,7 @@ select.field-input option{background:var(--surface2);}
           Seçilen hisseden elde edilen Net Kar birikimli olarak takip edilebilir.
         </div>
         <div style="display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap">
-          <input class="field-input" id="sTrackSym" type="text" inputmode="text" placeholder="Hisse Kodu" style="width:112px;padding:4px 7px;font-size:11px;height:auto;line-height:1.4" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter'){this.blur();saveSettings();}">
+          <input class="field-input" id="sTrackSym" type="text" inputmode="text" placeholder="HİSSE KODU" style="width:112px;padding:4px 7px;font-size:11px;height:auto;line-height:1.4" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter'){this.blur();saveSettings();}">
           <div style="position:relative;display:inline-block">
             <input class="field-input" id="sTrackTarget" type="text" inputmode="numeric" placeholder="Hedef Fiyat" style="width:112px;padding:4px 22px 4px 7px;font-size:11px;height:auto;line-height:1.4" oninput="const r=this.value.replace(/[^\d]/g,'');this.value=r?parseInt(r).toLocaleString('tr-TR'):'';" onkeydown="if(event.key==='Enter'){this.blur();saveSettings();}">
             <span style="position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;color:#4e6080;pointer-events:none">₺</span>
