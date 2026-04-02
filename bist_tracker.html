@@ -3271,7 +3271,7 @@ function renderGridResults(b,support,resistance,atr,capital,commFrac){
   const fxi=v=>Math.round(v).toLocaleString('tr-TR');
 
   $('gc-daily').textContent=fxi(b.daily)+' ₺';
-  $('gc-hero-sub').textContent='ATR: '+atr.toFixed(4)+' ₺  |  Günlük ~'++(atr/b.d).toFixed(1)+' tetiklenme';
+  $('gc-hero-sub').textContent='ATR: '+atr.toFixed(4)+' ₺  |  Günlük ~'+(atr/b.d).toFixed(1)+' tetiklenme';
   $('gc-n').textContent=b.N+' Grid';
   $('gc-d').textContent=fx2(b.d)+' ₺';
   $('gc-lots').textContent=b.lots.toLocaleString('tr-TR')+' Lot';
