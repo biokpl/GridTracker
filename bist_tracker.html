@@ -3234,11 +3234,19 @@ function calcGridBot(){
   const range=resistance-support;
   const midPrice=(support+resistance)/2;
   const minSpacing=midPrice*0.005;
-  const maxN=Math.floor(range/minSpacing);
 
+  // Kısıt: grid aralığı ≤ ATR×0.5 olmalı (günde en az ~2 tetiklenme)
+  // Bu: N ≥ range/(ATR×0.5)
+  const minN=Math.max(5,Math.ceil(range/(atr*0.5)));
+  const maxN=Math.min(100,Math.floor(range/minSpacing));
+
+  if(minN>maxN){toast('ATR aralığa göre çok büyük — girdileri kontrol edin','err');return;}
+
+  // Bu kısıt dahilinde daily_profit = lots×ATR ile doğru orantılı,
+  // lots = floor(C/(N×S)) ile ters orantılı → en küçük N her zaman optimal.
+  // Bu nedenle minN'den başlayıp lots≥1 olan ilk N = optimal.
   let best=null;
-  const candidates=[];
-  for(let N=2;N<=Math.min(maxN,100);N++){
+  for(let N=minN;N<=maxN;N++){
     const d=range/N;
     const lots=Math.floor(capital/(N*support));
     if(lots<1) continue;
@@ -3250,11 +3258,11 @@ function calcGridBot(){
     const daily=(atr/d)*net;
     const used=lots*N*support;
     const util=used/capital*100;
-    candidates.push({N,d,lots,net,daily,used,util});
-    if(!best||daily>best.daily) best={N,d,lots,net,daily,used,util};
+    if(!best) best={N,d,lots,net,daily,used,util};  // ilk geçerli = optimal
+    else break;  // kısıt dahilinde ilk geçerli her zaman en iyisi
   }
 
-  if(!best){toast('Hesaplanamadı — girdileri kontrol edin','err');return;}
+  if(!best){toast('Hesaplanamadı — sermaye yetersiz veya aralık dar','err');return;}
   renderGridResults(best,support,resistance,atr,capital,commFrac);
 }
 
