@@ -3184,23 +3184,31 @@ async function gcFetchATR(){
   btn.innerHTML='<span class="gc-spin"></span>Getiriliyor';
   msg.style.display='none';
   try{
-    // Local automation_server.pyw üzerinden fetch (CORS sorunu yok)
-    const r=await fetch('http://127.0.0.1:5050/api/atr/'+sym);
+    const ticker=sym+'.IS';
+    const yfUrl='https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=10d';
+    // allorigins.win CORS proxy — GitHub Pages ile uyumlu
+    const proxyUrl='https://api.allorigins.win/raw?url='+encodeURIComponent(yfUrl);
+    const r=await fetch(proxyUrl);
     if(!r.ok) throw new Error('HTTP '+r.status);
-    const json=await r.json();
-    if(json.error) throw new Error(json.error);
-    const atr=json.atr;
-    const price=json.price;
-    const days=json.days||7;
-    $('gc-atr').value=atr;
+    const data=await r.json();
+    const result=data.chart.result[0];
+    const quote=result.indicators.quote[0];
+    const highs=quote.high.filter(v=>v!=null).slice(-7);
+    const lows=quote.low.filter(v=>v!=null).slice(-7);
+    const closes=quote.close.filter(v=>v!=null);
+    const n=Math.min(highs.length,lows.length);
+    if(n<1) throw new Error('Yetersiz veri');
+    const atr=highs.slice(0,n).reduce((s,h,i)=>s+(h-lows[i]),0)/n;
+    const price=closes.at(-1)||null;
+    $('gc-atr').value=parseFloat(atr.toFixed(4));
     $('gc-atr').readOnly=false;
     msg.className='gc-alert ok';
-    msg.textContent='Ort. Günlük Hareket ('+days+' gün): '+atr.toFixed(4)+' ₺'+(price?' | Güncel: '+price.toFixed(2)+' ₺':'');
+    msg.textContent='Ort. Günlük Hareket ('+n+' gün): '+atr.toFixed(4)+' ₺'+(price?' | Güncel: '+price.toFixed(2)+' ₺':'');
     msg.style.display='block';
   }catch(e){
     $('gc-atr').readOnly=false;
     msg.className='gc-alert warn';
-    msg.textContent='Otomatik alınamadı (sunucu çalışıyor mu?) — lütfen manuel girin.';
+    msg.textContent='ATR alınamadı — lütfen manuel girin.';
     msg.style.display='block';
   }
   btn.disabled=false;
