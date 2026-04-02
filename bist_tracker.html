@@ -143,12 +143,38 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .nav-btn:nth-child(4).on{color:#c4b5fd;--tc:#a78bfa;--tc-a:rgba(167,139,250,.20);--tc-b:rgba(167,139,250,.35);}
 .nav-btn:nth-child(5).on{color:#5eead4;--tc:#2dd4bf;--tc-a:rgba(45,212,191,.18);--tc-b:rgba(45,212,191,.32);}
 .nav-btn:nth-child(6).on{color:#a1a1aa;--tc:#71717a;--tc-a:rgba(113,113,122,.15);--tc-b:rgba(113,113,122,.26);}
+.nav-btn:nth-child(7).on{color:#fdba74;--tc:#f97316;--tc-a:rgba(249,115,22,.18);--tc-b:rgba(249,115,22,.32);}
 .nav-btn:nth-child(1).on .nav-icon{filter:drop-shadow(0 0 5px rgba(59,130,246,.75));}
 .nav-btn:nth-child(2).on .nav-icon{filter:drop-shadow(0 0 5px rgba(74,222,128,.75));}
 .nav-btn:nth-child(3).on .nav-icon{filter:drop-shadow(0 0 5px rgba(245,158,11,.75));}
 .nav-btn:nth-child(4).on .nav-icon{filter:drop-shadow(0 0 5px rgba(167,139,250,.75));}
 .nav-btn:nth-child(5).on .nav-icon{filter:drop-shadow(0 0 5px rgba(45,212,191,.75));}
 .nav-btn:nth-child(6).on .nav-icon{filter:drop-shadow(0 0 5px rgba(113,113,122,.65));}
+.nav-btn:nth-child(7).on .nav-icon{filter:drop-shadow(0 0 5px rgba(249,115,22,.75));}
+/* ── GRID HESAP ── */
+.gc-alert{font-size:10px;padding:6px 10px;border-radius:6px;margin-top:8px;text-align:center;}
+.gc-alert.ok{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);color:#86efac;}
+.gc-alert.warn{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);color:#fcd34d;}
+.gc-alert.err{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#fca5a5;}
+.gc-field-row{display:flex;gap:8px;margin-bottom:8px;}
+.gc-field-row .field-wrap{flex:1;min-width:0;}
+.gc-field-wrap{margin-bottom:8px;}
+.gc-label{font-size:9px;color:#4e6080;letter-spacing:.3px;margin-bottom:3px;}
+.gc-results{display:none;}
+.gc-results.on{display:block;}
+.gc-kpi-hero{background:linear-gradient(135deg,rgba(249,115,22,.08),rgba(251,146,60,.04));border:1px solid rgba(249,115,22,.22);border-radius:var(--r);padding:14px;text-align:center;margin-bottom:10px;position:relative;overflow:hidden;}
+.gc-kpi-hero::before{content:'';position:absolute;bottom:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,rgba(249,115,22,.6) 40%,rgba(251,146,60,.8) 50%,rgba(249,115,22,.6) 60%,transparent);filter:drop-shadow(0 0 3px rgba(249,115,22,.5));}
+.gc-hero-val{font-size:22px;font-family:var(--mono);font-weight:700;color:#fdba74;}
+.gc-hero-lbl{font-size:10px;color:#7a6050;margin-top:2px;}
+.gc-hero-sub{font-size:9px;color:#6b5a48;margin-top:4px;font-style:italic;}
+.gc-lvl-tbl{width:100%;border-collapse:collapse;font-size:11px;}
+.gc-lvl-tbl th{font-size:9px;color:#4e6080;font-weight:600;padding:4px 6px;letter-spacing:.3px;border-bottom:1px solid rgba(255,255,255,.05);}
+.gc-lvl-tbl td{padding:5px 6px;border-bottom:1px solid rgba(255,255,255,.03);}
+.gc-lvl-tbl tr.gc-mid td{border-top:1px solid rgba(249,115,22,.2);border-bottom:1px solid rgba(249,115,22,.2);background:rgba(249,115,22,.04);}
+.gc-pill-buy{font-size:8px;background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.2);border-radius:3px;padding:1px 5px;font-weight:600;}
+.gc-pill-sell{font-size:8px;background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.2);border-radius:3px;padding:1px 5px;font-weight:600;}
+.gc-spin{display:inline-block;width:10px;height:10px;border:2px solid rgba(249,115,22,.3);border-top-color:#f97316;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:4px;}
+@keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── SCROLL AREA ── */
 .content{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(59,130,246,.25) transparent;}
@@ -736,6 +762,7 @@ select.field-input option{background:var(--surface2);}
   <button class="nav-btn" onclick="go('pg-overall',this)"><span class="nav-icon">◎</span>Overall</button>
   <button class="nav-btn" onclick="go('pg-sermaye',this)"><span class="nav-icon">₺</span>Sermaye</button>
   <button class="nav-btn" onclick="go('pg-settings',this)"><span class="nav-icon">⚙</span>Ayarlar</button>
+  <button class="nav-btn" onclick="go('pg-gridcalc',this)"><span class="nav-icon">⊞</span>Hesap</button>
 </div>
 
 <!-- CONTENT -->
@@ -1255,6 +1282,97 @@ select.field-input option{background:var(--surface2);}
   <div id="holidayList" style="display:none"></div>
 
 </div><!-- /pg-settings -->
+
+<!-- ══ GRID HESAPLAYICI ══ -->
+<div class="page" id="pg-gridcalc">
+
+  <div class="s-head-c"><div class="s-rule"></div><div class="section-title s-title-c">Grid Bot Hesaplayıcı</div><div class="s-rule"></div></div>
+
+  <!-- Input Kartı -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-body" style="padding:12px">
+
+      <!-- Hisse + ATR Getir -->
+      <div class="gc-field-row" style="align-items:flex-end">
+        <div class="field-wrap" style="flex:1">
+          <div class="gc-label">HİSSE KODU</div>
+          <input class="field-input" id="gc-sym" type="text" inputmode="text" autocomplete="off" placeholder="SASA" style="width:100%;padding:5px 8px;font-size:12px;height:auto;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+        </div>
+        <button class="btn btn-ghost btn-sm" id="gc-atr-btn" style="font-size:10px;padding:5px 12px;white-space:nowrap;flex-shrink:0" onclick="gcFetchATR()">ATR Getir</button>
+      </div>
+
+      <!-- ATR alanı -->
+      <div style="margin-bottom:8px">
+        <div class="gc-label">ATR (14 Günlük Ortalama Gün İçi Aralık)</div>
+        <input class="field-input" id="gc-atr" type="number" inputmode="decimal" autocomplete="off" placeholder="0.00" step="0.01" style="width:100%;padding:5px 8px;font-size:12px;height:auto">
+        <div id="gc-atr-msg" style="display:none" class="gc-alert"></div>
+      </div>
+
+      <!-- Sermaye -->
+      <div style="margin-bottom:8px">
+        <div class="gc-label">SERMAYE (₺)</div>
+        <input class="field-input" id="gc-cap" type="text" inputmode="numeric" autocomplete="off" placeholder="100.000" style="width:100%;padding:5px 8px;font-size:12px;height:auto" oninput="const r=this.value.replace(/[^\d]/g,'');this.value=r?parseInt(r).toLocaleString('tr-TR'):'';">
+      </div>
+
+      <!-- Destek | Direnç -->
+      <div class="gc-field-row">
+        <div style="flex:1;min-width:0">
+          <div class="gc-label">DESTEK (₺)</div>
+          <input class="field-input" id="gc-sup" type="number" inputmode="decimal" autocomplete="off" placeholder="0.00" step="0.01" style="width:100%;padding:5px 8px;font-size:12px;height:auto">
+        </div>
+        <div style="flex:1;min-width:0">
+          <div class="gc-label">DİRENÇ (₺)</div>
+          <input class="field-input" id="gc-res" type="number" inputmode="decimal" autocomplete="off" placeholder="0.00" step="0.01" style="width:100%;padding:5px 8px;font-size:12px;height:auto">
+        </div>
+      </div>
+
+      <button class="btn btn-ghost" style="width:100%;margin-top:4px;font-size:11px;padding:8px;border-color:rgba(249,115,22,.35);color:#fdba74" onclick="calcGridBot()">Hesapla</button>
+    </div>
+  </div>
+
+  <!-- Sonuçlar -->
+  <div id="gc-results" class="gc-results">
+
+    <!-- Hero: Günlük Kar -->
+    <div class="gc-kpi-hero">
+      <div class="gc-hero-val" id="gc-daily">—</div>
+      <div class="gc-hero-lbl">Beklenen Günlük Kar</div>
+      <div class="gc-hero-sub" id="gc-hero-sub"></div>
+    </div>
+
+    <!-- KPI strip 1 -->
+    <div class="kpi-strip three" style="margin-bottom:8px">
+      <div class="kpi"><div class="kpi-label">Optimal Grid</div><div class="kpi-val pos" id="gc-n">—</div></div>
+      <div class="kpi"><div class="kpi-label">Grid Aralığı</div><div class="kpi-val" style="color:#fdba74" id="gc-d">—</div></div>
+      <div class="kpi"><div class="kpi-label">Lot / Grid</div><div class="kpi-val" style="color:#c4b5fd" id="gc-lots">—</div></div>
+    </div>
+
+    <!-- KPI strip 2 -->
+    <div class="kpi-strip" style="margin-bottom:8px">
+      <div class="kpi"><div class="kpi-label">Kullanılan Sermaye</div><div class="kpi-val kpi-muted" id="gc-used">—</div></div>
+      <div class="kpi"><div class="kpi-label">Sermaye Kullanım</div><div class="kpi-val" id="gc-util">—</div></div>
+    </div>
+
+    <!-- KPI strip 3 -->
+    <div class="kpi-strip" style="margin-bottom:12px">
+      <div class="kpi"><div class="kpi-label">Net Kar / Grid</div><div class="kpi-val pos" id="gc-npg">—</div></div>
+      <div class="kpi"><div class="kpi-label">Aylık Beklenti</div><div class="kpi-val pos" id="gc-monthly">—</div></div>
+    </div>
+
+    <!-- Grid Seviyeleri Tablosu -->
+    <div class="s-head-c" style="margin-bottom:8px"><div class="s-rule"></div><div class="section-title s-title-c">Grid Seviyeleri</div><div class="s-rule"></div></div>
+    <div class="card">
+      <div class="tbl-wrap" style="max-height:320px;overflow-y:auto">
+        <table class="gc-lvl-tbl">
+          <thead><tr><th>#</th><th>Seviye ₺</th><th>İşlem</th><th>Lot</th></tr></thead>
+          <tbody id="gc-lvl-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+</div><!-- /pg-gridcalc -->
 
 </div><!-- /content -->
 
@@ -2587,6 +2705,7 @@ let S = {
     commissionRate: 1, gridInterval: 0, lotTolerance: 0,
     botSymbols: [],
     trackSymbol: '', trackTarget: 0, trackAccum: 0, trackLastDate: '', trackPayAmt: 1000,
+    gridCalc: {symbol:'',capital:0,support:0,resistance:0,atr:0},
     costs: [
       {name:'Hesap İşletim Ücreti',amount:95},{name:'Algo',amount:1095},
       {name:'IQ Terminal',amount:980},{name:'Tek Kademe',amount:282},
@@ -2620,7 +2739,7 @@ function load(){ try{
 // ════════════════════════════════════════════════════════
 //  NAV
 // ════════════════════════════════════════════════════════
-const PAGES=['pg-home','pg-monthly','pg-trades','pg-overall','pg-sermaye','pg-settings'];
+const PAGES=['pg-home','pg-monthly','pg-trades','pg-overall','pg-sermaye','pg-settings','pg-gridcalc'];
 function goById(id){
   const btn=[...document.querySelectorAll('.nav-btn')].find(b=>b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+id+"'"));
   if(btn) go(id,btn);
@@ -2635,6 +2754,7 @@ function go(id,btn){
   if(id==='pg-overall') renderOverall();
   if(id==='pg-trades') renderMonthly();
   if(id==='pg-sermaye') renderSermaye();
+  if(id==='pg-gridcalc') renderGridCalcPage();
 }
 
 // ════════════════════════════════════════════════════════
@@ -3043,6 +3163,135 @@ function resetTrackAccum(){
   renderHTrack();
   toast('Sıfırlandı','ok');
 }
+// ════════════════════════════════════════════════════════
+//  GRID HESAPLAYICI
+// ════════════════════════════════════════════════════════
+function renderGridCalcPage(){
+  const gc=S.settings.gridCalc||{};
+  const s=$('gc-sym');if(s&&gc.symbol)s.value=gc.symbol;
+  const c=$('gc-cap');if(c&&gc.capital)c.value=gc.capital.toLocaleString('tr-TR');
+  const sp=$('gc-sup');if(sp&&gc.support)sp.value=gc.support;
+  const rs=$('gc-res');if(rs&&gc.resistance)rs.value=gc.resistance;
+  const at=$('gc-atr');if(at&&gc.atr)at.value=gc.atr;
+}
+
+async function gcFetchATR(){
+  const sym=($('gc-sym').value||'').toUpperCase().trim();
+  if(!sym){toast('Hisse kodu girin','err');return;}
+  const btn=$('gc-atr-btn');
+  const msg=$('gc-atr-msg');
+  btn.disabled=true;
+  btn.innerHTML='<span class="gc-spin"></span>Getiriliyor';
+  msg.style.display='none';
+  try{
+    const yahooUrl='https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'.IS?interval=1d&range=20d';
+    const proxy='https://corsproxy.io/?'+encodeURIComponent(yahooUrl);
+    const r=await fetch(proxy);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const json=await r.json();
+    const result=json.chart.result[0];
+    const quote=result.indicators.quote[0];
+    const highs=quote.high.filter(v=>v!=null).slice(-14);
+    const lows=quote.low.filter(v=>v!=null).slice(-14);
+    const closes=quote.close.filter(v=>v!=null);
+    const n=Math.min(highs.length,lows.length);
+    if(n<2) throw new Error('Yetersiz veri');
+    let sum=0;for(let i=0;i<n;i++)sum+=(highs[i]-lows[i]);
+    const atr=+(sum/n).toFixed(4);
+    const price=+closes.at(-1).toFixed(4);
+    $('gc-atr').value=atr;
+    $('gc-atr').readOnly=false;
+    msg.className='gc-alert ok';
+    msg.textContent='ATR(14): '+atr.toFixed(4)+' ₺  |  Güncel Fiyat: '+price.toFixed(2)+' ₺';
+    msg.style.display='block';
+  }catch(e){
+    $('gc-atr').readOnly=false;
+    msg.className='gc-alert warn';
+    msg.textContent='ATR otomatik alınamadı — lütfen manuel girin.';
+    msg.style.display='block';
+  }
+  btn.disabled=false;
+  btn.innerHTML='ATR Getir';
+}
+
+function calcGridBot(){
+  const sym=($('gc-sym').value||'').toUpperCase().trim();
+  const capital=parseInt(($('gc-cap').value||'').replace(/[^\d]/g,''))||0;
+  const support=parseFloat($('gc-sup').value)||0;
+  const resistance=parseFloat($('gc-res').value)||0;
+  const atr=parseFloat($('gc-atr').value)||0;
+
+  if(!sym||capital<=0||support<=0||resistance<=0||atr<=0){
+    toast('Tüm alanları doldurun','err'); return;
+  }
+  if(resistance<=support){toast('Direnç > Destek olmalı','err');return;}
+
+  // Persist
+  S.settings.gridCalc={symbol:sym,capital,support,resistance,atr};
+  save();
+
+  const commFrac=(S.settings.commissionRate||1)/10000;
+  const range=resistance-support;
+  const midPrice=(support+resistance)/2;
+  const minSpacing=midPrice*0.005;
+  const maxN=Math.floor(range/minSpacing);
+
+  let best=null;
+  const candidates=[];
+  for(let N=2;N<=Math.min(maxN,100);N++){
+    const d=range/N;
+    const lots=Math.floor(capital/(N*support));
+    if(lots<1) continue;
+    const avg_buy=support+(N-1)*d/2;
+    const gross=lots*d;
+    const comm=lots*avg_buy*2*commFrac;
+    const net=gross-comm;
+    if(net<=0) continue;
+    const daily=(atr/d)*net;
+    const used=lots*N*support;
+    const util=used/capital*100;
+    candidates.push({N,d,lots,net,daily,used,util});
+    if(!best||daily>best.daily) best={N,d,lots,net,daily,used,util};
+  }
+
+  if(!best){toast('Hesaplanamadı — girdileri kontrol edin','err');return;}
+  renderGridResults(best,support,resistance,atr,capital,commFrac);
+}
+
+function renderGridResults(b,support,resistance,atr,capital,commFrac){
+  const fx2=v=>v.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fxi=v=>Math.round(v).toLocaleString('tr-TR');
+
+  $('gc-daily').textContent=fxi(b.daily)+' ₺';
+  $('gc-hero-sub').textContent='ATR: '+atr.toFixed(4)+' ₺  |  Günlük ~'++(atr/b.d).toFixed(1)+' tetiklenme';
+  $('gc-n').textContent=b.N+' Grid';
+  $('gc-d').textContent=fx2(b.d)+' ₺';
+  $('gc-lots').textContent=b.lots.toLocaleString('tr-TR')+' Lot';
+  $('gc-used').textContent=fxi(b.used)+' ₺';
+  const utilEl=$('gc-util');
+  utilEl.textContent='%'+b.util.toFixed(1);
+  utilEl.className='kpi-val '+(b.util<80?'pos':b.util<95?'':'neg');
+  $('gc-npg').textContent=fx2(b.net)+' ₺';
+  $('gc-monthly').textContent=fxi(b.daily*21)+' ₺';
+
+  // Grid seviyeleri tablosu
+  const rows=[];
+  const mid=(support+resistance)/2;
+  for(let i=b.N;i>=0;i--){
+    const price=support+i*b.d;
+    const isSell=price>=mid;
+    const isMid=i===Math.round(b.N/2);
+    rows.push(`<tr class="${isMid?'gc-mid':''}">
+      <td style="color:#4e6080;font-family:var(--mono)">${i+1}</td>
+      <td style="font-family:var(--mono);font-weight:600;color:${isSell?'#f87171':'#86efac'}">${fx2(price)}</td>
+      <td><span class="${isSell?'gc-pill-sell':'gc-pill-buy'}">${isSell?'SAT':'AL'}</span></td>
+      <td style="font-family:var(--mono);color:#a1a1aa">${b.lots.toLocaleString('tr-TR')}</td>
+    </tr>`);
+  }
+  $('gc-lvl-body').innerHTML=rows.join('');
+  $('gc-results').className='gc-results on';
+}
+
 function changeMonth(dir){
   S.month.m+=dir;
   if(S.month.m<0){S.month.m=11;S.month.y--;}
