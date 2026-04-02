@@ -3183,12 +3183,9 @@ async function gcFetchATR(){
   btn.disabled=true;
   btn.innerHTML='<span class="gc-spin"></span>Getiriliyor';
   msg.style.display='none';
-  try{
-    const ticker=sym+'.IS';
-    const yfUrl='https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=10d';
-    // allorigins.win CORS proxy — GitHub Pages ile uyumlu
-    const proxyUrl='https://api.allorigins.win/raw?url='+encodeURIComponent(yfUrl);
-    const r=await fetch(proxyUrl);
+
+  async function tryFetch(proxyUrl){
+    const r=await fetch(proxyUrl,{signal:AbortSignal.timeout(8000)});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const data=await r.json();
     const result=data.chart.result[0];
@@ -3200,17 +3197,36 @@ async function gcFetchATR(){
     if(n<1) throw new Error('Yetersiz veri');
     const atr=highs.slice(0,n).reduce((s,h,i)=>s+(h-lows[i]),0)/n;
     const price=closes.at(-1)||null;
-    $('gc-atr').value=parseFloat(atr.toFixed(4));
-    $('gc-atr').readOnly=false;
-    msg.className='gc-alert ok';
-    msg.textContent='Ort. Günlük Hareket ('+n+' gün): '+atr.toFixed(4)+' ₺'+(price?' | Güncel: '+price.toFixed(2)+' ₺':'');
-    msg.style.display='block';
-  }catch(e){
-    $('gc-atr').readOnly=false;
-    msg.className='gc-alert warn';
-    msg.textContent='ATR alınamadı — lütfen manuel girin.';
-    msg.style.display='block';
+    return {atr,price,n};
   }
+
+  const ticker=sym+'.IS';
+  const yfUrl='https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=10d';
+  const proxies=[
+    'https://corsproxy.io/?'+encodeURIComponent(yfUrl),
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(yfUrl),
+    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(yfUrl),
+  ];
+
+  let last=null;
+  for(const url of proxies){
+    try{
+      const res=await tryFetch(url);
+      $('gc-atr').value=parseFloat(res.atr.toFixed(4));
+      $('gc-atr').readOnly=false;
+      msg.className='gc-alert ok';
+      msg.textContent='Ort. Günlük Hareket ('+res.n+' gün): '+res.atr.toFixed(4)+' ₺'+(res.price?' | Güncel: '+res.price.toFixed(2)+' ₺':'');
+      msg.style.display='block';
+      btn.disabled=false;
+      btn.innerHTML='ATR Getir';
+      return;
+    }catch(e){last=e;}
+  }
+
+  $('gc-atr').readOnly=false;
+  msg.className='gc-alert warn';
+  msg.textContent='ATR alınamadı — lütfen manuel girin.';
+  msg.style.display='block';
   btn.disabled=false;
   btn.innerHTML='ATR Getir';
 }
