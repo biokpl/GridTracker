@@ -937,6 +937,7 @@ select.field-input option{background:var(--surface2);}
       <span class="h-track-txt" id="h-track-txt">—</span>
       <span class="h-track-pct" id="h-track-pct">%0</span>
     </div>
+    <div style="text-align:center;margin-top:3px;font-size:9px;color:#3d7a76" id="h-track-paid" style="display:none"></div>
   </div>
 
   <div class="s-head-c"><div class="s-rule"></div><div class="section-title s-title-c">Günlük Detay</div><div class="s-rule"></div></div>
@@ -1120,23 +1121,49 @@ select.field-input option{background:var(--surface2);}
   <!-- Hisse Takip -->
   <div class="section">
     <div class="s-head-c"><div class="s-rule"></div><div class="section-title s-title-c">Hedef Fiyatlı Hisse Takip</div><div class="s-rule"></div></div>
-    <div class="card">
-      <div class="card-body" style="padding:10px 12px">
-        <div style="font-size:10px;color:#4e6080;margin-bottom:10px;text-align:center;font-style:italic">
-          Seçilen hisseden elde edilen Net Kar birikimli olarak takip edilebilir.
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap">
-          <input class="field-input" id="sTrackSym" type="text" inputmode="text" autocomplete="off" placeholder="HİSSE KODU" style="width:112px;padding:4px 7px;font-size:11px;height:auto;line-height:1.4" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter'){this.blur();saveSettings();}">
-          <div style="position:relative;display:inline-block">
-            <input class="field-input" id="sTrackTarget" type="text" inputmode="numeric" autocomplete="off" placeholder="HEDEF FİYAT" style="width:112px;padding:4px 22px 4px 7px;font-size:11px;height:auto;line-height:1.4" oninput="const r=this.value.replace(/[^\d]/g,'');this.value=r?parseInt(r).toLocaleString('tr-TR'):'';" onkeydown="if(event.key==='Enter'){this.blur();saveSettings();}">
-            <span style="position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;color:#4e6080;pointer-events:none">₺</span>
+    <div style="display:flex;gap:0;align-items:stretch;margin-bottom:16px">
+
+      <!-- Sol: Hisse & Hedef -->
+      <div style="flex:1;min-width:0">
+        <div class="card" style="height:100%">
+          <div class="card-body" style="padding:10px 12px;height:100%;display:flex;flex-direction:column;justify-content:center">
+            <div style="font-size:10px;color:#4e6080;margin-bottom:10px;text-align:center;font-style:italic">
+              Seçilen hisseden elde edilen Net Kar birikimli olarak takip edilebilir.
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:center">
+              <input class="field-input" id="sTrackSym" type="text" inputmode="text" autocomplete="off" placeholder="HİSSE KODU" style="width:112px;padding:4px 7px;font-size:11px;height:auto;line-height:1.4" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter'){this.blur();saveSettings();}">
+              <div style="position:relative;display:inline-block">
+                <input class="field-input" id="sTrackTarget" type="text" inputmode="numeric" autocomplete="off" placeholder="HEDEF FİYAT" style="width:112px;padding:4px 22px 4px 7px;font-size:11px;height:auto;line-height:1.4" oninput="const r=this.value.replace(/[^\d]/g,'');this.value=r?parseInt(r).toLocaleString('tr-TR'):'';" onkeydown="if(event.key==='Enter'){this.blur();saveSettings();}">
+                <span style="position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;color:#4e6080;pointer-events:none">₺</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;justify-content:center;margin-top:10px">
+              <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:5px 20px" onclick="saveSettings()">Kaydet</button>
+              <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:5px 12px;border-color:rgba(239,68,68,.3);color:#f87171" onclick="resetTrackAccum()">Sıfırla</button>
+            </div>
           </div>
         </div>
-        <div style="display:flex;gap:6px;justify-content:center;margin-top:10px">
-          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:5px 20px" onclick="saveSettings()">Kaydet</button>
-          <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:5px 16px;border-color:rgba(239,68,68,.3);color:#f87171" onclick="resetTrackAccum()">Sıfırla</button>
+      </div>
+
+      <!-- Dikey ışın -->
+      <div style="width:1px;background:linear-gradient(to bottom,transparent,rgba(20,184,166,.5) 30%,rgba(20,184,166,.5) 70%,transparent);margin:0 10px;flex-shrink:0"></div>
+
+      <!-- Sağ: Ödeme Yap -->
+      <div style="flex:1;min-width:0">
+        <div class="card" style="height:100%">
+          <div class="card-body" style="padding:10px 12px;height:100%;display:flex;flex-direction:column;justify-content:center">
+            <div style="font-size:10px;color:#3d9e96;font-weight:600;text-align:center;letter-spacing:.4px;margin-bottom:10px">Annem'e Ödeme Yap</div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+              <div style="position:relative;display:inline-block">
+                <input class="field-input" id="sTrackPayAmt" type="text" inputmode="numeric" autocomplete="off" placeholder="1.000" style="width:112px;padding:4px 22px 4px 7px;font-size:11px;height:auto;line-height:1.4;text-align:center" oninput="const r=this.value.replace(/[^\d]/g,'');this.value=r?parseInt(r).toLocaleString('tr-TR'):'';" onkeydown="if(event.key==='Enter'){this.blur();makeTrackPayment();}">
+                <span style="position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;color:#4e6080;pointer-events:none">₺</span>
+              </div>
+              <button class="btn btn-ghost btn-sm" style="font-size:10px;padding:5px 20px;border-color:rgba(20,184,166,.35);color:#2dd4bf" onclick="makeTrackPayment()">Ödeme Yap</button>
+            </div>
+          </div>
         </div>
       </div>
+
     </div>
   </div>
 
@@ -2558,7 +2585,7 @@ let S = {
   settings: {
     commissionRate: 1, gridInterval: 0, lotTolerance: 0,
     botSymbols: [],
-    trackSymbol: '', trackTarget: 0, trackAccum: 0, trackLastDate: '',
+    trackSymbol: '', trackTarget: 0, trackAccum: 0, trackLastDate: '', trackPayAmt: 1000,
     costs: [
       {name:'Hesap İşletim Ücreti',amount:95},{name:'Algo',amount:1095},
       {name:'IQ Terminal',amount:980},{name:'Tek Kademe',amount:282},
@@ -2585,6 +2612,7 @@ function load(){ try{
     if(D.settings.trackTarget!=null) S.settings.trackTarget=D.settings.trackTarget;
     if(D.settings.trackAccum!=null) S.settings.trackAccum=D.settings.trackAccum;
     if(D.settings.trackLastDate!=null) S.settings.trackLastDate=D.settings.trackLastDate;
+    if(D.settings.trackPayAmt!=null) S.settings.trackPayAmt=D.settings.trackPayAmt;
   }
 }catch(e){} }
 
@@ -2985,6 +3013,23 @@ function renderHTrack(){
   ht.style.display='block';
   if(done&&rawPct>=100&&!(S._trackAlerted)){S._trackAlerted=true;toast(sym+' hedefine ulaşıldı! 🎯','ok',4000);}
   if(!done) S._trackAlerted=false;
+  const totalPaid=(D&&D.birikimTx)?D.birikimTx.filter(t=>t.trackPayment).reduce((s,t)=>s+Math.abs(t.amount),0):0;
+  const pe=$('h-track-paid');
+  if(pe){if(totalPaid>0){pe.textContent='Toplam Ödenen: '+fxi(Math.round(totalPaid))+' ₺';pe.style.display='block';}else{pe.style.display='none';}}
+}
+function makeTrackPayment(){
+  if(!D){ toast('Veri yüklenemedi','err'); return; }
+  const amt=parseInt(($('sTrackPayAmt').value||'').replace(/[^\d]/g,''))||0;
+  if(amt<=0){ toast('Geçerli bir tutar girin','err'); return; }
+  const today=new Date().toISOString().slice(0,10);
+  const tx={id:Date.now().toString(),date:today,amount:-amt,note:"Annem'e Ödeme Yapıldı",trackPayment:true};
+  if(!D.birikimTx) D.birikimTx=[];
+  D.birikimTx.push(tx);
+  renderSermaye();
+  renderHTrack();
+  fbWrite('gridtracker/birikimTx',D.birikimTx)
+    .then(()=>toast("Ödeme kaydedildi: "+fxi(amt)+" ₺",'ok'))
+    .catch(()=>toast('Kaydedildi (Firebase hatası)','warn'));
 }
 function resetTrackAccum(){
   S.settings.trackAccum=0;
@@ -3195,6 +3240,7 @@ function renderSettings(){
   const mt=$('sMonthTarget');if(mt)mt.value=S.settings.monthlyTarget?S.settings.monthlyTarget.toLocaleString('tr-TR'):'';
   const ts=$('sTrackSym');if(ts)ts.value=S.settings.trackSymbol||'';
   const tt=$('sTrackTarget');if(tt)tt.value=S.settings.trackTarget?S.settings.trackTarget.toLocaleString('tr-TR'):'';
+  const tp=$('sTrackPayAmt');if(tp)tp.value=(S.settings.trackPayAmt||1000).toLocaleString('tr-TR');
   renderCostList(); renderCostSummary(); renderBotSymList();
 }
 function saveSettings(){
@@ -3204,11 +3250,13 @@ function saveSettings(){
   S.settings.monthlyTarget=parseInt(($('sMonthTarget').value||'').replace(/[^\d]/g,''))||0;
   S.settings.trackSymbol=(($('sTrackSym').value||'').toUpperCase().trim());
   S.settings.trackTarget=parseInt(($('sTrackTarget').value||'').replace(/[^\d]/g,''))||0;
-  if(D){if(!D.settings)D.settings={};D.settings.monthlyTarget=S.settings.monthlyTarget;D.settings.trackSymbol=S.settings.trackSymbol;D.settings.trackTarget=S.settings.trackTarget;}
+  S.settings.trackPayAmt=parseInt(($('sTrackPayAmt').value||'').replace(/[^\d]/g,''))||1000;
+  if(D){if(!D.settings)D.settings={};D.settings.monthlyTarget=S.settings.monthlyTarget;D.settings.trackSymbol=S.settings.trackSymbol;D.settings.trackTarget=S.settings.trackTarget;D.settings.trackPayAmt=S.settings.trackPayAmt;}
   save(); toast('Kaydedildi','ok'); renderHome();
   fbWrite('gridtracker/settings/monthlyTarget',S.settings.monthlyTarget);
   fbWrite('gridtracker/settings/trackSymbol',S.settings.trackSymbol);
   fbWrite('gridtracker/settings/trackTarget',S.settings.trackTarget);
+  fbWrite('gridtracker/settings/trackPayAmt',S.settings.trackPayAmt);
 }
 function renderCostList(){
   $('costList').innerHTML=S.settings.costs.map((c,i)=>`
@@ -3392,6 +3440,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
       if(D.settings.trackTarget!=null) S.settings.trackTarget=D.settings.trackTarget;
       if(D.settings.trackAccum!=null) S.settings.trackAccum=D.settings.trackAccum;
       if(D.settings.trackLastDate!=null) S.settings.trackLastDate=D.settings.trackLastDate;
+      if(D.settings.trackPayAmt!=null) S.settings.trackPayAmt=D.settings.trackPayAmt;
     }
   }
   renderHome();
@@ -3407,6 +3456,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
     if(ds.trackTarget!=null) S.settings.trackTarget=ds.trackTarget;
     if(ds.trackAccum!=null) S.settings.trackAccum=ds.trackAccum;
     if(ds.trackLastDate!=null) S.settings.trackLastDate=ds.trackLastDate;
+    if(ds.trackPayAmt!=null) S.settings.trackPayAmt=ds.trackPayAmt;
   }
   function renderAll(showToast){
     syncSettings();
