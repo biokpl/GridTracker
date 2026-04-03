@@ -177,20 +177,19 @@ def get_atr(symbol):
 
 # ── Task Scheduler setup ───────────────────────────────────
 def setup_autostart():
-    """Sunucuyu Windows oturumu açılışında otomatik başlatmak için görev ekler."""
-    python = str(Path(sys.executable).parent / 'pythonw.exe')
-    script = str(Path(__file__).resolve())
-    cmd = (
-        f'schtasks /Create /TN "MatriksIQ_AyarlarSunucusu" '
-        f'/TR "\\"{python}\\" \\"{script}\\"" '
-        f'/SC ONLOGON /F'
-    )
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True,
-                            encoding='utf-8', errors='replace')
-    if result.returncode == 0:
-        print('Sunucu otomatik başlatma görevi eklendi.')
-    else:
-        print(f'Hata: {result.stdout}{result.stderr}')
+    """Sunucuyu Windows başlangıcında otomatik başlatmak için Registry'e ekler (admin gerekmez)."""
+    import winreg
+    pythonw = str(Path(sys.executable).parent / 'pythonw.exe')
+    script  = str(Path(__file__).resolve())
+    value   = f'"{pythonw}" "{script}"'
+    key_path = r'Software\Microsoft\Windows\CurrentVersion\Run'
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE)
+        winreg.SetValueEx(key, 'GridTrackerServer', 0, winreg.REG_SZ, value)
+        winreg.CloseKey(key)
+        print('Otomatik başlatma Registry\'e eklendi.')
+    except Exception as e:
+        print(f'Registry hatası: {e}')
 
 
 def fb_write(path, data):
