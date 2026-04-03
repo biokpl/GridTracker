@@ -1320,8 +1320,14 @@ select.field-input option{background:var(--surface2);}
         </div>
         <div style="flex:1;min-width:0">
           <div class="gc-label">DİRENÇ (₺)</div>
-          <input class="field-input" id="gc-res" type="number" inputmode="decimal" autocomplete="off" placeholder="0.00" step="0.01" style="width:100%;padding:5px 8px;font-size:12px;height:auto" onkeydown="if(event.key==='Enter'){this.blur();calcGridBot();}">
+          <input class="field-input" id="gc-res" type="number" inputmode="decimal" autocomplete="off" placeholder="0.00" step="0.01" style="width:100%;padding:5px 8px;font-size:12px;height:auto" onkeydown="if(event.key==='Enter'){this.blur();$('gc-price').focus();}">
         </div>
+      </div>
+
+      <!-- Güncel Fiyat -->
+      <div style="margin-bottom:8px">
+        <div class="gc-label">GÜNCEL FİYAT (₺)</div>
+        <input class="field-input" id="gc-price" type="number" inputmode="decimal" autocomplete="off" placeholder="0.00" step="0.01" style="width:100%;padding:5px 8px;font-size:12px;height:auto" onkeydown="if(event.key==='Enter'){this.blur();calcGridBot();}">
       </div>
 
       <button class="btn btn-ghost" style="width:100%;margin-top:4px;font-size:11px;padding:8px;border-color:rgba(249,115,22,.35);color:#fdba74" onclick="calcGridBot()">Hesapla</button>
@@ -1352,9 +1358,27 @@ select.field-input option{background:var(--surface2);}
     </div>
 
     <!-- KPI strip 3 -->
-    <div class="kpi-strip" style="margin-bottom:12px">
+    <div class="kpi-strip" style="margin-bottom:8px">
       <div class="kpi"><div class="kpi-label">Net Kar / Grid</div><div class="kpi-val pos" id="gc-npg">—</div></div>
       <div class="kpi"><div class="kpi-label">Aylık Beklenti</div><div class="kpi-val pos" id="gc-monthly">—</div></div>
+    </div>
+
+    <!-- Al/Sat Dağılımı -->
+    <div id="gc-split-strip" style="display:none;margin-bottom:12px;background:rgba(0,0,0,.25);border-radius:10px;padding:10px 14px">
+      <div style="font-size:10px;color:#71717a;letter-spacing:.06em;margin-bottom:6px;text-align:center">AL / SAT DAĞILIMI (Güncel Fiyata Göre)</div>
+      <div style="display:flex;gap:8px;align-items:stretch">
+        <div style="flex:1;background:rgba(134,239,172,.08);border:1px solid rgba(134,239,172,.2);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:700;color:#86efac;font-family:var(--mono)" id="gc-buy-pct">—</div>
+          <div style="font-size:10px;color:#86efac;margin-top:2px">AL</div>
+          <div style="font-size:10px;color:#71717a;margin-top:1px" id="gc-buy-cnt">—</div>
+        </div>
+        <div style="flex:1;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:18px;font-weight:700;color:#f87171;font-family:var(--mono)" id="gc-sell-pct">—</div>
+          <div style="font-size:10px;color:#f87171;margin-top:2px">SAT</div>
+          <div style="font-size:10px;color:#71717a;margin-top:1px" id="gc-sell-cnt">—</div>
+        </div>
+      </div>
+      <div style="font-size:10px;color:#71717a;text-align:center;margin-top:6px" id="gc-price-pos"></div>
     </div>
 
     <!-- Grid Seviyeleri Tablosu -->
@@ -1362,7 +1386,7 @@ select.field-input option{background:var(--surface2);}
     <div class="card">
       <div class="tbl-wrap" style="max-height:320px;overflow-y:auto">
         <table class="gc-lvl-tbl">
-          <thead><tr><th>#</th><th>Seviye ₺</th><th>İşlem</th><th>Lot</th></tr></thead>
+          <thead><tr><th>#</th><th>Seviye ₺</th><th>İşlem</th><th>% Uzaklık</th><th>Lot</th></tr></thead>
           <tbody id="gc-lvl-body"></tbody>
         </table>
       </div>
@@ -3171,6 +3195,7 @@ function renderGridCalcPage(){
   const sp=$('gc-sup');if(sp&&gc.support)sp.value=gc.support;
   const rs=$('gc-res');if(rs&&gc.resistance)rs.value=gc.resistance;
   const at=$('gc-atr');if(at&&gc.atr)at.value=gc.atr;
+  const pr=$('gc-price');if(pr&&gc.currentPrice)pr.value=gc.currentPrice;
 }
 
 
@@ -3180,6 +3205,7 @@ function calcGridBot(){
   const support=parseFloat($('gc-sup').value)||0;
   const resistance=parseFloat($('gc-res').value)||0;
   const atr=parseFloat($('gc-atr').value)||0;
+  const currentPrice=parseFloat($('gc-price').value)||0;
 
   if(!sym||capital<=0||support<=0||resistance<=0||atr<=0){
     toast('Tüm alanları doldurun','err'); return;
@@ -3187,7 +3213,7 @@ function calcGridBot(){
   if(resistance<=support){toast('Direnç > Destek olmalı','err');return;}
 
   // Persist
-  S.settings.gridCalc={symbol:sym,capital,support,resistance,atr};
+  S.settings.gridCalc={symbol:sym,capital,support,resistance,atr,currentPrice};
   save();
 
   const commFrac=(S.settings.commissionRate||1)/10000;
@@ -3195,16 +3221,11 @@ function calcGridBot(){
   const midPrice=(support+resistance)/2;
   const minSpacing=midPrice*0.005;
 
-  // Kısıt: grid aralığı ≤ ATR×0.5 olmalı (günde en az ~2 tetiklenme)
-  // Bu: N ≥ range/(ATR×0.5)
   const minN=Math.max(5,Math.ceil(range/(atr*0.5)));
   const maxN=Math.min(100,Math.floor(range/minSpacing));
 
   if(minN>maxN){toast('ATR aralığa göre çok büyük — girdileri kontrol edin','err');return;}
 
-  // Bu kısıt dahilinde daily_profit = lots×ATR ile doğru orantılı,
-  // lots = floor(C/(N×S)) ile ters orantılı → en küçük N her zaman optimal.
-  // Bu nedenle minN'den başlayıp lots≥1 olan ilk N = optimal.
   let best=null;
   for(let N=minN;N<=maxN;N++){
     const d=range/N;
@@ -3218,17 +3239,19 @@ function calcGridBot(){
     const daily=(atr/d)*net;
     const used=lots*N*support;
     const util=used/capital*100;
-    if(!best) best={N,d,lots,net,daily,used,util};  // ilk geçerli = optimal
-    else break;  // kısıt dahilinde ilk geçerli her zaman en iyisi
+    if(!best) best={N,d,lots,net,daily,used,util};
+    else break;
   }
 
   if(!best){toast('Hesaplanamadı — sermaye yetersiz veya aralık dar','err');return;}
-  renderGridResults(best,support,resistance,atr,capital,commFrac);
+  renderGridResults(best,support,resistance,atr,capital,commFrac,currentPrice);
 }
 
-function renderGridResults(b,support,resistance,atr,capital,commFrac){
+function renderGridResults(b,support,resistance,atr,capital,commFrac,currentPrice){
   const fx2=v=>v.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2});
   const fxi=v=>Math.round(v).toLocaleString('tr-TR');
+  const hasCurrent=currentPrice>0;
+  const splitRef=hasCurrent?currentPrice:(support+resistance)/2;
 
   $('gc-daily').textContent=fxi(b.daily)+' ₺';
   $('gc-hero-sub').textContent='ATR: '+atr.toFixed(4)+' ₺  |  Günlük ~'+(atr/b.d).toFixed(1)+' tetiklenme';
@@ -3242,17 +3265,39 @@ function renderGridResults(b,support,resistance,atr,capital,commFrac){
   $('gc-npg').textContent=fx2(b.net)+' ₺';
   $('gc-monthly').textContent=fxi(b.daily*21)+' ₺';
 
+  // Al/Sat dağılımı
+  const levels=[];
+  for(let i=b.N;i>=0;i--) levels.push(support+i*b.d);
+  const buyLevels=levels.filter(p=>p<splitRef);
+  const sellLevels=levels.filter(p=>p>=splitRef);
+  const total=levels.length;
+  const buyPct=Math.round(buyLevels.length/total*100);
+  const sellPct=100-buyPct;
+  $('gc-buy-pct').textContent='%'+buyPct;
+  $('gc-buy-cnt').textContent=buyLevels.length+' seviye';
+  $('gc-sell-pct').textContent='%'+sellPct;
+  $('gc-sell-cnt').textContent=sellLevels.length+' seviye';
+  if(hasCurrent){
+    const pctFromSup=((currentPrice-support)/(resistance-support)*100).toFixed(1);
+    $('gc-price-pos').textContent='Güncel fiyat ('+fx2(currentPrice)+' ₺) aralığın %'+pctFromSup+'\'inde';
+  } else {
+    $('gc-price-pos').textContent='Güncel fiyat girilmedi — orta nokta baz alındı';
+  }
+  $('gc-split-strip').style.display='block';
+
   // Grid seviyeleri tablosu
   const rows=[];
-  const mid=(support+resistance)/2;
   for(let i=b.N;i>=0;i--){
     const price=support+i*b.d;
-    const isSell=price>=mid;
-    const isMid=i===Math.round(b.N/2);
-    rows.push(`<tr class="${isMid?'gc-mid':''}">
+    const isSell=price>=splitRef;
+    const pctDiff=hasCurrent?((price-currentPrice)/currentPrice*100):null;
+    const pctStr=pctDiff!==null?(pctDiff>=0?'+':'')+pctDiff.toFixed(1)+'%':'—';
+    const pctColor=pctDiff===null?'#71717a':pctDiff>=0?'#f87171':'#86efac';
+    rows.push(`<tr>
       <td style="color:#4e6080;font-family:var(--mono)">${i+1}</td>
       <td style="font-family:var(--mono);font-weight:600;color:${isSell?'#f87171':'#86efac'}">${fx2(price)}</td>
       <td><span class="${isSell?'gc-pill-sell':'gc-pill-buy'}">${isSell?'SAT':'AL'}</span></td>
+      <td style="font-family:var(--mono);font-size:11px;color:${pctColor}">${pctStr}</td>
       <td style="font-family:var(--mono);color:#a1a1aa">${b.lots.toLocaleString('tr-TR')}</td>
     </tr>`);
   }
