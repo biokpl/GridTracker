@@ -3240,29 +3240,57 @@ async function gcFetchPrice(){
   const btn=$('gc-price-btn');
   const msg=$('gc-price-msg');
   btn.disabled=true; btn.textContent='Getiriliyor…';
-  msg.style.display='none';
+  msg.style.color='#fdba74';
+  msg.textContent='automation_server fiyatı çekiyor…';
+  msg.style.display='block';
 
+  // Önce mevcut veriyi kontrol et — yeni ise direkt kullan
   try{
-    // Firebase'den oku — automation_server her 2 dakikada bir günceller
-    const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(6000)});
-    const data=await r.json();
-    if(data && data.price){
-      const price=data.price;
-      const ageMin=Math.round((Date.now()/1000-data.ts)/60);
-      $('gc-price').value=price;
-      msg.style.color='#86efac';
-      msg.textContent=sym+': '+price.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺'+(data.ts?' ('+ageMin+' dk önce güncellendi)':'');
-      msg.style.display='block';
+    const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(5000)});
+    const d=await r.json();
+    if(d&&d.price&&(Date.now()/1000-d.ts)<120){
+      gcShowPrice(sym,d.price,d.ts);
       btn.disabled=false; btn.textContent='Fiyat Getir';
       return;
     }
   }catch(e){}
 
-  // Firebase'de veri yoksa — automation_server çalışmıyor
+  // Firebase'e talep yaz — automation_server görecek
+  try{
+    await fetch(FIREBASE_URL+'/gridtracker/priceRequests/'+sym+'.json',{
+      method:'PUT', body:JSON.stringify(Date.now()),
+      headers:{'Content-Type':'application/json'},
+      signal:AbortSignal.timeout(5000)
+    });
+  }catch(e){}
+
+  // Yanıt gelene kadar polling (max 25 saniye)
+  const deadline=Date.now()+25000;
+  while(Date.now()<deadline){
+    await new Promise(r=>setTimeout(r,2000));
+    try{
+      const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(4000)});
+      const d=await r.json();
+      if(d&&d.price&&(Date.now()/1000-d.ts)<30){
+        gcShowPrice(sym,d.price,d.ts);
+        btn.disabled=false; btn.textContent='Fiyat Getir';
+        return;
+      }
+    }catch(e){}
+  }
+
   msg.style.color='#f87171';
-  msg.textContent='Fiyat bulunamadı — automation_server çalışıyor mu? Manuel girin.';
-  msg.style.display='block';
+  msg.textContent='automation_server çalışmıyor — fiyatı manuel girin.';
   btn.disabled=false; btn.textContent='Fiyat Getir';
+}
+
+function gcShowPrice(sym,price,ts){
+  const msg=$('gc-price-msg');
+  const ageS=Math.round(Date.now()/1000-ts);
+  $('gc-price').value=price;
+  msg.style.color='#86efac';
+  msg.textContent=sym+': '+price.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺  ('+ageS+'s önce)';
+  msg.style.display='block';
 }
 
 function calcGridBot(){

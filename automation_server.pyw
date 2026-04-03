@@ -243,6 +243,28 @@ def firebase_watcher():
         except Exception:
             pass
 
+        # --- Anlık fiyat talepleri (priceRequests) ---
+        try:
+            req3 = urllib.request.urlopen(
+                f'{FIREBASE_URL}/gridtracker/priceRequests.json', timeout=10)
+            requests_data = json.loads(req3.read().decode())
+            if requests_data and isinstance(requests_data, dict):
+                for sym in list(requests_data.keys()):
+                    try:
+                        price = fetch_price(sym)
+                        if price:
+                            fb_write('gridtracker/livePrices/' + sym, {
+                                'price': price,
+                                'ts': int(time.time())
+                            })
+                            print(f'[Talep] {sym}: {price} ₺')
+                    except Exception as e:
+                        print(f'[Talep] {sym} hatası: {e}')
+                # Talepleri temizle
+                fb_write('gridtracker/priceRequests', {})
+        except Exception:
+            pass
+
         # --- Hisse fiyatı güncelle (her 2 dakikada bir) ---
         if time.time() - last_price_update >= 120:
             try:
@@ -262,7 +284,7 @@ def firebase_watcher():
                 print(f'[Fiyat] Güncelleme hatası: {e}')
             last_price_update = time.time()
 
-        time.sleep(30)
+        time.sleep(10)
 
 
 if __name__ == '__main__':
