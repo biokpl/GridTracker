@@ -1332,6 +1332,10 @@ select.field-input option{background:var(--surface2);}
         <input class="field-input" id="gc-atr" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;padding:5px 8px;font-size:12px;height:auto" oninput="this.value=this.value.replace(/,/g,'.')" onkeydown="if(event.key==='Enter'){this.blur();calcGridBot();}">
       </div>
 
+      <div style="margin-bottom:8px">
+        <button class="btn btn-ghost" style="width:100%;font-size:11px;padding:7px;border-color:rgba(99,179,237,.35);color:#90cdf4" onclick="gcAtrRange()">ATR Bazlı Aralık Öner (Fiyat ± ATR)</button>
+      </div>
+
       <div style="display:flex;gap:8px;margin-top:4px">
         <button class="btn btn-ghost" style="flex:1;font-size:11px;padding:8px;border-color:rgba(249,115,22,.35);color:#fdba74" onclick="calcGridBot()">Hesapla</button>
         <button class="btn btn-ghost" style="font-size:11px;padding:8px;border-color:rgba(239,68,68,.3);color:#f87171" onclick="gcReset()">Sıfırla</button>
@@ -3226,6 +3230,14 @@ function renderGridCalcPage(){
 }
 
 
+function gcAtrRange(){
+  const price=parseFloat($('gc-price').value)||0;
+  const atr=parseFloat($('gc-atr').value)||0;
+  if(!price||!atr){toast('Önce Güncel Fiyat ve ATR girin','err');return;}
+  $('gc-sup').value=parseFloat((price-atr).toFixed(2));
+  $('gc-res').value=parseFloat((price+atr).toFixed(2));
+  toast('Destek ve Direnç ATR\'ye göre ayarlandı','suc');
+}
 function gcReset(){
   S.settings.gridCalc={symbol:'',capital:0,support:0,resistance:0,atr:0,currentPrice:0};
   save();
