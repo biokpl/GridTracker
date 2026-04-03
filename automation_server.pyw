@@ -302,6 +302,20 @@ if __name__ == '__main__':
     if args.setup:
         setup_autostart()
     else:
+        # Port 5050'de eski instance varsa kapat
+        try:
+            import socket as _sock
+            with _sock.socket(_sock.AF_INET, _sock.SOCK_STREAM) as _s:
+                if _s.connect_ex(('127.0.0.1', PORT)) == 0:
+                    # Port kullanımda — o PID'i bul ve kapat
+                    result = subprocess.run(
+                        f'for /f "tokens=5" %a in (\'netstat -ano ^| findstr "127.0.0.1:{PORT}"\') do taskkill /PID %a /F',
+                        shell=True, capture_output=True
+                    )
+                    time.sleep(1)
+                    print(f'[Başlangıç] Eski instance kapatıldı.')
+        except Exception:
+            pass
         # Windows oturumunda otomatik başlat (her çalışmada güncelle)
         setup_autostart()
         # Firebase izleyiciyi arka planda başlat
