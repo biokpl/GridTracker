@@ -1380,13 +1380,13 @@ select.field-input option{background:var(--surface2);}
         <div class="gc-bot-pct-title">BOTA GİRİLECEK % DEĞERLERİ</div>
         <div style="display:flex;gap:8px">
           <div class="gc-pct-inner gc-pct-inner-buy" style="flex:1;background:rgba(34,197,94,.04);border:1px solid rgba(34,197,94,.25);padding:12px 8px;text-align:center">
-            <div class="gc-bot-pct-val" style="color:#4ade80" id="gc-pct-down">—</div>
-            <div class="gc-bot-pct-lbl" style="color:#4ade80">% AŞAĞI</div>
+            <div class="gc-bot-pct-val" style="color:#528f66" id="gc-pct-down">—</div>
+            <div class="gc-bot-pct-lbl" style="color:#528f66">% AŞAĞI</div>
             <div class="gc-bot-pct-sub">↓ Al emirleri</div>
           </div>
           <div class="gc-pct-inner gc-pct-inner-sell" style="flex:1;background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.25);padding:12px 8px;text-align:center">
-            <div class="gc-bot-pct-val" style="color:#f87171" id="gc-pct-up">—</div>
-            <div class="gc-bot-pct-lbl" style="color:#f87171">% YUKARI</div>
+            <div class="gc-bot-pct-val" style="color:#8f5252" id="gc-pct-up">—</div>
+            <div class="gc-bot-pct-lbl" style="color:#8f5252">% YUKARI</div>
             <div class="gc-bot-pct-sub">↑ Sat emirleri</div>
           </div>
         </div>
@@ -1424,15 +1424,15 @@ select.field-input option{background:var(--surface2);}
       <!-- Labels -->
       <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
         <div style="display:flex;align-items:center;gap:5px">
-          <div style="width:9px;height:9px;border-radius:50%;background:#4ade80;flex-shrink:0;box-shadow:0 0 5px rgba(74,222,128,.5)"></div>
-          <span style="font-size:13px;font-weight:800;color:#4ade80;font-family:var(--mono)" id="gc-buy-pct">—</span>
+          <div style="width:9px;height:9px;border-radius:50%;background:#528f66;flex-shrink:0"></div>
+          <span style="font-size:13px;font-weight:800;color:#528f66;font-family:var(--mono)" id="gc-buy-pct">—</span>
           <span style="font-size:11px;color:#6b7a92;font-weight:500" id="gc-buy-cnt">—</span>
         </div>
         <div style="font-size:10px;color:#6b7a92;text-align:center;flex:1;padding:0 4px" id="gc-price-pos"></div>
         <div style="display:flex;align-items:center;gap:5px">
           <span style="font-size:11px;color:#6b7a92;font-weight:500" id="gc-sell-cnt">—</span>
-          <span style="font-size:13px;font-weight:800;color:#f87171;font-family:var(--mono)" id="gc-sell-pct">—</span>
-          <div style="width:9px;height:9px;border-radius:50%;background:#f87171;flex-shrink:0;box-shadow:0 0 5px rgba(248,113,113,.5)"></div>
+          <span style="font-size:13px;font-weight:800;color:#8f5252;font-family:var(--mono)" id="gc-sell-pct">—</span>
+          <div style="width:9px;height:9px;border-radius:50%;background:#8f5252;flex-shrink:0"></div>
         </div>
       </div>
     </div>
@@ -3660,7 +3660,7 @@ function renderGridResults(b,support,resistance,atr,capital,commFrac,currentPric
     const pctColor=pctDiff===null?'#71717a':pctDiff>=0?'#f87171':'#86efac';
     rows.push(`<tr>
       <td style="color:#4e6080;font-family:var(--mono)">${i+1}</td>
-      <td style="font-family:var(--mono);font-weight:600;color:${isSell?'#f87171':'#86efac'}">${fx2(price)}</td>
+      <td style="font-family:var(--mono);font-weight:600;color:${isSell?'#8f5252':'#528f66'}">${fx2(price)}</td>
       <td><span class="${isSell?'gc-pill-sell':'gc-pill-buy'}">${isSell?'SAT':'AL'}</span></td>
       <td style="font-family:var(--mono);font-size:11px;color:${pctColor}">${pctStr}</td>
       <td style="font-family:var(--mono);color:#a1a1aa">${b.lots.toLocaleString('tr-TR')}</td>
