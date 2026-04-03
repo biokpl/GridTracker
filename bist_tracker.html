@@ -3283,8 +3283,33 @@ async function gcFetchPrice(){
     }catch(e){}
   }
 
+  // Sunucu çalışmıyor — CORS proxy fallback dene
+  msg.style.color='#fdba74';
+  msg.textContent='Sunucu bulunamadı, alternatif kaynak deneniyor…';
+  try{
+    const ticker=sym+'.IS';
+    const yfUrl='https://query2.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=1d';
+    const proxies=[
+      'https://corsproxy.io/?'+encodeURIComponent(yfUrl),
+      'https://api.allorigins.win/raw?url='+encodeURIComponent(yfUrl),
+      'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(yfUrl),
+    ];
+    for(const url of proxies){
+      try{
+        const r=await fetch(url,{signal:AbortSignal.timeout(6000)});
+        if(!r.ok) continue;
+        const data=await r.json();
+        const closes=data.chart.result[0].indicators.quote[0].close.filter(v=>v!=null);
+        if(!closes.length) continue;
+        const price=parseFloat(closes.at(-1).toFixed(2));
+        gcShowPrice(sym,price,Math.floor(Date.now()/1000));
+        btn.disabled=false; btn.textContent='Fiyat Getir';
+        return;
+      }catch(e){}
+    }
+  }catch(e){}
   msg.style.color='#f87171';
-  msg.textContent='automation_server çalışmıyor — fiyatı manuel girin.';
+  msg.textContent='Fiyat alınamadı — automation_server başlatın veya manuel girin.';
   btn.disabled=false; btn.textContent='Fiyat Getir';
 }
 

@@ -296,9 +296,11 @@ if __name__ == '__main__':
     if args.setup:
         setup_autostart()
     else:
+        # Windows oturumunda otomatik başlat (her çalışmada güncelle)
+        setup_autostart()
         # Firebase izleyiciyi arka planda başlat
         t = threading.Thread(target=firebase_watcher, daemon=True)
         t.start()
         print(f'Otomasyon ayarlar sunucusu başlatılıyor: http://localhost:{PORT}')
-        print(f'Firebase izleyici aktif (60s aralık)')
+        print(f'Firebase izleyici aktif (10s aralık)')
         app.run(host='127.0.0.1', port=PORT, debug=False)
