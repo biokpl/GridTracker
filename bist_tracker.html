@@ -3431,6 +3431,8 @@ function resetTrackAccum(){
 //  GRID HESAPLAYICI
 // ════════════════════════════════════════════════════════
 function renderGridCalcPage(){
+  // Kullanıcı alanları düzenliyorsa Firebase güncellemesi input'ları sıfırlamasın
+  if(window._gcDirty) return;
   const gc=S.settings.gridCalc||{};
   const s=$('gc-sym');if(s&&gc.symbol)s.value=gc.symbol;
   const c=$('gc-cap');if(c&&gc.capital)c.value=gc.capital.toLocaleString('tr-TR');
@@ -3454,6 +3456,7 @@ function gcAtrRange(){
   toast('Destek ve Direnç ATR\'ye göre ayarlandı','suc');
 }
 function gcReset(){
+  window._gcDirty=false;
   S.settings.gridCalc={symbol:'',capital:0,support:0,resistance:0,atr:0,currentPrice:0};
   save();
   fbWrite('gridtracker/settings/gridCalc',S.settings.gridCalc);
@@ -3549,6 +3552,7 @@ function calcGridBot(){
   if(resistance<=support){toast('Direnç > Destek olmalı','err');return;}
 
   // Persist — localStorage + Firebase
+  window._gcDirty=false;
   S.settings.gridCalc={symbol:sym,capital,support,resistance,atr,currentPrice};
   save();
   fbWrite('gridtracker/settings/gridCalc',S.settings.gridCalc);
@@ -4069,6 +4073,11 @@ document.addEventListener('DOMContentLoaded',async()=>{
   if(gc.symbol&&gc.capital>0&&gc.support>0&&gc.resistance>0&&gc.atr>0){
     renderGridCalcPage();
   }
+  // GridCalc input'larına dirty flag — Firebase sync kullanıcı düzenlemesini ezmesin
+  window._gcDirty=false;
+  ['gc-sym','gc-price','gc-cap','gc-sup','gc-res','gc-atr'].forEach(id=>{
+    const el=$(id); if(el) el.addEventListener('input',()=>{ window._gcDirty=true; });
+  });
   renderHome();
 
   // Firebase SSE — değişiklik anında yansır
@@ -4083,7 +4092,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
     if(ds.trackAccum!=null) S.settings.trackAccum=ds.trackAccum;
     if(ds.trackLastDate!=null) S.settings.trackLastDate=ds.trackLastDate;
     if(ds.trackPayAmt!=null) S.settings.trackPayAmt=ds.trackPayAmt;
-    if(ds.gridCalc!=null) S.settings.gridCalc=ds.gridCalc;
+    if(ds.gridCalc!=null && !window._gcDirty) S.settings.gridCalc=ds.gridCalc;
   }
   function renderAll(showToast){
     syncSettings();
