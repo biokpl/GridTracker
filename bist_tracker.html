@@ -1332,7 +1332,10 @@ select.field-input option{background:var(--surface2);}
         <input class="field-input" id="gc-atr" type="number" inputmode="decimal" autocomplete="off" placeholder="0.00" step="0.01" style="width:100%;padding:5px 8px;font-size:12px;height:auto" onkeydown="if(event.key==='Enter'){this.blur();calcGridBot();}">
       </div>
 
-      <button class="btn btn-ghost" style="width:100%;margin-top:4px;font-size:11px;padding:8px;border-color:rgba(249,115,22,.35);color:#fdba74" onclick="calcGridBot()">Hesapla</button>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-ghost" style="flex:1;font-size:11px;padding:8px;border-color:rgba(249,115,22,.35);color:#fdba74" onclick="calcGridBot()">Hesapla</button>
+        <button class="btn btn-ghost" style="font-size:11px;padding:8px;border-color:rgba(239,68,68,.3);color:#f87171" onclick="gcReset()">Sıfırla</button>
+      </div>
     </div>
   </div>
 
@@ -2774,6 +2777,7 @@ function load(){ try{
     if(D.settings.trackAccum!=null) S.settings.trackAccum=D.settings.trackAccum;
     if(D.settings.trackLastDate!=null) S.settings.trackLastDate=D.settings.trackLastDate;
     if(D.settings.trackPayAmt!=null) S.settings.trackPayAmt=D.settings.trackPayAmt;
+    if(D.settings.gridCalc!=null) S.settings.gridCalc=D.settings.gridCalc;
   }
 }catch(e){} }
 
@@ -3218,6 +3222,18 @@ function renderGridCalcPage(){
 }
 
 
+function gcReset(){
+  S.settings.gridCalc={symbol:'',capital:0,support:0,resistance:0,atr:0,currentPrice:0};
+  save();
+  fbWrite('gridtracker/settings/gridCalc',S.settings.gridCalc);
+  ['gc-sym','gc-price','gc-cap','gc-sup','gc-res','gc-atr'].forEach(id=>{$( id).value='';});
+  $('gc-price-msg').style.display='none';
+  $('gc-results').className='gc-results';
+  $('gc-bot-pct').style.display='none';
+  $('gc-split-strip').style.display='none';
+  toast('GridBot ayarları sıfırlandı','inf');
+}
+
 async function gcFetchPrice(){
   const sym=($('gc-sym').value||'').toUpperCase().trim();
   if(!sym){toast('Hisse kodu girin','err');return;}
@@ -3270,9 +3286,10 @@ function calcGridBot(){
   }
   if(resistance<=support){toast('Direnç > Destek olmalı','err');return;}
 
-  // Persist
+  // Persist — localStorage + Firebase
   S.settings.gridCalc={symbol:sym,capital,support,resistance,atr,currentPrice};
   save();
+  fbWrite('gridtracker/settings/gridCalc',S.settings.gridCalc);
 
   const commFrac=(S.settings.commissionRate||1)/10000;
   const range=resistance-support;
