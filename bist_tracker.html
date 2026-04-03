@@ -4071,6 +4071,8 @@ document.addEventListener('DOMContentLoaded',async()=>{
       if(D.settings.trackPayAmt!=null) S.settings.trackPayAmt=D.settings.trackPayAmt;
       if(D.settings.gridCalc!=null) S.settings.gridCalc=D.settings.gridCalc;
     }
+    saveCache();
+    renderAll(false);
   }
   // GridBot sonuçları Firebase'den yüklendikten sonra göster
   const gc=S.settings.gridCalc||{};
