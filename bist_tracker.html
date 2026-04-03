@@ -3244,72 +3244,73 @@ async function gcFetchPrice(){
   const btn=$('gc-price-btn');
   const msg=$('gc-price-msg');
   btn.disabled=true; btn.textContent='Getiriliyor…';
-  msg.style.color='#fdba74';
-  msg.textContent='automation_server fiyatı çekiyor…';
-  msg.style.display='block';
+  msg.style.color='#fdba74'; msg.textContent='Fiyat alınıyor…'; msg.style.display='block';
 
-  // Önce mevcut veriyi kontrol et — yeni ise direkt kullan
+  // 1. Sunucu heartbeat kontrolü
+  let serverAlive=false;
   try{
-    const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(5000)});
+    const hb=await fetch(FIREBASE_URL+'/gridtracker/serverHeartbeat.json',{signal:AbortSignal.timeout(4000)});
+    const hd=await hb.json();
+    if(hd&&hd.ts&&(Date.now()/1000-hd.ts)<30) serverAlive=true;
+  }catch(e){}
+
+  // 2. Firebase'de taze fiyat varsa direkt kullan
+  try{
+    const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(4000)});
     const d=await r.json();
     if(d&&d.price&&(Date.now()/1000-d.ts)<120){
       gcShowPrice(sym,d.price,d.ts);
-      btn.disabled=false; btn.textContent='Fiyat Getir';
-      return;
+      btn.disabled=false; btn.textContent='Fiyat Getir'; return;
     }
   }catch(e){}
 
-  // Firebase'e talep yaz — automation_server görecek
-  try{
-    await fetch(FIREBASE_URL+'/gridtracker/priceRequests/'+sym+'.json',{
-      method:'PUT', body:JSON.stringify(Date.now()),
-      headers:{'Content-Type':'application/json'},
-      signal:AbortSignal.timeout(5000)
-    });
-  }catch(e){}
-
-  // Yanıt gelene kadar polling (max 25 saniye)
-  const deadline=Date.now()+25000;
-  while(Date.now()<deadline){
-    await new Promise(r=>setTimeout(r,2000));
+  if(serverAlive){
+    // 3a. Sunucu çalışıyor → talep yaz ve bekle
+    msg.textContent='Sunucu fiyatı çekiyor…';
     try{
-      const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(4000)});
-      const d=await r.json();
-      if(d&&d.price&&(Date.now()/1000-d.ts)<30){
-        gcShowPrice(sym,d.price,d.ts);
-        btn.disabled=false; btn.textContent='Fiyat Getir';
-        return;
-      }
+      await fetch(FIREBASE_URL+'/gridtracker/priceRequests/'+sym+'.json',{
+        method:'PUT', body:JSON.stringify(Date.now()),
+        headers:{'Content-Type':'application/json'}, signal:AbortSignal.timeout(4000)
+      });
+    }catch(e){}
+    const deadline=Date.now()+20000;
+    while(Date.now()<deadline){
+      await new Promise(r=>setTimeout(r,2000));
+      try{
+        const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(4000)});
+        const d=await r.json();
+        if(d&&d.price&&(Date.now()/1000-d.ts)<25){
+          gcShowPrice(sym,d.price,d.ts);
+          btn.disabled=false; btn.textContent='Fiyat Getir'; return;
+        }
+      }catch(e){}
+    }
+  }
+
+  // 3b. Sunucu yok veya polling timeout → CORS proxy dene
+  msg.textContent='Alternatif kaynak deneniyor…';
+  const ticker=sym+'.IS';
+  const yfUrl='https://query2.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=1d';
+  const proxies=[
+    'https://corsproxy.io/?'+encodeURIComponent(yfUrl),
+    'https://api.allorigins.win/raw?url='+encodeURIComponent(yfUrl),
+    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(yfUrl),
+  ];
+  for(const url of proxies){
+    try{
+      const r=await fetch(url,{signal:AbortSignal.timeout(6000)});
+      if(!r.ok) continue;
+      const data=await r.json();
+      const closes=data.chart.result[0].indicators.quote[0].close.filter(v=>v!=null);
+      if(!closes.length) continue;
+      const price=parseFloat(closes.at(-1).toFixed(2));
+      gcShowPrice(sym,price,Math.floor(Date.now()/1000));
+      btn.disabled=false; btn.textContent='Fiyat Getir'; return;
     }catch(e){}
   }
 
-  // Sunucu çalışmıyor — CORS proxy fallback dene
-  msg.style.color='#fdba74';
-  msg.textContent='Sunucu bulunamadı, alternatif kaynak deneniyor…';
-  try{
-    const ticker=sym+'.IS';
-    const yfUrl='https://query2.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=1d';
-    const proxies=[
-      'https://corsproxy.io/?'+encodeURIComponent(yfUrl),
-      'https://api.allorigins.win/raw?url='+encodeURIComponent(yfUrl),
-      'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(yfUrl),
-    ];
-    for(const url of proxies){
-      try{
-        const r=await fetch(url,{signal:AbortSignal.timeout(6000)});
-        if(!r.ok) continue;
-        const data=await r.json();
-        const closes=data.chart.result[0].indicators.quote[0].close.filter(v=>v!=null);
-        if(!closes.length) continue;
-        const price=parseFloat(closes.at(-1).toFixed(2));
-        gcShowPrice(sym,price,Math.floor(Date.now()/1000));
-        btn.disabled=false; btn.textContent='Fiyat Getir';
-        return;
-      }catch(e){}
-    }
-  }catch(e){}
   msg.style.color='#f87171';
-  msg.textContent='Fiyat alınamadı — automation_server başlatın veya manuel girin.';
+  msg.textContent='Fiyat alınamadı — lütfen manuel girin.';
   btn.disabled=false; btn.textContent='Fiyat Getir';
 }
 

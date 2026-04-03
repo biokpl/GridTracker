@@ -284,6 +284,12 @@ def firebase_watcher():
                 print(f'[Fiyat] Güncelleme hatası: {e}')
             last_price_update = time.time()
 
+        # --- Heartbeat yaz ---
+        try:
+            fb_write('gridtracker/serverHeartbeat', {'ts': int(time.time())})
+        except Exception:
+            pass
+
         time.sleep(10)
 
 
