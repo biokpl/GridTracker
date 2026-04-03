@@ -3219,6 +3219,10 @@ function renderGridCalcPage(){
   const rs=$('gc-res');if(rs&&gc.resistance)rs.value=gc.resistance;
   const at=$('gc-atr');if(at&&gc.atr)at.value=gc.atr;
   const pr=$('gc-price');if(pr&&gc.currentPrice)pr.value=gc.currentPrice;
+  // Tüm alanlar doluysa otomatik hesapla — her cihazda sonuçlar görünsün
+  if(gc.symbol&&gc.capital>0&&gc.support>0&&gc.resistance>0&&gc.atr>0){
+    calcGridBot();
+  }
 }
 
 
