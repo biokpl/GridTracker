@@ -3423,8 +3423,8 @@ function gcAtrRange(){
   const price=parseFloat($('gc-price').value)||0;
   const atr=parseFloat($('gc-atr').value)||0;
   if(!price||!atr){toast('Önce Güncel Fiyat ve ATR girin','err');return;}
-  $('gc-sup').value=parseFloat((price-atr).toFixed(2));
-  $('gc-res').value=parseFloat((price+atr).toFixed(2));
+  $('gc-sup').value=parseFloat((price-atr*1.5).toFixed(2));
+  $('gc-res').value=parseFloat((price+atr*1.5).toFixed(2));
   toast('Destek ve Direnç ATR\'ye göre ayarlandı','suc');
 }
 function gcReset(){
@@ -3530,7 +3530,7 @@ function calcGridBot(){
   const midPrice=(support+resistance)/2;
   const minSpacing=midPrice*0.005;
 
-  const minN=Math.max(5,Math.ceil(range/(atr*0.5)));
+  const minN=Math.max(8,Math.ceil(range/(atr*0.3)));
   const maxN=Math.min(100,Math.floor(range/minSpacing));
 
   if(minN>maxN){toast('ATR aralığa göre çok büyük — girdileri kontrol edin','err');return;}
