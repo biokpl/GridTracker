@@ -1292,20 +1292,18 @@ select.field-input option{background:var(--surface2);}
   <div class="card" style="margin-bottom:12px">
     <div class="card-body" style="padding:12px">
 
-      <!-- Hisse + ATR Getir -->
+      <!-- Hisse Kodu -->
       <div class="gc-field-row" style="align-items:flex-end">
         <div class="field-wrap" style="flex:1">
           <div class="gc-label">HİSSE KODU</div>
           <input class="field-input" id="gc-sym" type="text" inputmode="text" autocomplete="off" placeholder="SASA" style="width:100%;padding:5px 8px;font-size:12px;height:auto;text-transform:uppercase" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter'){this.blur();$('gc-atr').focus();}">
         </div>
-        <button class="btn btn-ghost btn-sm" id="gc-atr-btn" style="font-size:10px;padding:5px 12px;white-space:nowrap;flex-shrink:0" onclick="gcFetchATR()">ATR Getir</button>
       </div>
 
       <!-- ATR alanı -->
       <div style="margin-bottom:8px">
-        <div class="gc-label">ATR (14 Günlük Ortalama Gün İçi Aralık)</div>
+        <div class="gc-label">ATR (Ortalama Günlük Hareket)</div>
         <input class="field-input" id="gc-atr" type="number" inputmode="decimal" autocomplete="off" placeholder="0.00" step="0.01" style="width:100%;padding:5px 8px;font-size:12px;height:auto" onkeydown="if(event.key==='Enter'){this.blur();$('gc-cap').focus();}">
-        <div id="gc-atr-msg" style="display:none" class="gc-alert"></div>
       </div>
 
       <!-- Sermaye -->
@@ -3175,61 +3173,6 @@ function renderGridCalcPage(){
   const at=$('gc-atr');if(at&&gc.atr)at.value=gc.atr;
 }
 
-async function gcFetchATR(){
-  const sym=($('gc-sym').value||'').toUpperCase().trim();
-  if(!sym){toast('Hisse kodu girin','err');return;}
-  const btn=$('gc-atr-btn');
-  const msg=$('gc-atr-msg');
-  btn.disabled=true;
-  btn.innerHTML='<span class="gc-spin"></span>Getiriliyor';
-  msg.style.display='none';
-
-  async function tryFetch(proxyUrl){
-    const r=await fetch(proxyUrl,{signal:AbortSignal.timeout(8000)});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const data=await r.json();
-    const result=data.chart.result[0];
-    const quote=result.indicators.quote[0];
-    const highs=quote.high.filter(v=>v!=null).slice(-7);
-    const lows=quote.low.filter(v=>v!=null).slice(-7);
-    const closes=quote.close.filter(v=>v!=null);
-    const n=Math.min(highs.length,lows.length);
-    if(n<1) throw new Error('Yetersiz veri');
-    const atr=highs.slice(0,n).reduce((s,h,i)=>s+(h-lows[i]),0)/n;
-    const price=closes.at(-1)||null;
-    return {atr,price,n};
-  }
-
-  const ticker=sym+'.IS';
-  const yfUrl='https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=10d';
-  const proxies=[
-    'https://corsproxy.io/?'+encodeURIComponent(yfUrl),
-    'https://api.allorigins.win/raw?url='+encodeURIComponent(yfUrl),
-    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(yfUrl),
-  ];
-
-  let last=null;
-  for(const url of proxies){
-    try{
-      const res=await tryFetch(url);
-      $('gc-atr').value=parseFloat(res.atr.toFixed(4));
-      $('gc-atr').readOnly=false;
-      msg.className='gc-alert ok';
-      msg.textContent='Ort. Günlük Hareket ('+res.n+' gün): '+res.atr.toFixed(4)+' ₺'+(res.price?' | Güncel: '+res.price.toFixed(2)+' ₺':'');
-      msg.style.display='block';
-      btn.disabled=false;
-      btn.innerHTML='ATR Getir';
-      return;
-    }catch(e){last=e;}
-  }
-
-  $('gc-atr').readOnly=false;
-  msg.className='gc-alert warn';
-  msg.textContent='ATR alınamadı — lütfen manuel girin.';
-  msg.style.display='block';
-  btn.disabled=false;
-  btn.innerHTML='ATR Getir';
-}
 
 function calcGridBot(){
   const sym=($('gc-sym').value||'').toUpperCase().trim();
