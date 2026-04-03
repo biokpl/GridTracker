@@ -3814,7 +3814,13 @@ document.addEventListener('DOMContentLoaded',async()=>{
       if(D.settings.trackAccum!=null) S.settings.trackAccum=D.settings.trackAccum;
       if(D.settings.trackLastDate!=null) S.settings.trackLastDate=D.settings.trackLastDate;
       if(D.settings.trackPayAmt!=null) S.settings.trackPayAmt=D.settings.trackPayAmt;
+      if(D.settings.gridCalc!=null) S.settings.gridCalc=D.settings.gridCalc;
     }
+  }
+  // GridBot sonuçları Firebase'den yüklendikten sonra göster
+  const gc=S.settings.gridCalc||{};
+  if(gc.symbol&&gc.capital>0&&gc.support>0&&gc.resistance>0&&gc.atr>0){
+    renderGridCalcPage();
   }
   renderHome();
 
@@ -3830,6 +3836,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
     if(ds.trackAccum!=null) S.settings.trackAccum=ds.trackAccum;
     if(ds.trackLastDate!=null) S.settings.trackLastDate=ds.trackLastDate;
     if(ds.trackPayAmt!=null) S.settings.trackPayAmt=ds.trackPayAmt;
+    if(ds.gridCalc!=null) S.settings.gridCalc=ds.gridCalc;
   }
   function renderAll(showToast){
     syncSettings();
@@ -3839,6 +3846,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
     if(pid==='pg-monthly'||pid==='pg-trades') renderMonthly();
     if(pid==='pg-overall') renderOverall();
     if(pid==='pg-settings'){ renderSettings(); }
+    if(pid==='pg-gridcalc'){ renderGridCalcPage(); }
     if(showToast) toast('Veri güncellendi','ok',2000);
   }
   function setNestedD(path,data){
