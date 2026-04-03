@@ -4132,6 +4132,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
       } else {
         if(!D) return;
         setNestedD(path.slice(1), data); // data null olabilir (Firebase boş array/objeyi siler)
+        saveCache();
         renderAll(false);
       }
     }catch(_){}
