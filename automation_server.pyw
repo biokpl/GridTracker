@@ -193,18 +193,43 @@ def setup_autostart():
         print(f'Hata: {result.stdout}{result.stderr}')
 
 
+def fb_write(path, data):
+    """Firebase Realtime Database'e REST API ile veri yazar."""
+    url = f'{FIREBASE_URL}/{path}.json'
+    payload = json.dumps(data).encode('utf-8')
+    req = urllib.request.Request(url, data=payload, method='PUT')
+    req.add_header('Content-Type', 'application/json')
+    with urllib.request.urlopen(req, timeout=8) as r:
+        return json.loads(r.read())
+
+
+def fetch_price(symbol):
+    """Yahoo Finance'ten anlık kapanış fiyatını çeker."""
+    ticker = symbol.upper() + '.IS'
+    url = f'https://query2.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=1d'
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(req, timeout=8) as resp:
+        data = json.loads(resp.read())
+    closes = [v for v in data['chart']['result'][0]['indicators']['quote'][0]['close'] if v is not None]
+    return round(closes[-1], 2) if closes else None
+
+
 def firebase_watcher():
     """
     Firebase'deki /settings/schedule_time değerini 60 saniyede bir izler.
     Değişirse yerel config + Task Scheduler güncellenir.
+    Ayrıca gridCalc sembolünün fiyatını her 2 dakikada bir günceller.
     """
-    last = None
+    last_sched = None
+    last_price_update = 0
+
     while True:
         try:
+            # --- Schedule sync ---
             req = urllib.request.urlopen(
                 f'{FIREBASE_URL}/settings/schedule_time.json', timeout=10)
             val = json.loads(req.read().decode())
-            if val and isinstance(val, str) and re.match(r'^\d{2}:\d{2}$', val) and val != last:
+            if val and isinstance(val, str) and re.match(r'^\d{2}:\d{2}$', val) and val != last_sched:
                 cfg = _read_cfg()
                 current = cfg.get('schedule', 'time', fallback='09:15')
                 if val != current:
@@ -214,10 +239,30 @@ def firebase_watcher():
                     _write_cfg(cfg)
                     ok, _ = _update_task(val)
                     print(f'[Firebase] Saat güncellendi: {val}  (görev: {"OK" if ok else "HATA"})')
-                last = val
-        except Exception as e:
+                last_sched = val
+        except Exception:
             pass
-        time.sleep(60)
+
+        # --- Hisse fiyatı güncelle (her 2 dakikada bir) ---
+        if time.time() - last_price_update >= 120:
+            try:
+                req2 = urllib.request.urlopen(
+                    f'{FIREBASE_URL}/gridtracker/settings/gridCalc.json', timeout=10)
+                gc = json.loads(req2.read().decode())
+                symbol = (gc or {}).get('symbol', '').strip().upper()
+                if symbol:
+                    price = fetch_price(symbol)
+                    if price:
+                        fb_write('gridtracker/livePrices/' + symbol, {
+                            'price': price,
+                            'ts': int(time.time())
+                        })
+                        print(f'[Fiyat] {symbol}: {price} ₺')
+            except Exception as e:
+                print(f'[Fiyat] Güncelleme hatası: {e}')
+            last_price_update = time.time()
+
+        time.sleep(30)
 
 
 if __name__ == '__main__':

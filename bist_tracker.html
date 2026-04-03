@@ -3241,35 +3241,27 @@ async function gcFetchPrice(){
   const msg=$('gc-price-msg');
   btn.disabled=true; btn.textContent='Getiriliyor…';
   msg.style.display='none';
-  const ticker=sym+'.IS';
-  const yfUrl='https://query2.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=1d';
-  const proxies=[
-    'https://corsproxy.io/?'+encodeURIComponent(yfUrl),
-    'https://api.allorigins.win/raw?url='+encodeURIComponent(yfUrl),
-    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(yfUrl),
-  ];
-  let ok=false;
-  for(const url of proxies){
-    try{
-      const r=await fetch(url,{signal:AbortSignal.timeout(7000)});
-      if(!r.ok) continue;
-      const data=await r.json();
-      const closes=data.chart.result[0].indicators.quote[0].close.filter(v=>v!=null);
-      if(!closes.length) continue;
-      const price=parseFloat(closes.at(-1).toFixed(2));
+
+  try{
+    // Firebase'den oku — automation_server her 2 dakikada bir günceller
+    const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(6000)});
+    const data=await r.json();
+    if(data && data.price){
+      const price=data.price;
+      const ageMin=Math.round((Date.now()/1000-data.ts)/60);
       $('gc-price').value=price;
-      msg.textContent=sym+' güncel fiyat: '+price.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺';
+      msg.style.color='#86efac';
+      msg.textContent=sym+': '+price.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺'+(data.ts?' ('+ageMin+' dk önce güncellendi)':'');
       msg.style.display='block';
-      ok=true; break;
-    }catch(e){}
-  }
-  if(!ok){
-    msg.style.color='#f87171';
-    msg.textContent='Fiyat alınamadı — lütfen manuel girin.';
-    msg.style.display='block';
-  } else {
-    msg.style.color='#86efac';
-  }
+      btn.disabled=false; btn.textContent='Fiyat Getir';
+      return;
+    }
+  }catch(e){}
+
+  // Firebase'de veri yoksa — automation_server çalışmıyor
+  msg.style.color='#f87171';
+  msg.textContent='Fiyat bulunamadı — automation_server çalışıyor mu? Manuel girin.';
+  msg.style.display='block';
   btn.disabled=false; btn.textContent='Fiyat Getir';
 }
 
