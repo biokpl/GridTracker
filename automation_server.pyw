@@ -214,82 +214,89 @@ def fetch_price(symbol):
     return round(closes[-1], 2) if closes else None
 
 
-def firebase_watcher():
-    """
-    Firebase'deki /settings/schedule_time değerini 60 saniyede bir izler.
-    Değişirse yerel config + Task Scheduler güncellenir.
-    Ayrıca gridCalc sembolünün fiyatını her 2 dakikada bir günceller.
-    """
-    last_sched = None
-    last_price_update = 0
+def _watcher_loop():
+    """Firebase izleyici ana döngüsü — tek iterasyon."""
+    last_sched = getattr(_watcher_loop, '_last_sched', None)
+    last_price_update = getattr(_watcher_loop, '_last_price_update', 0)
 
-    while True:
-        try:
-            # --- Schedule sync ---
-            req = urllib.request.urlopen(
-                f'{FIREBASE_URL}/settings/schedule_time.json', timeout=10)
-            val = json.loads(req.read().decode())
-            if val and isinstance(val, str) and re.match(r'^\d{2}:\d{2}$', val) and val != last_sched:
-                cfg = _read_cfg()
-                current = cfg.get('schedule', 'time', fallback='09:15')
-                if val != current:
-                    if 'schedule' not in cfg:
-                        cfg.add_section('schedule')
-                    cfg.set('schedule', 'time', val)
-                    _write_cfg(cfg)
-                    ok, _ = _update_task(val)
-                    print(f'[Firebase] Saat güncellendi: {val}  (görev: {"OK" if ok else "HATA"})')
-                last_sched = val
-        except Exception:
-            pass
+    try:
+        # --- Schedule sync ---
+        req = urllib.request.urlopen(
+            f'{FIREBASE_URL}/settings/schedule_time.json', timeout=10)
+        val = json.loads(req.read().decode())
+        if val and isinstance(val, str) and re.match(r'^\d{2}:\d{2}$', val) and val != last_sched:
+            cfg = _read_cfg()
+            current = cfg.get('schedule', 'time', fallback='09:15')
+            if val != current:
+                if 'schedule' not in cfg:
+                    cfg.add_section('schedule')
+                cfg.set('schedule', 'time', val)
+                _write_cfg(cfg)
+                ok, _ = _update_task(val)
+                print(f'[Firebase] Saat güncellendi: {val}  (görev: {"OK" if ok else "HATA"})')
+            _watcher_loop._last_sched = val
+    except Exception:
+        pass
 
+    try:
         # --- Anlık fiyat talepleri (priceRequests) ---
-        try:
-            req3 = urllib.request.urlopen(
-                f'{FIREBASE_URL}/gridtracker/priceRequests.json', timeout=10)
-            requests_data = json.loads(req3.read().decode())
-            if requests_data and isinstance(requests_data, dict):
-                for sym in list(requests_data.keys()):
-                    try:
-                        price = fetch_price(sym)
-                        if price:
-                            fb_write('gridtracker/livePrices/' + sym, {
-                                'price': price,
-                                'ts': int(time.time())
-                            })
-                            print(f'[Talep] {sym}: {price} ₺')
-                    except Exception as e:
-                        print(f'[Talep] {sym} hatası: {e}')
-                # Talepleri temizle
-                fb_write('gridtracker/priceRequests', {})
-        except Exception:
-            pass
-
-        # --- Hisse fiyatı güncelle (her 2 dakikada bir) ---
-        if time.time() - last_price_update >= 120:
-            try:
-                req2 = urllib.request.urlopen(
-                    f'{FIREBASE_URL}/gridtracker/settings/gridCalc.json', timeout=10)
-                gc = json.loads(req2.read().decode())
-                symbol = (gc or {}).get('symbol', '').strip().upper()
-                if symbol:
-                    price = fetch_price(symbol)
+        req3 = urllib.request.urlopen(
+            f'{FIREBASE_URL}/gridtracker/priceRequests.json', timeout=10)
+        requests_data = json.loads(req3.read().decode())
+        if requests_data and isinstance(requests_data, dict):
+            for sym in list(requests_data.keys()):
+                try:
+                    price = fetch_price(sym)
                     if price:
-                        fb_write('gridtracker/livePrices/' + symbol, {
+                        fb_write('gridtracker/livePrices/' + sym, {
                             'price': price,
                             'ts': int(time.time())
                         })
-                        print(f'[Fiyat] {symbol}: {price} ₺')
-            except Exception as e:
-                print(f'[Fiyat] Güncelleme hatası: {e}')
-            last_price_update = time.time()
+                        print(f'[Talep] {sym}: {price} ₺')
+                except Exception as e:
+                    print(f'[Talep] {sym} hatası: {e}')
+            fb_write('gridtracker/priceRequests', {})
+    except Exception:
+        pass
 
-        # --- Heartbeat yaz ---
+    # --- Hisse fiyatı güncelle (her 2 dakikada bir) ---
+    if time.time() - last_price_update >= 120:
         try:
-            fb_write('gridtracker/serverHeartbeat', {'ts': int(time.time())})
-        except Exception:
-            pass
+            req2 = urllib.request.urlopen(
+                f'{FIREBASE_URL}/gridtracker/settings/gridCalc.json', timeout=10)
+            gc = json.loads(req2.read().decode())
+            symbol = (gc or {}).get('symbol', '').strip().upper()
+            if symbol:
+                price = fetch_price(symbol)
+                if price:
+                    fb_write('gridtracker/livePrices/' + symbol, {
+                        'price': price,
+                        'ts': int(time.time())
+                    })
+                    print(f'[Fiyat] {symbol}: {price} ₺')
+        except Exception as e:
+            print(f'[Fiyat] Güncelleme hatası: {e}')
+        _watcher_loop._last_price_update = time.time()
 
+    # --- Heartbeat yaz ---
+    try:
+        fb_write('gridtracker/serverHeartbeat', {'ts': int(time.time())})
+    except Exception as e:
+        print(f'[Heartbeat] Hata: {e}')
+
+
+_watcher_loop._last_sched = None
+_watcher_loop._last_price_update = 0
+
+
+def firebase_watcher():
+    """Firebase izleyici — çökse bile kendini yeniden başlatır."""
+    print('[Firebase] İzleyici başladı.')
+    while True:
+        try:
+            _watcher_loop()
+        except Exception as e:
+            print(f'[Firebase] Beklenmedik hata, devam ediliyor: {e}')
         time.sleep(10)
 
 

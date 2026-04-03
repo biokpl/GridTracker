@@ -1480,48 +1480,149 @@ async function fbWrite(path,data){
 // ════════════════════════════════════════════════════════
                 // GRID_DATA_START
         window.__GRID_DATA__ = {
-  "lastUpdated": "2026-04-02 18:35:23",
-  "today": "2026-04-02",
-  "todayOverall": 1239798.9,
+  "lastUpdated": "2026-04-03 18:35:22",
+  "today": "2026-04-03",
+  "todayOverall": 1279586.37,
   "todayProfit": {
     "bySymbol": {
       "MIATK": {
         "symbol": "MIATK",
-        "buyCount": 0,
+        "buyCount": 3,
         "sellCount": 1,
-        "pairCount": 0,
+        "pairCount": 3,
         "openBuys": 0,
         "carriedIn": 0,
-        "avgBuy": 0,
-        "avgSell": 43.6,
-        "grossProfit": 0,
-        "commission": 0.0959,
-        "netProfit": -0.0959,
-        "pairs": [],
+        "avgBuy": 42.2667,
+        "avgSell": 42.6,
+        "grossProfit": 50.0,
+        "commission": 2.2997,
+        "netProfit": 47.7003,
+        "pairs": [
+          {
+            "buyPrice": 42.6,
+            "sellPrice": 42.6,
+            "qty": 50,
+            "gross": 0.0,
+            "comm": 0.426,
+            "net": -0.426,
+            "buyTime": "10:03:48",
+            "sellTime": "10:02:49",
+            "buyDate": "2026-04-03",
+            "carryover": false
+          },
+          {
+            "buyPrice": 42.6,
+            "sellPrice": 42.6,
+            "qty": 50,
+            "gross": 0.0,
+            "comm": 0.426,
+            "net": -0.426,
+            "buyTime": "10:03:49",
+            "sellTime": "10:02:49",
+            "buyDate": "2026-04-03",
+            "carryover": false
+          },
+          {
+            "buyPrice": 41.6,
+            "sellPrice": 42.6,
+            "qty": 50,
+            "gross": 50.0,
+            "comm": 0.421,
+            "net": 49.579,
+            "buyTime": "15:36:35",
+            "sellTime": "10:02:49",
+            "buyDate": "2026-04-03",
+            "carryover": false
+          }
+        ],
         "openPositions": []
       }
     },
-    "totalGross": 0,
-    "totalCommission": 0.0959,
-    "totalNet": -0.0959,
+    "totalGross": 50.0,
+    "totalCommission": 2.2997,
+    "totalNet": 47.7003,
     "openPositions": {}
   },
   "allTrades": [
     {
       "symbol": "MIATK",
-      "type": "Satış",
-      "qty": 22,
-      "price": 43.6,
+      "type": "Alış",
+      "qty": 50,
+      "price": 41.6,
       "status": "Gerçekleşti",
-      "execQty": 22,
+      "execQty": 50,
+      "amount": 2080.0,
+      "execPrice": 41.6,
+      "execAmount": 2080.0,
+      "commission": 0.208,
+      "time": "15:36:35",
+      "date": "2026-04-03",
+      "datetime": "2026-04-03 15:36:35",
+      "referans": "785794438"
+    },
+    {
+      "symbol": "MIATK",
+      "type": "Alış",
+      "qty": 50,
+      "price": 42.6,
+      "status": "Gerçekleşti",
+      "execQty": 50,
+      "amount": 2130.0,
+      "execPrice": 42.6,
+      "execAmount": 2130.0,
+      "commission": 0.213,
+      "time": "10:03:49",
+      "date": "2026-04-03",
+      "datetime": "2026-04-03 10:03:49",
+      "referans": "785248274"
+    },
+    {
+      "symbol": "MIATK",
+      "type": "Alış",
+      "qty": 50,
+      "price": 42.6,
+      "status": "Gerçekleşti",
+      "execQty": 50,
+      "amount": 2130.0,
+      "execPrice": 42.6,
+      "execAmount": 2130.0,
+      "commission": 0.213,
+      "time": "10:03:48",
+      "date": "2026-04-03",
+      "datetime": "2026-04-03 10:03:48",
+      "referans": "785248213"
+    },
+    {
+      "symbol": "MIATK",
+      "type": "Satış",
+      "qty": 391,
+      "price": 42.6,
+      "status": "Gerçekleşti",
+      "execQty": 391,
+      "amount": 16656.6,
+      "execPrice": 42.6,
+      "execAmount": 16656.6,
+      "commission": 1.66566,
+      "time": "10:02:49",
+      "date": "2026-04-03",
+      "datetime": "2026-04-03 10:02:49",
+      "referans": "785241159"
+    },
+    {
       "amount": 959.2,
-      "execPrice": 43.6,
-      "execAmount": 959.2,
       "commission": 0.09592,
-      "time": "14:42:34",
       "date": "2026-04-02",
       "datetime": "2026-04-02 14:42:34",
-      "referans": "784487824"
+      "execAmount": 959.2,
+      "execPrice": 43.6,
+      "execQty": 22,
+      "price": 43.6,
+      "qty": 22,
+      "referans": "784487824",
+      "status": "Gerçekleşti",
+      "symbol": "MIATK",
+      "time": "14:42:34",
+      "type": "Satış"
     },
     {
       "amount": 28.8,
@@ -2356,32 +2457,95 @@ async function fbWrite(path,data){
       "updatedAt": "2026-04-01 18:35:23"
     },
     "2026-04-02": {
-      "date": "2026-04-02",
-      "trades": 1,
-      "sells": 1,
       "buys": 0,
-      "grossProfit": 0,
+      "bySymbol": {
+        "MIATK": {
+          "avgBuy": 0,
+          "avgSell": 43.6,
+          "buyCount": 0,
+          "carriedIn": 0,
+          "commission": 0.0959,
+          "grossProfit": 0,
+          "netProfit": -0.0959,
+          "openBuys": 0,
+          "pairCount": 0,
+          "sellCount": 1,
+          "symbol": "MIATK"
+        }
+      },
       "commission": 0.0959,
+      "date": "2026-04-02",
+      "grossProfit": 0,
       "netProfit": -0.0959,
       "overall": 1239798.9,
+      "sells": 1,
+      "trades": 1,
+      "updatedAt": "2026-04-02 18:35:23"
+    },
+    "2026-04-03": {
+      "date": "2026-04-03",
+      "trades": 4,
+      "sells": 1,
+      "buys": 3,
+      "grossProfit": 50.0,
+      "commission": 2.2997,
+      "netProfit": 47.7003,
+      "overall": 1279586.37,
       "bySymbol": {
         "MIATK": {
           "symbol": "MIATK",
-          "buyCount": 0,
+          "buyCount": 3,
           "sellCount": 1,
-          "pairCount": 0,
+          "pairCount": 3,
           "openBuys": 0,
           "carriedIn": 0,
-          "avgBuy": 0,
-          "avgSell": 43.6,
-          "grossProfit": 0,
-          "commission": 0.0959,
-          "netProfit": -0.0959,
-          "pairs": [],
+          "avgBuy": 42.2667,
+          "avgSell": 42.6,
+          "grossProfit": 50.0,
+          "commission": 2.2997,
+          "netProfit": 47.7003,
+          "pairs": [
+            {
+              "buyPrice": 42.6,
+              "sellPrice": 42.6,
+              "qty": 50,
+              "gross": 0.0,
+              "comm": 0.426,
+              "net": -0.426,
+              "buyTime": "10:03:48",
+              "sellTime": "10:02:49",
+              "buyDate": "2026-04-03",
+              "carryover": false
+            },
+            {
+              "buyPrice": 42.6,
+              "sellPrice": 42.6,
+              "qty": 50,
+              "gross": 0.0,
+              "comm": 0.426,
+              "net": -0.426,
+              "buyTime": "10:03:49",
+              "sellTime": "10:02:49",
+              "buyDate": "2026-04-03",
+              "carryover": false
+            },
+            {
+              "buyPrice": 41.6,
+              "sellPrice": 42.6,
+              "qty": 50,
+              "gross": 50.0,
+              "comm": 0.421,
+              "net": 49.579,
+              "buyTime": "15:36:35",
+              "sellTime": "10:02:49",
+              "buyDate": "2026-04-03",
+              "carryover": false
+            }
+          ],
           "openPositions": []
         }
       },
-      "updatedAt": "2026-04-02 18:35:23"
+      "updatedAt": "2026-04-03 18:35:22"
     }
   },
   "overallHistory": [
@@ -2416,8 +2580,13 @@ async function fbWrite(path,data){
       "note": "Otomatik - 18:35"
     },
     {
-      "date": "2026-04-02",
       "amount": 1239798.9,
+      "date": "2026-04-02",
+      "note": "Otomatik - 18:35"
+    },
+    {
+      "date": "2026-04-03",
+      "amount": 1279586.37,
       "note": "Otomatik - 18:35"
     }
   ],
@@ -2452,7 +2621,7 @@ async function fbWrite(path,data){
     }
   ],
   "openPositions": {
-    "date": "2026-04-02",
+    "date": "2026-04-03",
     "positions": {}
   },
   "settings": {
@@ -2487,9 +2656,21 @@ async function fbWrite(path,data){
         "name": "Endeks Veri"
       }
     ],
+    "gridCalc": {
+      "atr": 0.91,
+      "capital": 1150000,
+      "currentPrice": 29.58,
+      "resistance": 33,
+      "support": 28.65,
+      "symbol": "EREGL"
+    },
     "gridInterval": 0,
     "lotTolerance": 0,
-    "monthlyTarget": 45000
+    "monthlyTarget": 45000,
+    "trackAccum": 47.7003,
+    "trackLastDate": "2026-04-03",
+    "trackSymbol": "MIATK",
+    "trackTarget": 1000
   },
   "birikimTx": [
     {
@@ -2498,6 +2679,14 @@ async function fbWrite(path,data){
       "exclude": true,
       "id": "1000000000000",
       "note": "Başlangıç Sermayesi"
+    },
+    {
+      "amount": -12000,
+      "date": "2025-08-01",
+      "exclude": true,
+      "id": "1743591600000",
+      "note": "Annem'e Ödeme Yapıldı",
+      "trackPayment": true
     },
     {
       "amount": -20000,
@@ -3299,30 +3488,13 @@ async function gcFetchPrice(){
     }
   }
 
-  // 3b. Sunucu yok veya polling timeout → CORS proxy dene
-  msg.textContent='Alternatif kaynak deneniyor…';
-  const ticker=sym+'.IS';
-  const yfUrl='https://query2.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=1d';
-  const proxies=[
-    'https://corsproxy.io/?'+encodeURIComponent(yfUrl),
-    'https://api.allorigins.win/raw?url='+encodeURIComponent(yfUrl),
-    'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(yfUrl),
-  ];
-  for(const url of proxies){
-    try{
-      const r=await fetch(url,{signal:AbortSignal.timeout(6000)});
-      if(!r.ok) continue;
-      const data=await r.json();
-      const closes=data.chart.result[0].indicators.quote[0].close.filter(v=>v!=null);
-      if(!closes.length) continue;
-      const price=parseFloat(closes.at(-1).toFixed(2));
-      gcShowPrice(sym,price,Math.floor(Date.now()/1000));
-      btn.disabled=false; btn.textContent='Fiyat Getir'; return;
-    }catch(e){}
-  }
-
+  // 3b. Sunucu kapalı → net hata mesajı
   msg.style.color='#f87171';
-  msg.textContent='Fiyat alınamadı — lütfen manuel girin.';
+  if(!serverAlive){
+    msg.textContent='Otomasyon sunucusu kapalı — PC\'de automation_server.pyw\'yi başlat veya fiyatı manuel gir.';
+  } else {
+    msg.textContent='Sunucu yanıt vermedi — fiyatı manuel girin.';
+  }
   btn.disabled=false; btn.textContent='Fiyat Getir';
 }
 
