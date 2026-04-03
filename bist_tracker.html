@@ -1304,7 +1304,7 @@ select.field-input option{background:var(--surface2);}
       <!-- Güncel Fiyat -->
       <div style="margin-bottom:4px">
         <div class="gc-label">GÜNCEL FİYAT (₺)</div>
-        <input class="field-input" id="gc-price" type="number" inputmode="decimal" autocomplete="off" placeholder="0.00" step="0.01" style="width:100%;padding:5px 8px;font-size:12px;height:auto" onkeydown="if(event.key==='Enter'){this.blur();$('gc-cap').focus();}">
+        <input class="field-input" id="gc-price" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;padding:5px 8px;font-size:12px;height:auto" oninput="this.value=this.value.replace(/,/g,'.')" onkeydown="if(event.key==='Enter'){this.blur();$('gc-cap').focus();}">
         <div id="gc-price-msg" style="display:none;font-size:10px;margin-top:3px;color:#86efac"></div>
       </div>
 
@@ -1318,18 +1318,18 @@ select.field-input option{background:var(--surface2);}
       <div class="gc-field-row">
         <div style="flex:1;min-width:0">
           <div class="gc-label">DESTEK (₺)</div>
-          <input class="field-input" id="gc-sup" type="number" inputmode="decimal" autocomplete="off" placeholder="0.00" step="0.01" style="width:100%;padding:5px 8px;font-size:12px;height:auto" onkeydown="if(event.key==='Enter'){this.blur();$('gc-res').focus();}">
+          <input class="field-input" id="gc-sup" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;padding:5px 8px;font-size:12px;height:auto" oninput="this.value=this.value.replace(/,/g,'.')" onkeydown="if(event.key==='Enter'){this.blur();$('gc-res').focus();}">
         </div>
         <div style="flex:1;min-width:0">
           <div class="gc-label">DİRENÇ (₺)</div>
-          <input class="field-input" id="gc-res" type="number" inputmode="decimal" autocomplete="off" placeholder="0.00" step="0.01" style="width:100%;padding:5px 8px;font-size:12px;height:auto" onkeydown="if(event.key==='Enter'){this.blur();$('gc-atr').focus();}">
+          <input class="field-input" id="gc-res" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;padding:5px 8px;font-size:12px;height:auto" oninput="this.value=this.value.replace(/,/g,'.')" onkeydown="if(event.key==='Enter'){this.blur();$('gc-atr').focus();}">
         </div>
       </div>
 
       <!-- ATR alanı -->
       <div style="margin-bottom:8px">
         <div class="gc-label">ATR (Ortalama Günlük Hareket)</div>
-        <input class="field-input" id="gc-atr" type="number" inputmode="decimal" autocomplete="off" placeholder="0.00" step="0.01" style="width:100%;padding:5px 8px;font-size:12px;height:auto" onkeydown="if(event.key==='Enter'){this.blur();calcGridBot();}">
+        <input class="field-input" id="gc-atr" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;padding:5px 8px;font-size:12px;height:auto" oninput="this.value=this.value.replace(/,/g,'.')" onkeydown="if(event.key==='Enter'){this.blur();calcGridBot();}">
       </div>
 
       <div style="display:flex;gap:8px;margin-top:4px">
