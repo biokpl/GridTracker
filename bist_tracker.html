@@ -1373,7 +1373,7 @@ select.field-input option{background:var(--surface2);}
       </div>
       <div id="gc-sr-alts" style="display:none;margin-bottom:5px;flex-direction:row;gap:4px"></div>
 
-      <div style="display:flex;gap:6px">
+      <div style="display:flex;gap:6px;margin-top:10px">
         <button class="btn btn-ghost" style="flex:1;font-size:11px;padding:8px 4px;display:flex;align-items:center;justify-content:center;text-align:center;border-color:rgba(99,179,237,.3);color:#7dd3fc;line-height:1.4" onclick="gcAtrRange()">Grid Aralığı Öner</button>
         <button class="btn btn-ghost" style="flex:2;font-size:11px;padding:8px;display:flex;align-items:center;justify-content:center;border-color:rgba(249,115,22,.4);color:#fdba74;font-weight:600" onclick="calcGridBot()">Hesapla</button>
         <button class="btn btn-ghost" style="flex:1;font-size:11px;padding:8px;display:flex;align-items:center;justify-content:center;border-color:rgba(239,68,68,.25);color:#f87171" onclick="gcReset()">Sıfırla</button>
@@ -3584,54 +3584,33 @@ async function gcFetchPrice(){
   btn.disabled=true; btn.textContent='Getiriliyor…';
   msg.style.color='#fdba74'; msg.textContent='Fiyat alınıyor…'; msg.style.display='block';
 
-  // 1. Sunucu heartbeat kontrolü
-  let serverAlive=false;
+  // 1. Yerel sunucudan doğrudan fiyat çek
   try{
-    const hb=await fetch(FIREBASE_URL+'/gridtracker/serverHeartbeat.json',{signal:AbortSignal.timeout(4000)});
-    const hd=await hb.json();
-    if(hd&&hd.ts&&(Date.now()/1000-hd.ts)<30) serverAlive=true;
+    const r=await fetch(`http://localhost:5050/api/atr/${sym}`,{signal:AbortSignal.timeout(6000)});
+    const d=await r.json();
+    if(d&&d.price){
+      $('gc-price').value=d.price;
+      const ts=Math.round(Date.now()/1000);
+      msg.style.color='#86efac';
+      msg.textContent=sym+': '+d.price.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺';
+      msg.style.display='block';
+      btn.disabled=false; btn.textContent='Fiyat Getir'; return;
+    }
   }catch(e){}
 
-  // 2. Firebase'de taze fiyat varsa direkt kullan
+  // 2. Firebase'de taze fiyat varsa kullan
   try{
     const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(4000)});
     const d=await r.json();
-    if(d&&d.price&&(Date.now()/1000-d.ts)<120){
+    if(d&&d.price&&(Date.now()/1000-d.ts)<300){
       gcShowPrice(sym,d.price,d.ts);
       btn.disabled=false; btn.textContent='Fiyat Getir'; return;
     }
   }catch(e){}
 
-  if(serverAlive){
-    // 3a. Sunucu çalışıyor → talep yaz ve bekle
-    msg.textContent='Sunucu fiyatı çekiyor…';
-    try{
-      await fetch(FIREBASE_URL+'/gridtracker/priceRequests/'+sym+'.json',{
-        method:'PUT', body:JSON.stringify(Date.now()),
-        headers:{'Content-Type':'application/json'}, signal:AbortSignal.timeout(4000)
-      });
-    }catch(e){}
-    const deadline=Date.now()+20000;
-    while(Date.now()<deadline){
-      await new Promise(r=>setTimeout(r,2000));
-      try{
-        const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(4000)});
-        const d=await r.json();
-        if(d&&d.price&&(Date.now()/1000-d.ts)<25){
-          gcShowPrice(sym,d.price,d.ts);
-          btn.disabled=false; btn.textContent='Fiyat Getir'; return;
-        }
-      }catch(e){}
-    }
-  }
-
-  // 3b. Sunucu kapalı → net hata mesajı
+  // 3. Başarısız
   msg.style.color='#f87171';
-  if(!serverAlive){
-    msg.textContent='Otomasyon sunucusu kapalı — PC\'de automation_server.pyw\'yi başlat veya fiyatı manuel gir.';
-  } else {
-    msg.textContent='Sunucu yanıt vermedi — fiyatı manuel girin.';
-  }
+  msg.textContent='Fiyat alınamadı — manuel girin.';
   btn.disabled=false; btn.textContent='Fiyat Getir';
 }
 
