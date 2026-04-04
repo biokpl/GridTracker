@@ -1361,7 +1361,7 @@ select.field-input option{background:var(--surface2);}
         <button id="gc-sr-btn2" class="btn btn-ghost" style="flex:1;font-size:9px;padding:4px 2px;border-color:rgba(99,179,237,.3);color:#7dd3fc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;justify-content:center" onclick="gcAutoSR('swing5')">Ort. Destek/Direnç</button>
         <button id="gc-sr-btn3" class="btn btn-ghost" style="flex:1;font-size:9px;padding:4px 2px;border-color:rgba(52,211,153,.3);color:#6ee7b7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;justify-content:center" onclick="gcAutoSR('swing3')">Yakın Destek/Direnç</button>
       </div>
-      <div class="gc-field-row" style="margin-bottom:3px">
+      <div class="gc-field-row" style="margin-bottom:3px;margin-top:8px">
         <div style="flex:1;min-width:0">
           <div class="gc-label" style="text-align:center">DESTEK (₺)</div>
           <input class="field-input" id="gc-sup" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;padding:4px 8px;font-size:12px;height:auto;border-bottom:1px solid transparent;border-image:linear-gradient(90deg,transparent 5%,rgba(248,113,113,.15) 17%,rgba(248,113,113,.55) 50%,rgba(248,113,113,.15) 83%,transparent 95%) 0 0 1 0;box-shadow:0 4px 8px rgba(248,113,113,.08),0 6px 14px rgba(248,113,113,.04)" oninput="this.value=this.value.replace(/,/g,'.')" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur();$('gc-res').focus();}">
