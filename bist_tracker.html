@@ -1352,7 +1352,7 @@ select.field-input option{background:var(--surface2);}
           <input class="field-input" id="gc-atr" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="flex:1;padding:4px 8px;font-size:12px;height:auto" oninput="this.value=this.value.replace(/,/g,'.')" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur();$('gc-sup').focus();}">
           <button id="gc-atr-load-btn" class="btn btn-ghost" style="font-size:9px;padding:4px 8px;border-color:rgba(99,179,237,.3);color:#7dd3fc;white-space:nowrap" onclick="gcLoadAtrExcel()">Excel'den Yükle</button>
         </div>
-        <div id="gc-atr-breakdown" style="display:none;margin-top:5px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:3px"></div>
+        <div id="gc-atr-breakdown" style="visibility:hidden;margin-top:5px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:3px;min-height:34px"></div>
       </div>
 
       <!-- Destek | Direnç -->
@@ -3484,7 +3484,7 @@ async function gcLoadAtrExcel(){
     window._gcDirty=true;
     // Breakdown göster
     const bd=$('gc-atr-breakdown');
-    bd.style.display='grid';
+    bd.style.visibility='visible';
     const items=[
       ['60DK',row.atr60],['240DK',row.atr240],['Günlük',row.atrDay],['Haftalık',row.atrWeek]
     ];
@@ -3570,7 +3570,7 @@ function gcReset(){
   $('gc-split-strip').style.display='none';
   const bb=$('gc-bar-buy');const bs=$('gc-bar-sell');
   if(bb)bb.style.width='0%';if(bs)bs.style.width='0%';
-  const bd=$('gc-atr-breakdown');if(bd){bd.style.display='none';bd.innerHTML='';}
+  const bd=$('gc-atr-breakdown');if(bd){bd.style.visibility='hidden';bd.innerHTML='';}
   const sa=$('gc-sr-alts');if(sa){sa.style.display='none';sa.innerHTML='';}
   ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{const b=$(id);if(b){b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');b.style.opacity='';}});
   toast('GridBot ayarları sıfırlandı','inf');
