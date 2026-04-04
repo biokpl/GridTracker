@@ -148,6 +148,66 @@ def get_holidays(year):
     return _cors(jsonify(items))
 
 
+# ── GET /api/sr/<symbol> ──────────────────────────────────
+@app.route('/api/sr/<symbol>', methods=['GET', 'OPTIONS'])
+def get_sr(symbol):
+    if request.method == 'OPTIONS':
+        return _cors(Response('', 204))
+    try:
+        ticker = symbol.upper() + '.IS'
+        url = f'https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=60d'
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read())
+        q = data['chart']['result'][0]['indicators']['quote'][0]
+        prices = [(h, l, c) for h, l, c in zip(q['high'], q['low'], q['close']) if h and l and c]
+        if len(prices) < 10:
+            return _cors(jsonify({'error': 'Yetersiz veri'})), 400
+        current = prices[-1][2]
+        n = len(prices)
+        W = 2
+        swing_highs, swing_lows = [], []
+        for i in range(W, n - W):
+            h, l, _ = prices[i]
+            w = (i + 1) / n
+            if all(h >= prices[i+j][0] for j in range(-W, W+1) if j != 0):
+                swing_highs.append((round(h, 2), w))
+            if all(l <= prices[i+j][1] for j in range(-W, W+1) if j != 0):
+                swing_lows.append((round(l, 2), w))
+        def cluster(pts):
+            if not pts:
+                return []
+            pts = sorted(pts, key=lambda x: x[0])
+            groups, cur = [], [pts[0]]
+            for p in pts[1:]:
+                if abs(p[0] - cur[0][0]) / cur[0][0] < 0.008:
+                    cur.append(p)
+                else:
+                    groups.append(cur); cur = [p]
+            groups.append(cur)
+            result = []
+            for g in groups:
+                avg = round(sum(x[0] for x in g) / len(g), 2)
+                score = len(g) + sum(x[1] for x in g)
+                result.append((avg, score))
+            return [p for p, _ in sorted(result, key=lambda x: -x[1])]
+        ch = cluster(swing_highs)
+        cl = cluster(swing_lows)
+        supports    = sorted([p for p in cl if p < current * 0.998], reverse=True)
+        resistances = sorted([p for p in ch if p > current * 1.002])
+        if not supports:
+            supports = [round(min(p[1] for p in prices[-20:]), 2)]
+        if not resistances:
+            resistances = [round(max(p[0] for p in prices[-20:]), 2)]
+        return _cors(jsonify({
+            'support': supports[0], 'resistance': resistances[0],
+            'current': round(current, 2),
+            'supports': supports[:4], 'resistances': resistances[:4],
+        }))
+    except Exception as e:
+        return _cors(jsonify({'error': str(e)})), 500
+
+
 # ── GET /api/atr/<symbol> ─────────────────────────────────
 @app.route('/api/atr/<symbol>', methods=['GET', 'OPTIONS'])
 def get_atr(symbol):
