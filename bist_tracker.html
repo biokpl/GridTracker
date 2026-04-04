@@ -3468,7 +3468,7 @@ function renderGridCalcPage(){
   const pr=$('gc-price');if(pr&&gc.currentPrice)pr.value=gc.currentPrice;
   // Tüm alanlar doluysa otomatik hesapla — her cihazda sonuçlar görünsün
   if(gc.symbol&&gc.capital>0&&gc.support>0&&gc.resistance>0&&gc.atr>0){
-    calcGridBot();
+    if(!window._gcCalcTs||Date.now()-window._gcCalcTs>3000) calcGridBot();
   }
 }
 
@@ -3622,6 +3622,7 @@ function gcAtrRange(){
 }
 function gcReset(){
   window._gcDirty=false;
+  window._gcCalcTs=0;
   S.settings.gridCalc={symbol:'',capital:0,support:0,resistance:0,atr:0,currentPrice:0};
   save();
   fbWrite('gridtracker/settings/gridCalc',S.settings.gridCalc);
@@ -3816,6 +3817,8 @@ function renderGridResults(b,support,resistance,atr,capital,commFrac,currentPric
   }
   $('gc-lvl-body').innerHTML=rows.join('');
   $('gc-results').className='gc-results on';
+  // Firebase echo'yu 3sn boyunca engelle
+  window._gcCalcTs=Date.now();
 }
 
 function changeMonth(dir){
