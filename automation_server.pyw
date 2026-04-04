@@ -424,6 +424,23 @@ if __name__ == '__main__':
         # Firebase izleyiciyi arka planda başlat
         t = threading.Thread(target=firebase_watcher, daemon=True)
         t.start()
-        print(f'Otomasyon ayarlar sunucusu başlatılıyor: http://localhost:{PORT}')
+        # Yerel IP'yi bul ve Firebase'e yaz
+        try:
+            import socket as _sock2
+            s2 = _sock2.socket(_sock2.AF_INET, _sock2.SOCK_DGRAM)
+            s2.connect(('8.8.8.8', 80))
+            local_ip = s2.getsockname()[0]
+            s2.close()
+            info_data = json.dumps({'ip': local_ip, 'port': PORT, 'ts': int(time.time())}).encode()
+            req2 = urllib.request.Request(
+                f'{FIREBASE_URL}/gridtracker/serverInfo.json',
+                data=info_data, method='PUT',
+                headers={'Content-Type': 'application/json'}
+            )
+            urllib.request.urlopen(req2, timeout=5)
+            print(f'[Firebase] Sunucu IP yazıldı: {local_ip}:{PORT}')
+        except Exception as e:
+            print(f'[Firebase] IP yazılamadı: {e}')
+        print(f'Otomasyon ayarlar sunucusu başlatılıyor: http://0.0.0.0:{PORT}')
         print(f'Firebase izleyici aktif (10s aralık)')
-        app.run(host='127.0.0.1', port=PORT, debug=False)
+        app.run(host='0.0.0.0', port=PORT, debug=False)

@@ -3479,7 +3479,7 @@ async function gcLoadAtrExcel(){
   const btn=$('gc-atr-load-btn');
   btn.disabled=true; btn.textContent='Yükleniyor…';
   try{
-    const r=await fetch(`http://localhost:5050/api/atr-excel?symbol=${sym}`,{signal:AbortSignal.timeout(5000)});
+    const r=await fetch(`${AUTO_API}/api/atr-excel?symbol=${sym}`,{signal:AbortSignal.timeout(5000)});
     const d=await r.json();
     if(d.error){toast(d.error,'err');return;}
     const row=d.data[0];
@@ -3531,7 +3531,7 @@ async function gcAutoSR(mode='main'){
   const origText=btn.textContent;
   btn.disabled=true; btn.textContent='Hesaplanıyor…';
   try{
-    const r=await fetch(`http://localhost:5050/api/sr/${sym}?mode=${mode}`,{signal:AbortSignal.timeout(12000)});
+    const r=await fetch(`${AUTO_API}/api/sr/${sym}?mode=${mode}`,{signal:AbortSignal.timeout(12000)});
     const d=await r.json();
     if(d.error){toast(d.error,'err');return;}
     $('gc-sup').value=d.support;
@@ -3566,7 +3566,46 @@ async function gcAutoSR(mode='main'){
     clearTimeout(window._gcSRTimer);
     window._gcSRTimer=setTimeout(()=>calcGridBot(),80);
   }catch(e){
-    toast('Sunucu çalışmıyor — önce sunucuyu yeniden başlatın','err');
+    // Sunucuya ulaşılamazsa CORS proxy ile Yahoo Finance'dan doğrudan çek
+    try{
+      btn.textContent='Alternatif…';
+      const ticker=sym+'.IS';
+      const url=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=60d`;
+      const proxy=`https://corsproxy.io/?${encodeURIComponent(url)}`;
+      const pr=await fetch(proxy,{signal:AbortSignal.timeout(10000)});
+      const pd=await pr.json();
+      const q=pd.chart.result[0].indicators.quote[0];
+      const prices=(q.high||[]).map((_,i)=>[q.high[i],q.low[i],q.close[i]]).filter(p=>p[0]&&p[1]&&p[2]);
+      if(!prices.length) throw new Error('Veri yok');
+      const current=prices[prices.length-1][2];
+      let support,resistance;
+      if(mode==='main'){
+        support=Math.round(Math.min(...prices.map(p=>p[1]))*100)/100;
+        resistance=Math.round(Math.max(...prices.map(p=>p[0]))*100)/100;
+      } else {
+        const W=2,n=prices.length;
+        const sh=[],sl=[];
+        for(let i=W;i<n-W;i++){
+          const h=prices[i][0],l=prices[i][1];
+          if([...Array(W*2)].every((_,j)=>j===W?true:h>=prices[i-W+j][0])) sh.push(h);
+          if([...Array(W*2)].every((_,j)=>j===W?true:l<=prices[i-W+j][1])) sl.push(l);
+        }
+        const idx=mode==='swing5'?4:mode==='swing3'?2:0;
+        const sups=sl.filter(p=>p<current*.998).sort((a,b)=>b-a);
+        const ress=sh.filter(p=>p>current*1.002).sort((a,b)=>a-b);
+        support=Math.round((sups[idx]||sups[sups.length-1]||Math.min(...prices.map(p=>p[1])))*100)/100;
+        resistance=Math.round((ress[idx]||ress[ress.length-1]||Math.max(...prices.map(p=>p[0])))*100)/100;
+      }
+      $('gc-sup').value=support; $('gc-res').value=resistance;
+      window._gcDirty=true;
+      ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{const b=$(id);if(b){b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');b.style.opacity='0.45';}});
+      btn.classList.add('gc-sr-active','gc-sr-active-'+mode); btn.style.opacity='';
+      toast(`Destek: ${support} ₺  |  Direnç: ${resistance} ₺`,'suc');
+      clearTimeout(window._gcSRTimer);
+      window._gcSRTimer=setTimeout(()=>calcGridBot(),80);
+    }catch(e2){
+      toast('Sunucuya ve internete ulaşılamıyor','err');
+    }
   }finally{
     btn.disabled=false; btn.textContent=origText;
   }
@@ -3609,7 +3648,7 @@ async function gcFetchPrice(){
 
   // 1. Yerel sunucudan doğrudan fiyat çek
   try{
-    const r=await fetch(`http://localhost:5050/api/atr/${sym}`,{signal:AbortSignal.timeout(6000)});
+    const r=await fetch(`${AUTO_API}/api/atr/${sym}`,{signal:AbortSignal.timeout(6000)});
     const d=await r.json();
     if(d&&d.price){
       $('gc-price').value=d.price;
@@ -4024,8 +4063,19 @@ function renderCostSummary(){
 // ════════════════════════════════════════════════════════
 //  SABAH OTOMASYONU AYARLARI
 // ════════════════════════════════════════════════════════
-const AUTO_API = 'http://localhost:5050';
+let AUTO_API = 'http://localhost:5050';
 const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+// Sunucu IP'sini Firebase'den oku (telefon/uzak cihaz için)
+(async()=>{
+  try{
+    const r=await fetch(FIREBASE_URL+'/gridtracker/serverInfo.json',{signal:AbortSignal.timeout(4000)});
+    const d=await r.json();
+    if(d&&d.ip&&d.port){
+      // PC'deyse localhost kullan, değilse gerçek IP
+      AUTO_API=IS_LOCAL?`http://localhost:${d.port}`:`http://${d.ip}:${d.port}`;
+    }
+  }catch(e){}
+})();
 
 function _wakeTime(t){ const[h,m]=t.split(':').map(Number); return `${String(m<5?h-1:h).padStart(2,'0')}:${String(m<5?m+55:m-5).padStart(2,'0')}`; }
 
