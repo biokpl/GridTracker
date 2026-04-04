@@ -3477,7 +3477,7 @@ async function gcLoadAtrExcel(){
     ];
     bd.innerHTML=items.map(([lbl,val])=>`
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:5px;padding:3px 5px;text-align:center">
-        <div style="font-size:9px;color:#7a9abf;letter-spacing:.5px;font-weight:600;padding-bottom:2px;margin-bottom:2px;background-image:linear-gradient(90deg,transparent 0%,rgba(122,154,191,.35) 20%,rgba(122,154,191,.35) 80%,transparent 100%);background-size:100% 1px;background-repeat:no-repeat;background-position:bottom">${lbl}</div>
+        <div style="font-size:9px;color:#7a9abf;letter-spacing:.5px;font-weight:600;padding-bottom:2px;margin-bottom:2px;background-image:linear-gradient(90deg,transparent 0%,rgba(122,154,191,.35) 35%,rgba(122,154,191,.35) 65%,transparent 100%);background-size:100% 1px;background-repeat:no-repeat;background-position:bottom">${lbl}</div>
         <div style="font-size:10px;font-family:var(--mono);color:#7dd3fc">${val!=null?val.toFixed(3).replace('.',','):'—'}</div>
       </div>`).join('');
     toast('ATR yüklendi','suc');
