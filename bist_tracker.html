@@ -4261,6 +4261,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
     if(ds.trackLastDate!=null) S.settings.trackLastDate=ds.trackLastDate;
     if(ds.trackPayAmt!=null) S.settings.trackPayAmt=ds.trackPayAmt;
     if(ds.gridCalc!=null && !window._gcDirty) S.settings.gridCalc=ds.gridCalc;
+    if(ds.atrCache) S.settings.atrCache={...(S.settings.atrCache||{}),...ds.atrCache};
   }
   function renderAll(showToast){
     syncSettings();
