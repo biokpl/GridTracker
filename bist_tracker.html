@@ -3582,10 +3582,10 @@ function gcShowPrice(sym,price,ts){
 function calcGridBot(){
   const sym=($('gc-sym').value||'').toUpperCase().trim();
   const capital=parseInt(($('gc-cap').value||'').replace(/[^\d]/g,''))||0;
-  const support=parseFloat($('gc-sup').value)||0;
-  const resistance=parseFloat($('gc-res').value)||0;
-  const atr=parseFloat($('gc-atr').value)||0;
-  const currentPrice=parseFloat($('gc-price').value)||0;
+  const support=parseFloat(($('gc-sup').value||'').replace(',','.'))||0;
+  const resistance=parseFloat(($('gc-res').value||'').replace(',','.'))||0;
+  const atr=parseFloat(($('gc-atr').value||'').replace(',','.'))||0;
+  const currentPrice=parseFloat(($('gc-price').value||'').replace(',','.'))||0;
 
   if(!sym||capital<=0||support<=0||resistance<=0||atr<=0){
     toast('Tüm alanları doldurun','err'); return;
