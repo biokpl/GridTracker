@@ -3460,7 +3460,11 @@ function renderGridCalcPage(){
   const c=$('gc-cap');if(c&&gc.capital)c.value=gc.capital.toLocaleString('tr-TR');
   const sp=$('gc-sup');if(sp&&gc.support)sp.value=gc.support;
   const rs=$('gc-res');if(rs&&gc.resistance)rs.value=gc.resistance;
-  const at=$('gc-atr');if(at&&gc.atr)at.value=gc.atr;
+  const at=$('gc-atr');if(at&&gc.atr){at.value=gc.atr;
+    // Cache breakdown göster
+    const cached=(S.settings.atrCache||{})[gc.symbol];
+    if(cached) gcShowAtrBreakdown(cached);
+  }
   const pr=$('gc-price');if(pr&&gc.currentPrice)pr.value=gc.currentPrice;
   // Tüm alanlar doluysa otomatik hesapla — her cihazda sonuçlar görünsün
   if(gc.symbol&&gc.capital>0&&gc.support>0&&gc.resistance>0&&gc.atr>0){
@@ -3483,23 +3487,41 @@ async function gcLoadAtrExcel(){
     const composite=((row.atr60||0)*2+(row.atr240||0)*3+(row.atrDay||0)*4+(row.atrWeek||0)*1)/10;
     $('gc-atr').value=composite.toFixed(4);
     window._gcDirty=true;
+    // Cache'e kaydet (localStorage + Firebase)
+    if(!S.settings.atrCache) S.settings.atrCache={};
+    S.settings.atrCache[sym]={atr60:row.atr60,atr240:row.atr240,atrDay:row.atrDay,atrWeek:row.atrWeek,composite:parseFloat(composite.toFixed(4)),ts:Date.now()};
+    save();
+    fbWrite('gridtracker/settings/atrCache/'+sym, S.settings.atrCache[sym]);
     // Breakdown göster
-    const bd=$('gc-atr-breakdown');
-    bd.style.visibility='visible';
-    const items=[
-      ['60DK',row.atr60],['240DK',row.atr240],['Günlük',row.atrDay],['Haftalık',row.atrWeek]
-    ];
-    bd.innerHTML=items.map(([lbl,val])=>`
-      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:5px;padding:3px 5px;text-align:center">
-        <div style="font-size:9px;color:#7a9abf;letter-spacing:.5px;font-weight:600;padding-bottom:2px;margin-bottom:2px;background-image:linear-gradient(90deg,transparent 0%,rgba(122,154,191,.35) 35%,rgba(122,154,191,.35) 65%,transparent 100%);background-size:100% 1px;background-repeat:no-repeat;background-position:bottom">${lbl}</div>
-        <div style="font-size:10px;font-family:var(--mono);color:#7dd3fc">${val!=null?val.toFixed(3):'—'}</div>
-      </div>`).join('');
-    toast('ATR yüklendi','suc');
+    gcShowAtrBreakdown(row);
+    toast('ATR yüklendi ve kaydedildi','suc');
   }catch(e){
-    toast('Sunucu çalışmıyor — önce 3.xlsx masaüstüne kaydedin','err');
+    // Sunucu çalışmıyor → cache'den yükle
+    const cache=(S.settings.atrCache||{})[sym];
+    if(cache){
+      $('gc-atr').value=cache.composite.toFixed(4);
+      window._gcDirty=true;
+      gcShowAtrBreakdown(cache);
+      const age=Math.round((Date.now()-cache.ts)/86400000);
+      toast(`Cache'den yüklendi (${age} gün önce kaydedildi)`,'inf');
+    } else {
+      toast('Sunucu çalışmıyor ve cache bulunamadı — 3.xlsx masaüstüne kaydedin','err');
+    }
   }finally{
     btn.disabled=false; btn.textContent='Excel\'den Yükle';
   }
+}
+
+function gcShowAtrBreakdown(row){
+  const bd=$('gc-atr-breakdown');
+  if(!bd) return;
+  bd.style.visibility='visible';
+  const items=[['60DK',row.atr60],['240DK',row.atr240],['Günlük',row.atrDay],['Haftalık',row.atrWeek]];
+  bd.innerHTML=items.map(([lbl,val])=>`
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:5px;padding:3px 5px;text-align:center">
+      <div style="font-size:9px;color:#7a9abf;letter-spacing:.5px;font-weight:600;padding-bottom:2px;margin-bottom:2px;background-image:linear-gradient(90deg,transparent 0%,rgba(122,154,191,.35) 35%,rgba(122,154,191,.35) 65%,transparent 100%);background-size:100% 1px;background-repeat:no-repeat;background-position:bottom">${lbl}</div>
+      <div style="font-size:10px;font-family:var(--mono);color:#7dd3fc">${val!=null?val.toFixed(3):'—'}</div>
+    </div>`).join('');
 }
 
 async function gcAutoSR(mode='main'){
