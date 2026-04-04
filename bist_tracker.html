@@ -3489,12 +3489,13 @@ async function gcLoadAtrExcel(){
 }
 
 function gcAtrRange(){
-  const price=parseFloat($('gc-price').value)||0;
-  const atr=parseFloat($('gc-atr').value)||0;
+  const price=parseFloat(($('gc-price').value||'').replace(',','.'))||0;
+  const atr=parseFloat(($('gc-atr').value||'').replace(',','.'))||0;
   if(!price||!atr){toast('Önce Güncel Fiyat ve ATR girin','err');return;}
   $('gc-sup').value=parseFloat((price-atr*1.5).toFixed(2));
   $('gc-res').value=parseFloat((price+atr*1.5).toFixed(2));
-  toast('Destek ve Direnç ATR\'ye göre ayarlandı','suc');
+  window._gcDirty=true;
+  calcGridBot();
 }
 function gcReset(){
   window._gcDirty=false;
