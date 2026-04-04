@@ -165,8 +165,8 @@ def get_sr(symbol):
             return _cors(jsonify({'error': 'Yetersiz veri'})), 400
         current = prices[-1][2]
         mode = request.args.get('mode', 'main')
-        if mode == 'swing':
-            # En yakın swing low/high
+        if mode in ('swing', 'swing3'):
+            # Swing low/high tespiti
             W, n = 2, len(prices)
             swing_highs, swing_lows = [], []
             for i in range(W, n - W):
@@ -177,8 +177,9 @@ def get_sr(symbol):
                     swing_lows.append(round(l, 2))
             supports    = sorted([p for p in swing_lows if p < current * 0.998], reverse=True)
             resistances = sorted([p for p in swing_highs if p > current * 1.002])
-            support    = supports[0]    if supports    else round(min(p[1] for p in prices[-20:]), 2)
-            resistance = resistances[0] if resistances else round(max(p[0] for p in prices[-20:]), 2)
+            idx = 2 if mode == 'swing3' else 0
+            support    = supports[idx]    if len(supports)    > idx else (supports[-1]    if supports    else round(min(p[1] for p in prices[-20:]), 2))
+            resistance = resistances[idx] if len(resistances) > idx else (resistances[-1] if resistances else round(max(p[0] for p in prices[-20:]), 2))
         else:
             support    = round(min(p[1] for p in prices), 2)
             resistance = round(max(p[0] for p in prices), 2)

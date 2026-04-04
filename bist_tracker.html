@@ -1339,9 +1339,10 @@ select.field-input option{background:var(--surface2);}
       </div>
 
       <!-- Destek | Direnç -->
-      <div style="display:flex;gap:4px;margin-bottom:4px">
-        <button id="gc-sr-btn" class="btn btn-ghost" style="flex:1;font-size:9px;padding:3px 4px;border-color:rgba(168,85,247,.35);color:#c084fc;line-height:1.6;white-space:nowrap" onclick="gcAutoSR('main')">Ana Destek/Direnç</button>
-        <button id="gc-sr-btn2" class="btn btn-ghost" style="flex:1;font-size:9px;padding:3px 4px;border-color:rgba(99,179,237,.3);color:#7dd3fc;line-height:1.6;white-space:nowrap" onclick="gcAutoSR('swing')">Ort. Destek/Direnç</button>
+      <div style="display:flex;gap:3px;margin-bottom:4px">
+        <button id="gc-sr-btn" class="btn btn-ghost" style="flex:1;font-size:8.5px;padding:3px 2px;border-color:rgba(168,85,247,.35);color:#c084fc;line-height:1.5;text-align:center" onclick="gcAutoSR('main')">Ana<br>Destek/Direnç</button>
+        <button id="gc-sr-btn2" class="btn btn-ghost" style="flex:1;font-size:8.5px;padding:3px 2px;border-color:rgba(99,179,237,.3);color:#7dd3fc;line-height:1.5;text-align:center" onclick="gcAutoSR('swing3')">Ort.<br>Destek/Direnç</button>
+        <button id="gc-sr-btn3" class="btn btn-ghost" style="flex:1;font-size:8.5px;padding:3px 2px;border-color:rgba(52,211,153,.3);color:#6ee7b7;line-height:1.5;text-align:center" onclick="gcAutoSR('swing')">Yakın<br>Destek/Direnç</button>
       </div>
       <div class="gc-field-row" style="margin-bottom:3px">
         <div style="flex:1;min-width:0">
@@ -3496,7 +3497,7 @@ async function gcLoadAtrExcel(){
 async function gcAutoSR(mode='main'){
   const sym=($('gc-sym').value||'').toUpperCase().trim();
   if(!sym){toast('Önce hisse kodu girin','err');return;}
-  const btn=mode==='swing'?$('gc-sr-btn2'):$('gc-sr-btn');
+  const btn=mode==='swing'?$('gc-sr-btn3'):mode==='swing3'?$('gc-sr-btn2'):$('gc-sr-btn');
   const origText=btn.textContent;
   btn.disabled=true; btn.textContent='Hesaplanıyor…';
   try{
@@ -3649,7 +3650,7 @@ function calcGridBot(){
   const midPrice=(support+resistance)/2;
   const minSpacing=midPrice*0.005;
 
-  const minN=Math.max(8,Math.ceil(range/(atr*0.3)));
+  const minN=Math.max(2,Math.ceil(range/(atr*0.3)));
   const maxN=Math.min(100,Math.floor(range/minSpacing));
 
   if(minN>maxN){toast('ATR aralığa göre çok büyük — girdileri kontrol edin','err');return;}
