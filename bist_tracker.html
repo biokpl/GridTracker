@@ -1404,7 +1404,7 @@ select.field-input option{background:var(--surface2);}
     <div class="kpi-strip three" style="margin-bottom:8px">
       <div class="kpi"><div class="kpi-label">Kullanılan Sermaye</div><div class="kpi-val kpi-muted" id="gc-used">—</div></div>
       <div class="kpi"><div class="kpi-label">Günlük ROI %</div><div class="kpi-val" style="color:#a38e30" id="gc-util">—</div></div>
-      <div class="kpi"><div class="kpi-label">Günlük Tetiklenme</div><div class="kpi-val blue" id="gc-triggers">—</div></div>
+      <div class="kpi"><div class="kpi-label">Günlük Tetiklenme</div><div class="kpi-val blue" id="gc-triggers">—</div><div id="gc-triggers-exact" style="font-size:9px;color:#4a6080;margin-top:3px;font-family:var(--mono)"></div></div>
     </div>
 
     <!-- KPI strip 3 -->
@@ -3613,7 +3613,12 @@ function renderGridResults(b,support,resistance,atr,capital,commFrac,currentPric
   $('gc-npg').textContent=fx2(b.net)+' ₺';
   $('gc-monthly').textContent=fxi(b.daily*21)+' ₺';
   const trigEl=$('gc-triggers');
-  if(trigEl) trigEl.textContent='~'+triggers+' / Gün';
+  if(trigEl){
+    const trigRounded=Math.round(parseFloat(triggers.replace(',','.')));
+    trigEl.textContent=trigRounded;
+    const trigExact=$('gc-triggers-exact');
+    if(trigExact) trigExact.textContent='~'+triggers+' / Gün';
+  }
 
   // Al/Sat dağılımı — bar
   const levels=[];
