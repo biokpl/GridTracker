@@ -3647,38 +3647,40 @@ async function gcFetchPrice(){
   btn.disabled=true; btn.textContent='Getiriliyor…';
   msg.style.color='#fdba74'; msg.textContent='Fiyat alınıyor…'; msg.style.display='block';
 
-  // 1. Yahoo Finance CORS proxy (HTTPS — her yerden çalışır)
-  try{
-    const ticker=sym+'.IS';
-    const url=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=5d`;
-    const proxy=`https://corsproxy.io/?${encodeURIComponent(url)}`;
-    const r=await fetch(proxy,{signal:AbortSignal.timeout(8000)});
+  // Yardımcı: Yahoo Finance chart verisinden son kapanış fiyatını çek
+  async function _yahooPrice(proxyUrl){
+    const r=await fetch(proxyUrl,{signal:AbortSignal.timeout(9000)});
     const d=await r.json();
     const closes=d.chart.result[0].indicators.quote[0].close.filter(v=>v!=null);
-    const price=closes[closes.length-1];
-    if(price){
-      $('gc-price').value=parseFloat(price.toFixed(2));
-      msg.style.color='#86efac';
-      msg.textContent=sym+': '+price.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺';
-      msg.style.display='block';
-      btn.disabled=false; btn.textContent='Fiyat Getir'; return;
-    }
-  }catch(e){}
+    const p=closes[closes.length-1];
+    return p?parseFloat(p.toFixed(2)):null;
+  }
 
-  // 2. Yerel sunucudan fiyat çek
+  const ticker=sym+'.IS';
+  const yfUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=5d`;
+
+  // 1. corsproxy.io
   try{
-    const r=await fetch(`${AUTO_API}/api/atr/${sym}`,{signal:AbortSignal.timeout(5000)});
-    const d=await r.json();
-    if(d&&d.price){
-      $('gc-price').value=d.price;
-      msg.style.color='#86efac';
-      msg.textContent=sym+': '+d.price.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺';
-      msg.style.display='block';
-      btn.disabled=false; btn.textContent='Fiyat Getir'; return;
-    }
+    const price=await _yahooPrice(`https://corsproxy.io/?${encodeURIComponent(yfUrl)}`);
+    if(price){ _gcSetPrice(sym,price,msg,btn); return; }
   }catch(e){}
 
-  // 3. Firebase'de taze fiyat varsa kullan
+  // 2. allorigins proxy
+  try{
+    const price=await _yahooPrice(`https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`);
+    if(price){ _gcSetPrice(sym,price,msg,btn); return; }
+  }catch(e){}
+
+  // 3. Yerel sunucu (sadece localhost'ta çalışırken)
+  if(IS_LOCAL){
+    try{
+      const r=await fetch(`${AUTO_API}/api/atr/${sym}`,{signal:AbortSignal.timeout(5000)});
+      const d=await r.json();
+      if(d&&d.price){ _gcSetPrice(sym,d.price,msg,btn); return; }
+    }catch(e){}
+  }
+
+  // 4. Firebase livePrices
   try{
     const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(4000)});
     const d=await r.json();
@@ -3688,9 +3690,17 @@ async function gcFetchPrice(){
     }
   }catch(e){}
 
-  // 4. Tüm kaynaklar başarısız
+  // 5. Başarısız
   msg.style.color='#f87171';
   msg.textContent='Fiyat alınamadı — manuel girin.';
+  btn.disabled=false; btn.textContent='Fiyat Getir';
+}
+
+function _gcSetPrice(sym,price,msg,btn){
+  $('gc-price').value=price;
+  msg.style.color='#86efac';
+  msg.textContent=sym+': '+price.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺';
+  msg.style.display='block';
   btn.disabled=false; btn.textContent='Fiyat Getir';
 }
 
