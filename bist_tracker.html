@@ -3664,14 +3664,14 @@ async function gcFetchPrice(){
     }catch(e){}
   }
 
-  // 2. Yahoo Finance — corsproxy.io
+  // 2. Yahoo Finance — corsproxy.io (regularMarketPrice meta'dan)
   try{
     const ticker=sym+'.IS';
     const yfUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=5d`;
-    const r=await fetch(`https://corsproxy.io/?${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(8000)});
+    const r=await fetch(`https://corsproxy.io/?${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(15000)});
     const d=await r.json();
-    const closes=d.chart.result[0].indicators.quote[0].close.filter(v=>v!=null);
-    const p=closes[closes.length-1];
+    const p=d.chart.result[0].meta.regularMarketPrice
+           || d.chart.result[0].indicators.quote[0].close.filter(v=>v!=null).at(-1);
     if(p){ _gcSetPrice(parseFloat(p.toFixed(2))); return; }
   }catch(e){}
 
@@ -3679,18 +3679,18 @@ async function gcFetchPrice(){
   try{
     const ticker=sym+'.IS';
     const yfUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=5d`;
-    const r=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(8000)});
+    const r=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(15000)});
     const d=await r.json();
-    const closes=d.chart.result[0].indicators.quote[0].close.filter(v=>v!=null);
-    const p=closes[closes.length-1];
+    const p=d.chart.result[0].meta.regularMarketPrice
+           || d.chart.result[0].indicators.quote[0].close.filter(v=>v!=null).at(-1);
     if(p){ _gcSetPrice(parseFloat(p.toFixed(2))); return; }
   }catch(e){}
 
-  // 4. Firebase livePrices
+  // 4. Firebase livePrices (sunucu her fiyat çekişinde buraya yazar, 8 saat geçerli)
   try{
     const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(4000)});
     const d=await r.json();
-    if(d&&d.price&&(Date.now()/1000-d.ts)<300){
+    if(d&&d.price&&(Date.now()/1000-d.ts)<28800){
       gcShowPrice(sym,d.price,d.ts);
       btn.disabled=false; btn.textContent='Fiyat Getir'; return;
     }

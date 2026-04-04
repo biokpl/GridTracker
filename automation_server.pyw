@@ -206,6 +206,7 @@ def get_atr(symbol):
         with ur.urlopen(req, timeout=8) as resp:
             data = _json.loads(resp.read())
         result = data['chart']['result'][0]
+        meta   = result.get('meta', {})
         quote  = result['indicators']['quote'][0]
         highs  = [v for v in quote['high']  if v is not None][-7:]
         lows   = [v for v in quote['low']   if v is not None][-7:]
@@ -214,8 +215,20 @@ def get_atr(symbol):
         if n < 1:
             return _cors(jsonify({'error': 'Yetersiz veri'})), 400
         atr = sum(highs[i] - lows[i] for i in range(n)) / n
-        price = closes[-1] if closes else None
-        return _cors(jsonify({'atr': round(atr, 4), 'price': round(price, 4) if price else None, 'days': n}))
+        # regularMarketPrice güncel fiyat (piyasa açıksa anlık, kapalıysa son kapanış)
+        price = meta.get('regularMarketPrice') or (closes[-1] if closes else None)
+        if price:
+            # Firebase'e yaz — telefon/GitHub Pages buradan okur
+            def _push():
+                try:
+                    pl = _json.dumps({'price': round(price,2), 'ts': int(time.time())}).encode()
+                    rq = ur.Request(f'{FIREBASE_URL}/gridtracker/livePrices/{symbol.upper()}.json',
+                                    data=pl, method='PUT',
+                                    headers={'Content-Type':'application/json'})
+                    ur.urlopen(rq, timeout=5)
+                except: pass
+            threading.Thread(target=_push, daemon=True).start()
+        return _cors(jsonify({'atr': round(atr, 4), 'price': round(price, 2) if price else None, 'days': n}))
     except Exception as e:
         return _cors(jsonify({'error': str(e)})), 500
 
