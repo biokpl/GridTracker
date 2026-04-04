@@ -1346,11 +1346,11 @@ select.field-input option{background:var(--surface2);}
       </div>
       <div class="gc-field-row" style="margin-bottom:3px">
         <div style="flex:1;min-width:0">
-          <div class="gc-label">DESTEK (₺)</div>
+          <div class="gc-label" style="text-align:center">DESTEK (₺)</div>
           <input class="field-input" id="gc-sup" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;padding:4px 8px;font-size:12px;height:auto;border-bottom:1px solid transparent;border-image:linear-gradient(90deg,transparent 5%,rgba(248,113,113,.15) 17%,rgba(248,113,113,.55) 50%,rgba(248,113,113,.15) 83%,transparent 95%) 0 0 1 0;box-shadow:0 4px 8px rgba(248,113,113,.08),0 6px 14px rgba(248,113,113,.04)" oninput="this.value=this.value.replace(/,/g,'.')" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur();$('gc-res').focus();}">
         </div>
         <div style="flex:1;min-width:0">
-          <div class="gc-label">DİRENÇ (₺)</div>
+          <div class="gc-label" style="text-align:center">DİRENÇ (₺)</div>
           <input class="field-input" id="gc-res" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;padding:4px 8px;font-size:12px;height:auto;border-top:1px solid transparent;border-image:linear-gradient(90deg,transparent 5%,rgba(74,222,128,.15) 17%,rgba(74,222,128,.55) 50%,rgba(74,222,128,.15) 83%,transparent 95%) 1 0 0 0;box-shadow:0 -4px 8px rgba(74,222,128,.08),0 -6px 14px rgba(74,222,128,.04)" oninput="this.value=this.value.replace(/,/g,'.')" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur();$('gc-atr').focus();}">
         </div>
       </div>
