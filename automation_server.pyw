@@ -402,6 +402,13 @@ def atr_file_watcher():
                 wb.close()
                 if len(rows) >= 2:
                     headers = [str(h).strip() if h else '' for h in rows[0]]
+                    # ATR dosyası olup olmadığını doğrula — Sembol + en az bir ATR sütunu şart
+                    atr_cols = {'ATR - 60DK', 'ATR - 240DK', 'ATR - DAY', 'ATR - WEEK'}
+                    has_sembol = 'Sembol' in headers
+                    has_atr = bool(atr_cols & set(headers))
+                    if not (has_sembol and has_atr):
+                        print(f'[ATR] {desktop.name} ATR dosyası değil, atlandı.')
+                        continue
                     saved = []
                     for row in rows[1:]:
                         if not any(row): continue
