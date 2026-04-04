@@ -424,12 +424,17 @@ if __name__ == '__main__':
         # Firebase izleyiciyi arka planda başlat
         t = threading.Thread(target=firebase_watcher, daemon=True)
         t.start()
-        # Yerel IP'yi bul ve Firebase'e yaz
+        # Tailscale IP'yi bul, yoksa yerel IP kullan
         try:
             import socket as _sock2
+            tailscale_ip = None
+            for iface_ip in _sock2.gethostbyname_ex(_sock2.gethostname())[2]:
+                if iface_ip.startswith('100.'):
+                    tailscale_ip = iface_ip
+                    break
             s2 = _sock2.socket(_sock2.AF_INET, _sock2.SOCK_DGRAM)
             s2.connect(('8.8.8.8', 80))
-            local_ip = s2.getsockname()[0]
+            local_ip = tailscale_ip or s2.getsockname()[0]
             s2.close()
             info_data = json.dumps({'ip': local_ip, 'port': PORT, 'ts': int(time.time())}).encode()
             req2 = urllib.request.Request(
