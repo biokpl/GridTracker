@@ -3455,7 +3455,7 @@ function renderGridCalcPage(){
   // Kullanıcı alanları düzenliyorsa Firebase güncellemesi input'ları sıfırlamasın
   if(window._gcDirty) return;
   const gc=S.settings.gridCalc||{};
-  const s=$('gc-sym');if(s&&gc.symbol)s.value=gc.symbol;
+  const s=$('gc-sym');if(s)s.value=gc.symbol||'EREGL';
   const c=$('gc-cap');if(c&&gc.capital)c.value=gc.capital.toLocaleString('tr-TR');
   const sp=$('gc-sup');if(sp&&gc.support)sp.value=gc.support;
   const rs=$('gc-res');if(rs&&gc.resistance)rs.value=gc.resistance;
@@ -3563,7 +3563,7 @@ function gcReset(){
   S.settings.gridCalc={symbol:'',capital:0,support:0,resistance:0,atr:0,currentPrice:0};
   save();
   fbWrite('gridtracker/settings/gridCalc',S.settings.gridCalc);
-  ['gc-sym','gc-price','gc-cap','gc-sup','gc-res','gc-atr'].forEach(id=>{$( id).value='';});
+  ['gc-price','gc-cap','gc-sup','gc-res','gc-atr'].forEach(id=>{$( id).value='';});
   $('gc-price-msg').style.display='none';
   $('gc-results').className='gc-results';
   $('gc-bot-pct').style.display='none';
