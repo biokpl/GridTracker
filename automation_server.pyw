@@ -386,12 +386,14 @@ _watcher_loop._last_price_update = 0
 
 
 def atr_file_watcher():
-    """Masaüstünde 3.xlsx belirince otomatik Firebase'e yaz ve dosyayı sil."""
-    desktop = Path.home() / 'Desktop' / '3.xlsx'
-    print('[ATR] Dosya izleyici başladı — masaüstünde 3.xlsx bekleniyor...')
+    """Masaüstünde 3*.xlsx belirince otomatik Firebase'e yaz ve dosyayı sil."""
+    desktop_dir = Path.home() / 'Desktop'
+    print('[ATR] Dosya izleyici başladı — masaüstünde 3*.xlsx bekleniyor...')
     while True:
         try:
-            if desktop.exists():
+            matches = list(desktop_dir.glob('3*.xlsx'))
+            desktop = matches[0] if matches else None
+            if desktop and desktop.exists():
                 time.sleep(1)  # Dosyanın tam yazılmasını bekle
                 import openpyxl
                 wb = openpyxl.load_workbook(desktop, read_only=True, data_only=True)

@@ -1350,7 +1350,7 @@ select.field-input option{background:var(--surface2);}
         <div class="gc-label">ATR (Bileşik)</div>
         <div style="display:flex;gap:4px;align-items:center">
           <input class="field-input" id="gc-atr" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="flex:1;padding:4px 8px;font-size:12px;height:auto" oninput="this.value=this.value.replace(/,/g,'.')" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur();$('gc-sup').focus();}">
-          <button id="gc-atr-load-btn" class="btn btn-ghost" style="font-size:9px;padding:4px 8px;border-color:rgba(99,179,237,.3);color:#7dd3fc;white-space:nowrap" onclick="gcLoadAtrExcel()">Excel'den Yükle</button>
+          <button id="gc-atr-load-btn" class="btn btn-ghost" style="font-size:9px;padding:4px 8px;border-color:rgba(99,179,237,.3);color:#7dd3fc;white-space:nowrap" onclick="gcLoadAtrExcel()">ATR Getir</button>
         </div>
         <div id="gc-atr-breakdown" style="visibility:hidden;margin-top:5px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:3px;min-height:34px"></div>
       </div>
@@ -3508,7 +3508,7 @@ async function gcLoadAtrExcel(){
       toast('Sunucu çalışmıyor ve cache bulunamadı — 3.xlsx masaüstüne kaydedin','err');
     }
   }finally{
-    btn.disabled=false; btn.textContent='Excel\'den Yükle';
+    btn.disabled=false; btn.textContent='ATR Getir';
   }
 }
 
