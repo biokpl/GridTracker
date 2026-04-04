@@ -3507,6 +3507,12 @@ async function gcAutoSR(mode='main'){
     $('gc-sup').value=d.support;
     $('gc-res').value=d.resistance;
     window._gcDirty=true;
+    // Seçili buton vurgusu
+    ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{
+      const b=$(id); if(!b) return;
+      b.style.opacity='0.5'; b.style.fontWeight=''; b.style.boxShadow='';
+    });
+    btn.style.opacity='1'; btn.style.fontWeight='700'; btn.style.boxShadow='0 0 0 1px currentColor';
     // Alternatif seviyeler
     const alts=$('gc-sr-alts');
     const altSups=(d.supports||[]).slice(1,4);
@@ -3555,6 +3561,7 @@ function gcReset(){
   if(bb)bb.style.width='0%';if(bs)bs.style.width='0%';
   const bd=$('gc-atr-breakdown');if(bd){bd.style.display='none';bd.innerHTML='';}
   const sa=$('gc-sr-alts');if(sa){sa.style.display='none';sa.innerHTML='';}
+  ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{const b=$(id);if(b){b.style.opacity='';b.style.fontWeight='';b.style.boxShadow='';}});
   toast('GridBot ayarları sıfırlandı','inf');
 }
 
