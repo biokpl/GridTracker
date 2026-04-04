@@ -1352,8 +1352,12 @@ select.field-input option{background:var(--surface2);}
 
       <!-- ATR alanı -->
       <div style="margin-bottom:6px">
-        <div class="gc-label">ATR (Ortalama Günlük Hareket)</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+          <div class="gc-label" style="margin-bottom:0">ATR (Bileşik)</div>
+          <button id="gc-atr-load-btn" class="btn btn-ghost" style="font-size:9px;padding:2px 8px;border-color:rgba(99,179,237,.3);color:#7dd3fc;line-height:1.6" onclick="gcLoadAtrExcel()">Excel'den Yükle</button>
+        </div>
         <input class="field-input" id="gc-atr" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;padding:4px 8px;font-size:12px;height:auto" oninput="this.value=this.value.replace(/,/g,'.')" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur();calcGridBot();}">
+        <div id="gc-atr-breakdown" style="display:none;margin-top:5px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:3px"></div>
       </div>
 
       <div style="display:flex;gap:6px">
@@ -3450,6 +3454,39 @@ function renderGridCalcPage(){
   }
 }
 
+
+async function gcLoadAtrExcel(){
+  const sym=($('gc-sym').value||'').toUpperCase().trim();
+  if(!sym){toast('Önce hisse kodu girin','err');return;}
+  const btn=$('gc-atr-load-btn');
+  btn.disabled=true; btn.textContent='Yükleniyor…';
+  try{
+    const r=await fetch(`http://localhost:5050/api/atr-excel?symbol=${sym}`,{signal:AbortSignal.timeout(5000)});
+    const d=await r.json();
+    if(d.error){toast(d.error,'err');return;}
+    const row=d.data[0];
+    // Bileşik ATR: 60DK×2 + 240DK×3 + DAY×4 + WEEK×1 / 10
+    const composite=((row.atr60||0)*2+(row.atr240||0)*3+(row.atrDay||0)*4+(row.atrWeek||0)*1)/10;
+    $('gc-atr').value=composite.toFixed(4).replace('.',',');
+    window._gcDirty=true;
+    // Breakdown göster
+    const bd=$('gc-atr-breakdown');
+    bd.style.display='grid';
+    const items=[
+      ['60DK',row.atr60],['240DK',row.atr240],['Günlük',row.atrDay],['Haftalık',row.atrWeek]
+    ];
+    bd.innerHTML=items.map(([lbl,val])=>`
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:5px;padding:3px 5px;text-align:center">
+        <div style="font-size:8px;color:#4e6080;letter-spacing:.5px">${lbl}</div>
+        <div style="font-size:10px;font-family:var(--mono);color:#7dd3fc">${val!=null?val.toFixed(3).replace('.',','):'—'}</div>
+      </div>`).join('');
+    toast('ATR yüklendi','suc');
+  }catch(e){
+    toast('Sunucu çalışmıyor — önce 3.xlsx masaüstüne kaydedin','err');
+  }finally{
+    btn.disabled=false; btn.textContent='Excel\'den Yükle';
+  }
+}
 
 function gcAtrRange(){
   const price=parseFloat($('gc-price').value)||0;
