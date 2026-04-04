@@ -1339,22 +1339,21 @@ select.field-input option{background:var(--surface2);}
       </div>
 
       <!-- Destek | Direnç -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
-        <div style="display:flex;flex:1;gap:0">
-          <div class="gc-label" style="margin-bottom:0;flex:1">DESTEK (₺)</div>
-          <div class="gc-label" style="margin-bottom:0;flex:1">DİRENÇ (₺)</div>
-        </div>
-        <button id="gc-sr-btn" class="btn btn-ghost" style="font-size:9px;padding:2px 8px;border-color:rgba(168,85,247,.35);color:#c084fc;line-height:1.6;white-space:nowrap" onclick="gcAutoSR()">Otomatik Bul</button>
+      <div style="display:flex;gap:4px;margin-bottom:4px">
+        <button id="gc-sr-btn" class="btn btn-ghost" style="flex:1;font-size:9px;padding:3px 4px;border-color:rgba(168,85,247,.35);color:#c084fc;line-height:1.6;white-space:nowrap" onclick="gcAutoSR('main')">Ana Destek/Direnç</button>
+        <button id="gc-sr-btn2" class="btn btn-ghost" style="flex:1;font-size:9px;padding:3px 4px;border-color:rgba(99,179,237,.3);color:#7dd3fc;line-height:1.6;white-space:nowrap" onclick="gcAutoSR('swing')">Ort. Destek/Direnç</button>
       </div>
       <div class="gc-field-row" style="margin-bottom:3px">
         <div style="flex:1;min-width:0">
+          <div class="gc-label">DESTEK (₺)</div>
           <input class="field-input" id="gc-sup" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;padding:4px 8px;font-size:12px;height:auto;border-bottom:1px solid transparent;border-image:linear-gradient(90deg,transparent 5%,rgba(248,113,113,.15) 17%,rgba(248,113,113,.55) 50%,rgba(248,113,113,.15) 83%,transparent 95%) 0 0 1 0;box-shadow:0 4px 8px rgba(248,113,113,.08),0 6px 14px rgba(248,113,113,.04)" oninput="this.value=this.value.replace(/,/g,'.')" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur();$('gc-res').focus();}">
         </div>
         <div style="flex:1;min-width:0">
+          <div class="gc-label">DİRENÇ (₺)</div>
           <input class="field-input" id="gc-res" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;padding:4px 8px;font-size:12px;height:auto;border-top:1px solid transparent;border-image:linear-gradient(90deg,transparent 5%,rgba(74,222,128,.15) 17%,rgba(74,222,128,.55) 50%,rgba(74,222,128,.15) 83%,transparent 95%) 1 0 0 0;box-shadow:0 -4px 8px rgba(74,222,128,.08),0 -6px 14px rgba(74,222,128,.04)" oninput="this.value=this.value.replace(/,/g,'.')" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur();$('gc-atr').focus();}">
         </div>
       </div>
-      <div id="gc-sr-alts" style="display:none;margin-bottom:5px;display:none;flex-direction:row;gap:4px"></div>
+      <div id="gc-sr-alts" style="display:none;margin-bottom:5px;flex-direction:row;gap:4px"></div>
 
       <!-- ATR alanı -->
       <div style="margin-bottom:6px">
@@ -3494,13 +3493,14 @@ async function gcLoadAtrExcel(){
   }
 }
 
-async function gcAutoSR(){
+async function gcAutoSR(mode='main'){
   const sym=($('gc-sym').value||'').toUpperCase().trim();
   if(!sym){toast('Önce hisse kodu girin','err');return;}
-  const btn=$('gc-sr-btn');
+  const btn=mode==='swing'?$('gc-sr-btn2'):$('gc-sr-btn');
+  const origText=btn.textContent;
   btn.disabled=true; btn.textContent='Hesaplanıyor…';
   try{
-    const r=await fetch(`http://localhost:5050/api/sr/${sym}`,{signal:AbortSignal.timeout(12000)});
+    const r=await fetch(`http://localhost:5050/api/sr/${sym}?mode=${mode}`,{signal:AbortSignal.timeout(12000)});
     const d=await r.json();
     if(d.error){toast(d.error,'err');return;}
     $('gc-sup').value=d.support;
@@ -3527,7 +3527,7 @@ async function gcAutoSR(){
   }catch(e){
     toast('Sunucu çalışmıyor — önce sunucuyu yeniden başlatın','err');
   }finally{
-    btn.disabled=false; btn.textContent='Otomatik Bul';
+    btn.disabled=false; btn.textContent=origText;
   }
 }
 
