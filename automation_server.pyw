@@ -164,45 +164,12 @@ def get_sr(symbol):
         if len(prices) < 10:
             return _cors(jsonify({'error': 'Yetersiz veri'})), 400
         current = prices[-1][2]
-        n = len(prices)
-        W = 2
-        swing_highs, swing_lows = [], []
-        for i in range(W, n - W):
-            h, l, _ = prices[i]
-            w = (i + 1) / n
-            if all(h >= prices[i+j][0] for j in range(-W, W+1) if j != 0):
-                swing_highs.append((round(h, 2), w))
-            if all(l <= prices[i+j][1] for j in range(-W, W+1) if j != 0):
-                swing_lows.append((round(l, 2), w))
-        def cluster(pts):
-            if not pts:
-                return []
-            pts = sorted(pts, key=lambda x: x[0])
-            groups, cur = [], [pts[0]]
-            for p in pts[1:]:
-                if abs(p[0] - cur[0][0]) / cur[0][0] < 0.008:
-                    cur.append(p)
-                else:
-                    groups.append(cur); cur = [p]
-            groups.append(cur)
-            result = []
-            for g in groups:
-                avg = round(sum(x[0] for x in g) / len(g), 2)
-                score = len(g) + sum(x[1] for x in g)
-                result.append((avg, score))
-            return [p for p, _ in sorted(result, key=lambda x: -x[1])]
-        ch = cluster(swing_highs)
-        cl = cluster(swing_lows)
-        supports    = sorted([p for p in cl if p < current * 0.998], reverse=True)
-        resistances = sorted([p for p in ch if p > current * 1.002])
-        if not supports:
-            supports = [round(min(p[1] for p in prices[-20:]), 2)]
-        if not resistances:
-            resistances = [round(max(p[0] for p in prices[-20:]), 2)]
+        support    = round(min(p[1] for p in prices), 2)
+        resistance = round(max(p[0] for p in prices), 2)
         return _cors(jsonify({
-            'support': supports[0], 'resistance': resistances[0],
+            'support': support, 'resistance': resistance,
             'current': round(current, 2),
-            'supports': supports[:4], 'resistances': resistances[:4],
+            'supports': [support], 'resistances': [resistance],
         }))
     except Exception as e:
         return _cors(jsonify({'error': str(e)})), 500
