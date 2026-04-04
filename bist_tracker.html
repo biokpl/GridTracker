@@ -3647,31 +3647,7 @@ async function gcFetchPrice(){
   btn.disabled=true; btn.textContent='Getiriliyor…';
   msg.style.color='#fdba74'; msg.textContent='Fiyat alınıyor…'; msg.style.display='block';
 
-  // 1. Yerel sunucudan doğrudan fiyat çek
-  try{
-    const r=await fetch(`${AUTO_API}/api/atr/${sym}`,{signal:AbortSignal.timeout(6000)});
-    const d=await r.json();
-    if(d&&d.price){
-      $('gc-price').value=d.price;
-      const ts=Math.round(Date.now()/1000);
-      msg.style.color='#86efac';
-      msg.textContent=sym+': '+d.price.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺';
-      msg.style.display='block';
-      btn.disabled=false; btn.textContent='Fiyat Getir'; return;
-    }
-  }catch(e){}
-
-  // 2. Firebase'de taze fiyat varsa kullan
-  try{
-    const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(4000)});
-    const d=await r.json();
-    if(d&&d.price&&(Date.now()/1000-d.ts)<300){
-      gcShowPrice(sym,d.price,d.ts);
-      btn.disabled=false; btn.textContent='Fiyat Getir'; return;
-    }
-  }catch(e){}
-
-  // 3. Yahoo Finance CORS proxy ile dene
+  // 1. Yahoo Finance CORS proxy (HTTPS — her yerden çalışır)
   try{
     const ticker=sym+'.IS';
     const url=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=5d`;
@@ -3685,6 +3661,29 @@ async function gcFetchPrice(){
       msg.style.color='#86efac';
       msg.textContent=sym+': '+price.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺';
       msg.style.display='block';
+      btn.disabled=false; btn.textContent='Fiyat Getir'; return;
+    }
+  }catch(e){}
+
+  // 2. Yerel sunucudan fiyat çek
+  try{
+    const r=await fetch(`${AUTO_API}/api/atr/${sym}`,{signal:AbortSignal.timeout(5000)});
+    const d=await r.json();
+    if(d&&d.price){
+      $('gc-price').value=d.price;
+      msg.style.color='#86efac';
+      msg.textContent=sym+': '+d.price.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺';
+      msg.style.display='block';
+      btn.disabled=false; btn.textContent='Fiyat Getir'; return;
+    }
+  }catch(e){}
+
+  // 3. Firebase'de taze fiyat varsa kullan
+  try{
+    const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(4000)});
+    const d=await r.json();
+    if(d&&d.price&&(Date.now()/1000-d.ts)<300){
+      gcShowPrice(sym,d.price,d.ts);
       btn.disabled=false; btn.textContent='Fiyat Getir'; return;
     }
   }catch(e){}
