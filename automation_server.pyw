@@ -263,6 +263,10 @@ def get_atr_excel():
         if not results:
             msg = f'{symbol_filter} Excel dosyasında bulunamadı' if symbol_filter else 'Veri bulunamadı'
             return _cors(jsonify({'error': msg})), 404
+        try:
+            desktop.unlink()
+        except Exception:
+            pass
         return _cors(jsonify({'data': results}))
     except Exception as e:
         return _cors(jsonify({'error': str(e)})), 500
