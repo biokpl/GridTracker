@@ -1358,11 +1358,11 @@ select.field-input option{background:var(--surface2);}
 
       <!-- ATR alanı -->
       <div style="margin-bottom:6px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
-          <div class="gc-label" style="margin-bottom:0">ATR (Bileşik)</div>
-          <button id="gc-atr-load-btn" class="btn btn-ghost" style="font-size:9px;padding:2px 8px;border-color:rgba(99,179,237,.3);color:#7dd3fc;line-height:1.6" onclick="gcLoadAtrExcel()">Excel'den Yükle</button>
+        <div class="gc-label">ATR (Bileşik)</div>
+        <div style="display:flex;gap:4px;align-items:center">
+          <input class="field-input" id="gc-atr" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="flex:1;padding:4px 8px;font-size:12px;height:auto" oninput="this.value=this.value.replace(/,/g,'.')" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur();calcGridBot();}">
+          <button id="gc-atr-load-btn" class="btn btn-ghost" style="font-size:9px;padding:4px 8px;border-color:rgba(99,179,237,.3);color:#7dd3fc;white-space:nowrap" onclick="gcLoadAtrExcel()">Excel'den Yükle</button>
         </div>
-        <input class="field-input" id="gc-atr" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;padding:4px 8px;font-size:12px;height:auto" oninput="this.value=this.value.replace(/,/g,'.')" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur();calcGridBot();}">
         <div id="gc-atr-breakdown" style="display:none;margin-top:5px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:3px"></div>
       </div>
 
