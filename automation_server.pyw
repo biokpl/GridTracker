@@ -385,6 +385,54 @@ _watcher_loop._last_sched = None
 _watcher_loop._last_price_update = 0
 
 
+def atr_file_watcher():
+    """Masaüstünde 3.xlsx belirince otomatik Firebase'e yaz ve dosyayı sil."""
+    desktop = Path.home() / 'Desktop' / '3.xlsx'
+    print('[ATR] Dosya izleyici başladı — masaüstünde 3.xlsx bekleniyor...')
+    while True:
+        try:
+            if desktop.exists():
+                time.sleep(1)  # Dosyanın tam yazılmasını bekle
+                import openpyxl
+                wb = openpyxl.load_workbook(desktop, read_only=True, data_only=True)
+                ws = wb.active
+                rows = list(ws.iter_rows(values_only=True))
+                wb.close()
+                if len(rows) >= 2:
+                    headers = [str(h).strip() if h else '' for h in rows[0]]
+                    saved = []
+                    for row in rows[1:]:
+                        if not any(row): continue
+                        d = dict(zip(headers, row))
+                        sym = str(d.get('Sembol') or '').upper().strip()
+                        if not sym: continue
+                        def _v(k):
+                            v = d.get(k)
+                            return round(float(v), 6) if v is not None else None
+                        atr60  = _v('ATR - 60DK')
+                        atr240 = _v('ATR - 240DK')
+                        atrDay = _v('ATR - DAY')
+                        atrWeek= _v('ATR - WEEK')
+                        composite = round(((atr60 or 0)*2 + (atr240 or 0)*3 + (atrDay or 0)*4 + (atrWeek or 0)*1) / 10, 6)
+                        payload = json.dumps({
+                            'atr60': atr60, 'atr240': atr240,
+                            'atrDay': atrDay, 'atrWeek': atrWeek,
+                            'composite': composite, 'ts': int(time.time()*1000)
+                        }).encode()
+                        req = urllib.request.Request(
+                            f'{FIREBASE_URL}/gridtracker/settings/atrCache/{sym}.json',
+                            data=payload, method='PUT',
+                            headers={'Content-Type': 'application/json'}
+                        )
+                        urllib.request.urlopen(req, timeout=8)
+                        saved.append(sym)
+                    desktop.unlink()
+                    print(f'[ATR] Firebase\'e kaydedildi: {", ".join(saved)} — dosya silindi.')
+        except Exception as e:
+            print(f'[ATR] Hata: {e}')
+        time.sleep(3)
+
+
 def firebase_watcher():
     """Firebase izleyici — çökse bile kendini yeniden başlatır."""
     print('[Firebase] İzleyici başladı.')
@@ -424,6 +472,9 @@ if __name__ == '__main__':
         # Firebase izleyiciyi arka planda başlat
         t = threading.Thread(target=firebase_watcher, daemon=True)
         t.start()
+        # ATR dosya izleyiciyi arka planda başlat
+        t2 = threading.Thread(target=atr_file_watcher, daemon=True)
+        t2.start()
         # Tailscale IP'yi bul, yoksa yerel IP kullan
         try:
             import socket as _sock2
