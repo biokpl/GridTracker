@@ -3559,6 +3559,8 @@ async function gcAutoSR(mode='main'){
     $('gc-sup').value=d.support;
     $('gc-res').value=d.resistance;
     window._gcDirty=true;
+    // PC'de başarılı → Firebase srCache'e yaz (telefon buradan okur)
+    fbWrite('gridtracker/srCache/'+sym+'_'+mode,{support:d.support,resistance:d.resistance,ts:Math.floor(Date.now()/1000)});
     // Seçili buton vurgusu
     const modeClass='gc-sr-active-'+mode;
     ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{
@@ -3588,18 +3590,22 @@ async function gcAutoSR(mode='main'){
     clearTimeout(window._gcSRTimer);
     window._gcSRTimer=setTimeout(()=>calcGridBot(),80);
   }catch(e){
-    // Sunucuya ulaşılamazsa CORS proxy ile Yahoo Finance'dan doğrudan çek
+    // Sunucuya ulaşılamazsa: 4 proxy aynı anda, ilk cevap veren kazanır
     try{
       btn.textContent='Alternatif…';
       const ticker=sym+'.IS';
-      const url=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=60d`;
-      let pr;
-      try{
-        pr=await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(10000)});
-      }catch(_){
-        pr=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,{signal:AbortSignal.timeout(10000)});
-      }
-      const pd=await pr.json();
+      const yfUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=60d`;
+      const proxies=[
+        `https://corsproxy.io/?${encodeURIComponent(yfUrl)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`,
+        `https://corsproxy.org/?${encodeURIComponent(yfUrl)}`,
+        `https://thingproxy.freeboard.io/fetch/${yfUrl}`,
+      ];
+      const pd=await Promise.any(proxies.map(pu=>
+        fetch(pu,{signal:AbortSignal.timeout(12000)})
+          .then(r=>{if(!r.ok)throw new Error('bad');return r.json();})
+          .then(d=>{if(!d?.chart?.result?.[0])throw new Error('no data');return d;})
+      ));
       const q=pd.chart.result[0].indicators.quote[0];
       const prices=(q.high||[]).map((_,i)=>[q.high[i],q.low[i],q.close[i]]).filter(p=>p[0]&&p[1]&&p[2]);
       if(!prices.length) throw new Error('Veri yok');
@@ -3624,13 +3630,29 @@ async function gcAutoSR(mode='main'){
       }
       $('gc-sup').value=support; $('gc-res').value=resistance;
       window._gcDirty=true;
+      // Firebase'e kaydet — telefon buradan da okuyabilir
+      fbWrite('gridtracker/srCache/'+sym+'_'+mode,{support,resistance,ts:Math.floor(Date.now()/1000)});
       ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{const b=$(id);if(b){b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');b.style.opacity='0.45';}});
       btn.classList.add('gc-sr-active','gc-sr-active-'+mode); btn.style.opacity='';
       toast(`↓ ${support} ₺   |   ↑ ${resistance} ₺`,'suc');
       clearTimeout(window._gcSRTimer);
       window._gcSRTimer=setTimeout(()=>calcGridBot(),80);
     }catch(e2){
-      toast('Sunucuya ve internete ulaşılamıyor','err');
+      // Tüm proxy'ler başarısız → Firebase srCache'den oku
+      try{
+        const fr=await fetch(FIREBASE_URL+'/gridtracker/srCache/'+sym+'_'+mode+'.json',{signal:AbortSignal.timeout(4000)});
+        const fc=await fr.json();
+        if(fc&&fc.support&&fc.resistance){
+          $('gc-sup').value=fc.support; $('gc-res').value=fc.resistance;
+          window._gcDirty=true;
+          ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{const b=$(id);if(b){b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');b.style.opacity='0.45';}});
+          btn.classList.add('gc-sr-active','gc-sr-active-'+mode); btn.style.opacity='';
+          const age=Math.round((Date.now()/1000-fc.ts)/3600);
+          toast(`↓ ${fc.support} ₺   |   ↑ ${fc.resistance} ₺  (${age}s önce)`,'inf');
+          clearTimeout(window._gcSRTimer);
+          window._gcSRTimer=setTimeout(()=>calcGridBot(),80);
+        } else { toast('Veri bulunamadı — PC\'de bir kez deneyin','err'); }
+      }catch(e3){ toast('Veri bulunamadı — PC\'de bir kez deneyin','err'); }
     }
   }finally{
     btn.disabled=false; btn.textContent=origText;
