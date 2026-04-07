@@ -1378,8 +1378,16 @@ select.field-input option{background:var(--surface2);}
         <button class="btn btn-ghost" style="flex:2;font-size:11px;padding:8px;display:flex;align-items:center;justify-content:center;border-color:rgba(249,115,22,.4);color:#fdba74;font-weight:600" onclick="calcGridBot()">Hesapla</button>
         <button class="btn btn-ghost" style="flex:1;font-size:11px;padding:8px;display:flex;align-items:center;justify-content:center;border-color:rgba(239,68,68,.25);color:#f87171" onclick="gcReset()">Sıfırla</button>
       </div>
+
+      <!-- Tüm Hisseler Tara -->
+      <button id="gc-scan-btn" class="btn btn-ghost" style="width:100%;margin-top:8px;font-size:10px;padding:8px;border-color:rgba(250,204,21,.3);color:#fde047;display:flex;align-items:center;justify-content:center;gap:6px" onclick="gcScanAll()">
+        <span>📊</span><span>Tüm Hisseler: En İyi Grid'i Bul</span>
+      </button>
     </div>
   </div>
+
+  <!-- Tarama Sonuçları -->
+  <div id="gc-scan-results" style="display:none;margin-bottom:10px"></div>
 
   <!-- Sonuçlar -->
   <div id="gc-results" class="gc-results">
@@ -3912,6 +3920,58 @@ function gcReset(){
   toast('GridBot ayarları sıfırlandı','inf');
 }
 
+// Grid optimizasyon skoru — tek hisse için en iyi aralık ve N'yi döner
+function gcOptimalGrid(d, capital){
+  const atr=d.atr_gunluk||d.atr_ort; if(!atr||atr<=0) return null;
+  const price=d.price; if(!price) return null;
+  const comm=((S.settings&&S.settings.commissionRate)||1)/10000;
+  const combos=[
+    {name:'Yakın', sup:d.yakin_sup, res:d.yakin_res},
+    {name:'Orta',  sup:d.orta_sup,  res:d.orta_res},
+    {name:'Uzak',  sup:d.sup,        res:d.res},
+  ];
+  let best=null;
+  for(const c of combos){
+    const {sup,res}=c; if(!sup||!res||res<=sup) continue;
+    const rng=res-sup;
+    const mid=(sup+res)/2;
+    const minN=Math.max(2,Math.ceil(rng/(atr*0.3)));
+    const maxN=Math.min(100,Math.floor(rng/(mid*0.005)));
+    if(minN>maxN) continue;
+    for(let N=minN;N<=maxN;N++){
+      const dg=rng/N;
+      const lots=Math.floor(capital/(N*sup));
+      if(lots<1) continue;
+      const avg_buy=sup+(N-1)*dg/2;
+      const net=lots*dg - lots*avg_buy*2*comm;
+      if(net<=0) continue;
+      const daily=(atr/dg)*net;
+      const dailyRoi=daily/capital*100;
+      const used=lots*N*sup;
+      // Pozisyon skoru: fiyat aralığın ortasına ne kadar yakın?
+      const pos=(price-sup)/rng;
+      const posScore=1-Math.abs(pos-0.5)*2;
+      // Trend skoru
+      let trendPct=50;
+      try{ trendPct=parseInt((d.trend||'50%').match(/(\d+)%/)[1]); }catch(e){}
+      const trendScore=(trendPct>=20&&trendPct<=80)?1.0:trendPct<20?0.5:0.7;
+      // Volatilite skoru
+      const volScore=Math.min(atr/price*100/2,1.0);
+      const composite=dailyRoi*posScore*trendScore*volScore;
+      if(!best||composite>best.composite){
+        best={name:c.name,N,d:parseFloat(dg.toFixed(4)),lots,sup,res,
+              daily:parseFloat(daily.toFixed(2)),dailyRoi:parseFloat(dailyRoi.toFixed(4)),
+              used:Math.round(used),util:parseFloat((used/capital*100).toFixed(1)),
+              netPG:parseFloat(net.toFixed(4)),triggers:parseFloat((atr/dg).toFixed(1)),
+              pos:parseFloat((pos*100).toFixed(1)),trendPct,
+              volPct:parseFloat((atr/price*100).toFixed(2)),composite};
+      }
+      break; // minN optimal, ilk geçerli N al
+    }
+  }
+  return best;
+}
+
 async function gcFetchPrice(){
   const sym=($('gc-sym').value||'').toUpperCase().trim();
   if(!sym){toast('Hisse kodu girin','err');return;}
@@ -3923,14 +3983,21 @@ async function gcFetchPrice(){
     const d=await gcLoadStockData(sym);
     if(!d||d.price==null) throw new Error('fiyat yok');
     $('gc-price').value=d.price;
-    msg.style.color='#86efac';
-    const ageS=d.ts?Math.round(Date.now()/1000-d.ts):null;
-    msg.textContent=sym+': '+d.price.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺'+(ageS!=null?' ('+ageS+'s önce)':'');
-    // ATR de varsa otomatik doldur
-    if(d.atr_ort!=null){
-      $('gc-atr').value=d.atr_ort.toFixed(4);
-      gcShowAtrBreakdown(d);
+    // ATR doldur
+    if(d.atr_ort!=null){ $('gc-atr').value=d.atr_ort.toFixed(4); gcShowAtrBreakdown(d); }
+    // En iyi destek/direnç aralığını otomatik seç
+    const capital=parseInt(($('gc-cap').value||'').replace(/[^\d]/g,''))||100000;
+    const opt=gcOptimalGrid(d,capital);
+    let rangeNote='';
+    if(opt){
+      $('gc-sup').value=opt.sup;
+      $('gc-res').value=opt.res;
+      rangeNote=` · ${opt.name} aralık · ${opt.N} grid · ${opt.lots} lot`;
+      ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{const b=$(id);if(b){b.style.opacity='0.45';b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');}});
     }
+    const ageS=d.ts?Math.round(Date.now()/1000-d.ts):null;
+    msg.style.color='#86efac';
+    msg.textContent=sym+': '+d.price.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺'+(ageS!=null?' ('+ageS+'s önce)':'')+rangeNote;
     window._gcDirty=true;
   }catch(e){
     msg.style.color='#f87171';
@@ -3938,6 +4005,106 @@ async function gcFetchPrice(){
   }finally{
     btn.disabled=false; btn.textContent='Fiyat Getir';
   }
+}
+
+async function gcScanAll(){
+  const btn=$('gc-scan-btn');
+  btn.disabled=true; btn.querySelector('span:last-child').textContent='Taranıyor…';
+  const capital=parseInt(($('gc-cap').value||'').replace(/[^\d]/g,''))||100000;
+  try{
+    // Tüm hisseleri çek
+    let stocks=null;
+    try{
+      const r=await fetch(`${AUTO_API}/api/all`,{signal:AbortSignal.timeout(3000)});
+      const j=await r.json(); stocks=j.stocks;
+    }catch(e){}
+    if(!stocks){
+      const r=await fetch(FIREBASE_URL+'/gridtracker/stocks.json',{signal:AbortSignal.timeout(6000)});
+      stocks=await r.json();
+    }
+    if(!stocks||typeof stocks!=='object') throw new Error('veri yok');
+
+    const rows=[];
+    for(const [sym,d] of Object.entries(stocks)){
+      const opt=gcOptimalGrid(d,capital);
+      if(!opt) continue;
+      rows.push({sym,...opt,price:d.price,trend:d.trend||'',durum:d.durum||''});
+    }
+    rows.sort((a,b)=>b.composite-a.composite);
+
+    const fx2=v=>typeof v==='number'?v.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}):v;
+    const fxi=v=>Math.round(v).toLocaleString('tr-TR');
+
+    const html=`
+      <div class="card" style="margin-bottom:4px">
+        <div class="card-body" style="padding:8px">
+          <div style="font-size:10px;color:#7a9abf;margin-bottom:6px;display:flex;justify-content:space-between">
+            <span>📊 Sermaye: <b style="color:#fde047">${fxi(capital)} ₺</b> · ${rows.length} hisse analiz edildi</span>
+            <span style="color:#6a8aaa">Tıkla → formu doldur</span>
+          </div>
+          <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <table style="width:100%;border-collapse:collapse;font-size:10px">
+            <thead>
+              <tr style="color:#4e6080;border-bottom:1px solid rgba(255,255,255,.06)">
+                <th style="text-align:left;padding:3px 4px">#</th>
+                <th style="text-align:left;padding:3px 4px">HİSSE</th>
+                <th style="padding:3px 4px">FİYAT</th>
+                <th style="padding:3px 4px">ARALIK</th>
+                <th style="padding:3px 4px">N</th>
+                <th style="padding:3px 4px">LOT</th>
+                <th style="padding:3px 4px">DESTEK</th>
+                <th style="padding:3px 4px">DİRENÇ</th>
+                <th style="padding:3px 4px">GRİD ₺</th>
+                <th style="padding:3px 4px">GÜNLÜK</th>
+                <th style="padding:3px 4px">ROI%</th>
+                <th style="padding:3px 4px">TREND</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.slice(0,20).map((r,i)=>{
+                const roiColor=r.dailyRoi>=1?'#4ade80':r.dailyRoi>=0.5?'#86efac':'#fde047';
+                return `<tr onclick="gcScanFill(${JSON.stringify(r).replace(/</g,'&lt;')})" style="cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.04)'" onmouseout="this.style.background=''">
+                  <td style="color:#4e6080;padding:4px 4px">${i+1}</td>
+                  <td style="font-weight:700;color:#e2e8f0;padding:4px 4px;font-family:var(--mono)">${r.sym}</td>
+                  <td style="text-align:right;font-family:var(--mono);color:#7dd3fc;padding:4px 4px">${fx2(r.price)}</td>
+                  <td style="text-align:center;padding:4px 4px"><span style="font-size:8px;padding:1px 4px;border-radius:3px;background:${r.name==='Yakın'?'rgba(52,211,153,.15)':r.name==='Orta'?'rgba(99,179,237,.15)':'rgba(168,85,247,.15)'};color:${r.name==='Yakın'?'#6ee7b7':r.name==='Orta'?'#7dd3fc':'#c084fc'}">${r.name}</span></td>
+                  <td style="text-align:center;font-family:var(--mono);color:#fde047;padding:4px 4px">${r.N}</td>
+                  <td style="text-align:right;font-family:var(--mono);padding:4px 4px">${r.lots.toLocaleString('tr-TR')}</td>
+                  <td style="text-align:right;font-family:var(--mono);color:#f87171;padding:4px 4px">${fx2(r.sup)}</td>
+                  <td style="text-align:right;font-family:var(--mono);color:#4ade80;padding:4px 4px">${fx2(r.res)}</td>
+                  <td style="text-align:right;font-family:var(--mono);color:#a1a1aa;padding:4px 4px">${fx2(r.d)}</td>
+                  <td style="text-align:right;font-family:var(--mono);color:#fde047;font-weight:600;padding:4px 4px">${fxi(r.daily)} ₺</td>
+                  <td style="text-align:right;font-family:var(--mono);color:${roiColor};font-weight:700;padding:4px 4px">%${r.dailyRoi.toFixed(3)}</td>
+                  <td style="text-align:center;padding:4px 4px;color:#94a3b8;font-size:9px">${r.trend}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>`;
+    $('gc-scan-results').innerHTML=html;
+    $('gc-scan-results').style.display='block';
+    $('gc-scan-results').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }catch(e){
+    toast('Veri alınamadı — sunucu çalışıyor mu?','err');
+  }finally{
+    btn.disabled=false; btn.querySelector('span:last-child').textContent='Tüm Hisseler: En İyi Grid\'i Bul';
+  }
+}
+
+function gcScanFill(r){
+  $('gc-sym').value=r.sym;
+  if(r.price) $('gc-price').value=r.price;
+  $('gc-sup').value=r.sup;
+  $('gc-res').value=r.res;
+  $('gc-price-msg').style.display='none';
+  window._gcDirty=true;
+  // ATR'yi yeniden yükle
+  gcLoadAtrExcel();
+  $('gc-scan-results').style.display='none';
+  window.scrollTo({top:0,behavior:'smooth'});
+  toast(r.sym+' → '+r.name+' aralık · '+r.N+' grid · '+r.lots+' lot','suc');
 }
 
 function gcShowPrice(sym,price,ts){
