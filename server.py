@@ -1,106 +1,179 @@
 #!/usr/bin/env python3
 """
 GridTracker Server - port 5050
-- GET /               → bist_tracker.html servis eder
-- GET /api/atr/{SYM}  → Yahoo Finance fiyat
-- GET /api/sr/{SYM}   → Destek/Direnç
-Stdlib only, pip gerekmez.
+- ATR_Sonuc.xlsx ve Destek_Direc_Seviyeleri.xlsx okur
+- GET /api/stock/{SYM}  → hisse verisi (fiyat + ATR + destek/direnç)
+- GET /api/all          → tüm hisseler
+- GET /api/health       → durum
+- GET /                 → bist_tracker.html
+- Arka planda 60s'de bir Firebase'e push eder
+Stdlib only + openpyxl (otomatik install edilir)
 """
+try:
+    from openpyxl import load_workbook
+except ImportError:
+    import subprocess, sys
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'openpyxl', '-q'],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    from openpyxl import load_workbook
+
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-import urllib.request, json, socket, threading, time, os, sys
+import urllib.request, json, socket, threading, time, os
 
 FIREBASE_URL = 'https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app'
 PORT = 5050
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ATR_FILE = os.path.join(BASE_DIR, 'ATR_Sonuc.xlsx')
+DD_FILE  = os.path.join(BASE_DIR, 'Destek_Direc_Seviyeleri.xlsx')
+
+# Bellekte tutulan veri
+_stocks = {}
+_stocks_ts = 0
+_lock = threading.Lock()
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Excel okuma
 # ---------------------------------------------------------------------------
+
+def _val(cell):
+    v = cell.value
+    if v is None: return None
+    try: return float(v)
+    except: return str(v).strip()
+
+def read_excel():
+    atr = {}
+    dd  = {}
+
+    # ATR_Sonuc.xlsx
+    if os.path.exists(ATR_FILE):
+        try:
+            wb = load_workbook(ATR_FILE, data_only=True, read_only=True)
+            ws = wb['Sonuclar']
+            headers = [str(c.value).strip() if c.value else '' for c in next(ws.iter_rows(min_row=1, max_row=1))]
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if not row[0]: continue
+                r = dict(zip(headers, row))
+                sym = str(r.get('Sembol', '')).strip().upper()
+                if not sym: continue
+                atr[sym] = {
+                    'price':       _safe(r.get('Anlik Fiyat')),
+                    'atr_5dk':     _safe(r.get('ATR 5dk')),
+                    'atr_60dk':    _safe(r.get('ATR 60dk')),
+                    'atr_120dk':   _safe(r.get('ATR 120dk')),
+                    'atr_240dk':   _safe(r.get('ATR 240dk')),
+                    'atr_gunluk':  _safe(r.get('ATR Gunluk')),
+                    'atr_haftalik':_safe(r.get('ATR Haftalik')),
+                    'atr_ort':     _safe(r.get('ATR Ortalama')),
+                }
+            wb.close()
+        except Exception as e:
+            print(f'[ATR] okuma hatası: {e}')
+
+    # Destek_Direc_Seviyeleri.xlsx
+    if os.path.exists(DD_FILE):
+        try:
+            wb = load_workbook(DD_FILE, data_only=True, read_only=True)
+            ws = wb['Sonuclar']
+            headers = [str(c.value).strip() if c.value else '' for c in next(ws.iter_rows(min_row=1, max_row=1))]
+            for row in ws.iter_rows(min_row=2, values_only=True):
+                if not row[0]: continue
+                r = dict(zip(headers, row))
+                sym = str(r.get('Sembol', '')).strip().upper()
+                if not sym: continue
+                dd[sym] = {
+                    'price2':      _safe(r.get('Hisse Fiyati')),
+                    'yakin_sup':   _safe(r.get('Yakin Destek')),
+                    'yakin_res':   _safe(r.get('Yakin Direnc')),
+                    'orta_sup':    _safe(r.get('Orta Destek')),
+                    'orta_res':    _safe(r.get('Orta Direnc')),
+                    'sup':         _safe(r.get('Uzak Destek')),
+                    'res':         _safe(r.get('Uzak Direnc')),
+                    'durum':       str(r.get('Durum') or '').strip(),
+                    'trend':       str(r.get('Trend Gucu') or '').strip(),
+                }
+            wb.close()
+        except Exception as e:
+            print(f'[DD] okuma hatası: {e}')
+
+    # Birleştir
+    syms = set(atr) | set(dd)
+    result = {}
+    for sym in syms:
+        entry = {'ts': int(time.time())}
+        entry.update(atr.get(sym, {}))
+        entry.update(dd.get(sym, {}))
+        # Fiyat: ATR dosyasındaki Anlik Fiyat öncelikli, yoksa DD dosyasındaki
+        if entry.get('price') is None and entry.get('price2') is not None:
+            entry['price'] = entry['price2']
+        entry.pop('price2', None)
+        result[sym] = entry
+    return result
+
+def _safe(v):
+    if v is None: return None
+    try: return round(float(v), 4)
+    except: return None
+
+# ---------------------------------------------------------------------------
+# Firebase
+# ---------------------------------------------------------------------------
+
+def firebase_put(path, data):
+    try:
+        body = json.dumps(data, ensure_ascii=False).encode('utf-8')
+        req = urllib.request.Request(
+            f'{FIREBASE_URL}/{path}.json', data=body, method='PUT',
+            headers={'Content-Type': 'application/json'})
+        urllib.request.urlopen(req, timeout=10)
+    except Exception as e:
+        print(f'[Firebase] hata: {e}')
 
 def get_server_ip():
     try:
         for info in socket.getaddrinfo(socket.gethostname(), None):
             ip = info[4][0]
-            if ip.startswith('100.'):   # Tailscale tercihli
+            if ip.startswith('100.'):
                 return ip
-    except Exception:
-        pass
+    except: pass
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(('8.8.8.8', 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except Exception:
-        return '127.0.0.1'
+        ip = s.getsockname()[0]; s.close(); return ip
+    except: return '127.0.0.1'
 
-def firebase_put(path, data):
-    try:
-        body = json.dumps(data).encode()
-        req = urllib.request.Request(
-            f'{FIREBASE_URL}/{path}.json', data=body, method='PUT',
-            headers={'Content-Type': 'application/json'})
-        urllib.request.urlopen(req, timeout=5)
-    except Exception:
-        pass
+# ---------------------------------------------------------------------------
+# Arka plan thread: Excel oku → belleği güncelle → Firebase'e push
+# ---------------------------------------------------------------------------
 
-def yahoo_fetch(ticker, range_='5d', interval='1d'):
-    url = (f'https://query2.finance.yahoo.com/v8/finance/chart/'
-           f'{ticker}?interval={interval}&range={range_}')
-    req = urllib.request.Request(url, headers={
-        'User-Agent': ('Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-                       'AppleWebKit/537.36 Chrome/124.0 Safari/537.36'),
-        'Accept': 'application/json',
-    })
-    with urllib.request.urlopen(req, timeout=12) as resp:
-        return json.loads(resp.read())
-
-def extract_price(data):
-    r = data['chart']['result'][0]
-    price = r['meta'].get('regularMarketPrice')
-    if price is None:
-        closes = [v for v in r['indicators']['quote'][0].get('close', []) if v is not None]
-        price = closes[-1]
-    return round(float(price), 2)
-
-def calc_sr(data, mode):
-    q = data['chart']['result'][0]['indicators']['quote'][0]
-    prices = [(h, l, c) for h, l, c in zip(
-                  q.get('high', []), q.get('low', []), q.get('close', []))
-              if h is not None and l is not None and c is not None]
-    if not prices:
-        raise ValueError('Veri yok')
-    current = prices[-1][2]
-    if mode == 'main':
-        return {'support': round(min(p[1] for p in prices), 2),
-                'resistance': round(max(p[0] for p in prices), 2)}
-    W, n, sh, sl = 2, len(prices), [], []
-    for i in range(W, n - W):
-        h, l = prices[i][0], prices[i][1]
-        if all(h >= prices[i - W + j][0] for j in range(W * 2) if j != W): sh.append(h)
-        if all(l <= prices[i - W + j][1] for j in range(W * 2) if j != W): sl.append(l)
-    idx  = 4 if mode == 'swing5' else 2 if mode == 'swing3' else 0
-    sups = sorted([p for p in sl if p < current * 0.998], reverse=True)
-    ress = sorted([p for p in sh if p > current * 1.002])
-    return {
-        'support':    round((sups[idx] if idx < len(sups) else (sups[-1] if sups else min(p[1] for p in prices))), 2),
-        'resistance': round((ress[idx] if idx < len(ress) else (ress[-1] if ress else max(p[0] for p in prices))), 2),
-    }
+def _bg_loop():
+    while True:
+        try:
+            stocks = read_excel()
+            ts = int(time.time())
+            with _lock:
+                _stocks.clear()
+                _stocks.update(stocks)
+                global _stocks_ts
+                _stocks_ts = ts
+            # Firebase'e yaz
+            firebase_put('gridtracker/stocks', stocks)
+            firebase_put('gridtracker/stocks_ts', ts)
+        except Exception as e:
+            print(f'[BG] hata: {e}')
+        time.sleep(60)
 
 # ---------------------------------------------------------------------------
 # HTTP Handler
 # ---------------------------------------------------------------------------
 
 class Handler(SimpleHTTPRequestHandler):
-    """API route'ları yakalar, geri kalan her şeyi BASE_DIR'den servis eder."""
-
-    def log_message(self, fmt, *args):
-        pass
+    def log_message(self, fmt, *args): pass
 
     def send_json(self, code, obj):
-        body = json.dumps(obj).encode()
+        body = json.dumps(obj, ensure_ascii=False).encode('utf-8')
         self.send_response(code)
-        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
@@ -113,7 +186,6 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        # Kök URL → doğrudan HTML'e yönlendir
         if self.path in ('/', ''):
             self.send_response(302)
             self.send_header('Location', '/bist_tracker.html')
@@ -123,66 +195,63 @@ class Handler(SimpleHTTPRequestHandler):
         path  = self.path.split('?')[0]
         parts = path.strip('/').split('/')
 
-        # /api/atr/{SYM}
-        if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'atr':
+        # /api/stock/{SYM}
+        if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'stock':
             sym = parts[2].upper()
-            try:
-                price = extract_price(yahoo_fetch(sym + '.IS', '5d'))
-                threading.Thread(target=firebase_put, daemon=True,
-                    args=(f'gridtracker/livePrices/{sym}',
-                          {'price': price, 'ts': int(time.time())})).start()
-                self.send_json(200, {'price': price})
-            except Exception as e:
-                self.send_json(500, {'error': str(e)})
+            with _lock:
+                data = _stocks.get(sym)
+            if data:
+                self.send_json(200, data)
+            else:
+                self.send_json(404, {'error': f'{sym} bulunamadı'})
             return
 
-        # /api/sr/{SYM}?mode=...
-        if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'sr':
-            sym  = parts[2].upper()
-            qs   = self.path.split('?')[1] if '?' in self.path else ''
-            mode = next((v.split('=')[1] for v in qs.split('&') if v.startswith('mode=')), 'main')
-            try:
-                sr = calc_sr(yahoo_fetch(sym + '.IS', '60d'), mode)
-                threading.Thread(target=firebase_put, daemon=True,
-                    args=(f'gridtracker/srCache/{sym}_{mode}', sr)).start()
-                self.send_json(200, sr)
-            except Exception as e:
-                self.send_json(500, {'error': str(e)})
+        # /api/all
+        if path == '/api/all':
+            with _lock:
+                self.send_json(200, {'stocks': dict(_stocks), 'ts': _stocks_ts})
             return
 
         # /api/health
         if path == '/api/health':
-            self.send_json(200, {'ok': True})
+            with _lock:
+                self.send_json(200, {'ok': True, 'count': len(_stocks), 'ts': _stocks_ts})
             return
 
-        # Statik dosya (bist_tracker.html, sw.js, ikonlar vs.)
+        # Statik dosyalar
         super().do_GET()
 
     def translate_path(self, path):
-        # SimpleHTTPRequestHandler'ı BASE_DIR'e kilitle
         import posixpath, urllib.parse
         path = posixpath.normpath(urllib.parse.unquote(path.split('?')[0]))
-        parts = path.split('/')
-        path  = BASE_DIR
-        for part in parts:
-            if part in ('', os.curdir, os.pardir):
-                continue
-            path = os.path.join(path, part)
-        return path
+        result = BASE_DIR
+        for part in path.split('/'):
+            if part in ('', os.curdir, os.pardir): continue
+            result = os.path.join(result, part)
+        return result
 
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
-def register():
-    ip = get_server_ip()
-    firebase_put('gridtracker/serverInfo', {'ip': ip, 'port': PORT})
-
 if __name__ == '__main__':
     os.chdir(BASE_DIR)
-    threading.Thread(target=register, daemon=True).start()
+    # İlk okuma
+    stocks = read_excel()
+    with _lock:
+        _stocks.update(stocks)
+        _stocks_ts = int(time.time())
+    print(f'[GridTracker] {len(_stocks)} hisse yüklendi.')
+    # Firebase'e yaz (IP + ilk veri)
+    ip = get_server_ip()
+    threading.Thread(target=firebase_put, daemon=True,
+        args=('gridtracker/serverInfo', {'ip': ip, 'port': PORT})).start()
+    threading.Thread(target=firebase_put, daemon=True,
+        args=('gridtracker/stocks', dict(_stocks))).start()
+    # Arka plan döngüsü
+    threading.Thread(target=_bg_loop, daemon=True).start()
     server = HTTPServer(('0.0.0.0', PORT), Handler)
-    print(f'GridTracker Server: http://localhost:{PORT}/bist_tracker.html')
+    print(f'[GridTracker] http://localhost:{PORT}/bist_tracker.html')
     try:
         server.serve_forever()
     except KeyboardInterrupt:

@@ -1478,8 +1478,6 @@ select.field-input option{background:var(--surface2);}
 //  FİREBASE
 // ════════════════════════════════════════════════════════
 const FIREBASE_URL='https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app';
-// Cloudflare Worker URL — deploy ettikten sonra buraya yaz, boş bırakırsan devre dışı
-const WORKER_URL='';
 
 // BİST işlem günü sayacı — resmi/dini tatil OLMAYAN Pzt-Cum günlerini sayar
 function bistDayCount(y,mo){
@@ -3796,62 +3794,39 @@ function renderGridCalcPage(){
 }
 
 
+// Tek fonksiyon: Excel verilerini API veya Firebase'den çek, tüm alanları doldur
+async function gcLoadStockData(sym, opts={}){
+  const {fillPrice=false, fillAtr=false, fillSR=false} = opts;
+  // 1. Önce local server dene, sonra Firebase
+  let d = null;
+  try{
+    const r=await fetch(`${AUTO_API}/api/stock/${sym}`,{signal:AbortSignal.timeout(3000)});
+    d=await r.json();
+    if(d.error) d=null;
+  }catch(e){}
+  if(!d){
+    try{
+      const r=await fetch(FIREBASE_URL+'/gridtracker/stocks/'+sym+'.json',{signal:AbortSignal.timeout(5000)});
+      d=await r.json();
+    }catch(e){}
+  }
+  return d||null;
+}
+
 async function gcLoadAtrExcel(){
   const sym=($('gc-sym').value||'').toUpperCase().trim();
   if(!sym){toast('Önce hisse kodu girin','err');return;}
   const btn=$('gc-atr-load-btn');
   btn.disabled=true; btn.textContent='Yükleniyor…';
   try{
-    const r=await fetch(`http://localhost:5050/api/atr-excel?symbol=${sym}`,{signal:AbortSignal.timeout(5000)});
-    const d=await r.json();
-    if(d.error){
-      // Sunucuda hata → önce local cache, yoksa Firebase cache
-      const cache=(S.settings.atrCache||{})[sym];
-      if(cache){
-        $('gc-atr').value=cache.composite.toFixed(4);
-        window._gcDirty=true; gcShowAtrBreakdown(cache);
-        const age=Math.round((Date.now()-cache.ts)/86400000);
-        toast(`Cache'den yüklendi (${age} gün önce)`,'inf');
-      } else {
-        try{
-          const fr=await fetch(FIREBASE_URL+'/gridtracker/settings/atrCache/'+sym+'.json',{signal:AbortSignal.timeout(4000)});
-          const fc=await fr.json();
-          if(fc&&fc.composite){
-            if(!S.settings.atrCache) S.settings.atrCache={};
-            S.settings.atrCache[sym]=fc; save();
-            $('gc-atr').value=fc.composite.toFixed(4);
-            window._gcDirty=true; gcShowAtrBreakdown(fc);
-            toast(`Cache'den yüklendi`,'inf');
-          } else { toast(d.error,'err'); }
-        }catch(fe){ toast(d.error,'err'); }
-      }
-      return;
-    }
-    const row=d.data[0];
-    // Bileşik ATR: 60DK×2 + 240DK×3 + DAY×4 + WEEK×1 / 10
-    const composite=((row.atr60||0)*2+(row.atr240||0)*3+(row.atrDay||0)*4+(row.atrWeek||0)*1)/10;
-    $('gc-atr').value=composite.toFixed(4);
+    const d=await gcLoadStockData(sym);
+    if(!d||d.atr_ort==null){toast('ATR verisi bulunamadı','err');return;}
+    $('gc-atr').value=(d.atr_ort).toFixed(4);
     window._gcDirty=true;
-    // Cache'e kaydet (localStorage + Firebase)
-    if(!S.settings.atrCache) S.settings.atrCache={};
-    S.settings.atrCache[sym]={atr60:row.atr60,atr240:row.atr240,atrDay:row.atrDay,atrWeek:row.atrWeek,composite:parseFloat(composite.toFixed(4)),ts:Date.now()};
-    save();
-    fbWrite('gridtracker/settings/atrCache/'+sym, S.settings.atrCache[sym]);
-    // Breakdown göster
-    gcShowAtrBreakdown(row);
-    toast('ATR yüklendi ve kaydedildi','suc');
+    gcShowAtrBreakdown(d);
+    toast('ATR yüklendi','suc');
   }catch(e){
-    // Sunucu çalışmıyor → cache'den yükle
-    const cache=(S.settings.atrCache||{})[sym];
-    if(cache){
-      $('gc-atr').value=cache.composite.toFixed(4);
-      window._gcDirty=true;
-      gcShowAtrBreakdown(cache);
-      const age=Math.round((Date.now()-cache.ts)/86400000);
-      toast(`Cache'den yüklendi (${age} gün önce kaydedildi)`,'inf');
-    } else {
-      toast('Sunucu çalışmıyor ve cache bulunamadı — 3.xlsx masaüstüne kaydedin','err');
-    }
+    toast('ATR alınamadı','err');
   }finally{
     btn.disabled=false; btn.textContent='ATR Getir';
   }
@@ -3861,7 +3836,7 @@ function gcShowAtrBreakdown(row){
   const bd=$('gc-atr-breakdown');
   if(!bd) return;
   bd.style.visibility='visible';
-  const items=[['60DK',row.atr60],['240DK',row.atr240],['Günlük',row.atrDay],['Haftalık',row.atrWeek]];
+  const items=[['60DK',row.atr_60dk],['240DK',row.atr_240dk],['Günlük',row.atr_gunluk],['Haftalık',row.atr_haftalik]];
   bd.innerHTML=items.map(([lbl,val])=>`
     <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:5px;padding:3px 5px;text-align:center">
       <div style="font-size:9px;color:#7a9abf;letter-spacing:.5px;font-weight:600;padding-bottom:2px;margin-bottom:2px;background-image:linear-gradient(90deg,transparent 0%,rgba(122,154,191,.35) 35%,rgba(122,154,191,.35) 65%,transparent 100%);background-size:100% 1px;background-repeat:no-repeat;background-position:bottom">${lbl}</div>
@@ -3869,59 +3844,19 @@ function gcShowAtrBreakdown(row){
     </div>`).join('');
 }
 
-// Yahoo ham verisinden mod'a göre destek/direnç hesapla
-function _calcSR(pd, mode){
-  const q=pd.chart.result[0].indicators.quote[0];
-  const prices=(q.high||[]).map((_,i)=>[q.high[i],q.low[i],q.close[i]]).filter(p=>p[0]&&p[1]&&p[2]);
-  if(!prices.length) throw new Error('Veri yok');
-  const current=prices[prices.length-1][2];
-  let support,resistance;
-  if(mode==='main'){
-    support=Math.round(Math.min(...prices.map(p=>p[1]))*100)/100;
-    resistance=Math.round(Math.max(...prices.map(p=>p[0]))*100)/100;
-  } else {
-    const W=2,n=prices.length,sh=[],sl=[];
-    for(let i=W;i<n-W;i++){
-      const h=prices[i][0],l=prices[i][1];
-      if([...Array(W*2)].every((_,j)=>j===W?true:h>=prices[i-W+j][0])) sh.push(h);
-      if([...Array(W*2)].every((_,j)=>j===W?true:l<=prices[i-W+j][1])) sl.push(l);
-    }
-    const idx=mode==='swing5'?4:mode==='swing3'?2:0;
-    const sups=sl.filter(p=>p<current*.998).sort((a,b)=>b-a);
-    const ress=sh.filter(p=>p>current*1.002).sort((a,b)=>a-b);
-    support=Math.round((sups[idx]||sups[sups.length-1]||Math.min(...prices.map(p=>p[1])))*100)/100;
-    resistance=Math.round((ress[idx]||ress[ress.length-1]||Math.max(...prices.map(p=>p[0])))*100)/100;
-  }
-  return {support,resistance};
-}
-
-function _applySR(sym, mode, d, btn, origText){
-  $('gc-sup').value=d.support;
-  $('gc-res').value=d.resistance;
+function _applySR(sym, sup, res, btn, origText){
+  $('gc-sup').value=sup;
+  $('gc-res').value=res;
   window._gcDirty=true;
-  fbWrite('gridtracker/srCache/'+sym+'_'+mode,{support:d.support,resistance:d.resistance,ts:Math.floor(Date.now()/1000)});
   ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{
     const b=$(id);if(!b)return;
     b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');
     b.style.opacity='0.45';
   });
-  btn.classList.add('gc-sr-active','gc-sr-active-'+mode); btn.style.opacity='';
+  if(btn){btn.classList.add('gc-sr-active','gc-sr-active-main');btn.style.opacity='';}
   const alts=$('gc-sr-alts');
-  const altSups=(d.supports||[]).slice(1,4);
-  const altRes=(d.resistances||[]).slice(1,4);
-  if(alts&&(altSups.length||altRes.length)){
-    alts.style.display='flex';
-    alts.innerHTML=
-      `<div style="flex:1;display:flex;flex-wrap:wrap;gap:2px;align-items:center">
-        <span style="font-size:8px;color:#6a8aaa;margin-right:2px">Alt:</span>`+
-        altSups.map(v=>`<span onclick="$('gc-sup').value=${v};window._gcDirty=true;calcGridBot();" style="cursor:pointer;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:3px;font-size:9px;padding:1px 5px;color:#f87171">${v}</span>`).join('')+
-      `</div>
-      <div style="flex:1;display:flex;flex-wrap:wrap;gap:2px;align-items:center;justify-content:flex-end">
-        <span style="font-size:8px;color:#6a8aaa;margin-right:2px">Alt:</span>`+
-        altRes.map(v=>`<span onclick="$('gc-res').value=${v};window._gcDirty=true;calcGridBot();" style="cursor:pointer;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);border-radius:3px;font-size:9px;padding:1px 5px;color:#4ade80">${v}</span>`).join('')+
-      `</div>`;
-  }
-  btn.disabled=false; btn.textContent=origText;
+  if(alts) alts.style.display='none';
+  if(btn){btn.disabled=false;btn.textContent=origText;}
   clearTimeout(window._gcSRTimer);
   window._gcSRTimer=setTimeout(()=>calcGridBot(),80);
 }
@@ -3929,31 +3864,20 @@ function _applySR(sym, mode, d, btn, origText){
 async function gcAutoSR(mode='main'){
   const sym=($('gc-sym').value||'').toUpperCase().trim();
   if(!sym){toast('Önce hisse kodu girin','err');return;}
-  await _apiReady;
   const btn=mode==='swing3'?$('gc-sr-btn3'):mode==='swing5'?$('gc-sr-btn2'):$('gc-sr-btn');
   const origText=btn.textContent;
-  btn.disabled=true; btn.textContent='Hesaplanıyor…';
-
-  const ticker=sym+'.IS';
-  const yfUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=60d`;
-
+  btn.disabled=true; btn.textContent='Yükleniyor…';
   try{
-    // Tüm kaynaklar aynı anda — ilk başarılı cevap kazanır
-    // Firebase srCache (file watcher tarafından doldurulur) proxy'lerden önce gelir
-    const d=await Promise.any([
-      fetch(`${AUTO_API}/api/sr/${sym}?mode=${mode}`,{signal:AbortSignal.timeout(3000)})
-        .then(r=>r.json()).then(r=>{if(r.error)throw new Error(r.error);return r;}),
-      fetch(FIREBASE_URL+'/gridtracker/srCache/'+sym+'_'+mode+'.json',{signal:AbortSignal.timeout(5000)})
-        .then(r=>r.json()).then(fc=>{if(!fc?.support)throw new Error('no cache');return fc;}),
-      fetch(`https://corsproxy.io/?${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
-        .then(r=>r.json()).then(pd=>_calcSR(pd,mode)),
-      fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
-        .then(r=>r.json()).then(pd=>_calcSR(pd,mode)),
-      fetch(`https://corsproxy.org/?${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
-        .then(r=>r.json()).then(pd=>_calcSR(pd,mode)),
-    ]);
-    toast(`↓ ${d.support} ₺   |   ↑ ${d.resistance} ₺`,'suc');
-    _applySR(sym,mode,d,btn,origText);
+    const d=await gcLoadStockData(sym);
+    if(!d) throw new Error('veri yok');
+    // mode'a göre kaynak seç
+    let sup, res;
+    if(mode==='main'){sup=d.sup; res=d.res;}
+    else if(mode==='swing5'){sup=d.orta_sup; res=d.orta_res;}
+    else{sup=d.yakin_sup; res=d.yakin_res;}
+    if(!sup||!res) throw new Error('seviye yok');
+    toast(`↓ ${sup} ₺   |   ↑ ${res} ₺`,'suc');
+    _applySR(sym,sup,res,btn,origText);
   }catch(e){
     toast('Destek/Direnç alınamadı','err');
     btn.disabled=false; btn.textContent=origText;
@@ -3994,39 +3918,23 @@ async function gcFetchPrice(){
   const btn=$('gc-price-btn');
   const msg=$('gc-price-msg');
   btn.disabled=true; btn.textContent='Getiriliyor…';
-  await _apiReady;
-  msg.style.color='#fdba74'; msg.textContent='Fiyat alınıyor…'; msg.style.display='block';
-
-  const ticker=sym+'.IS';
-  const yfUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=5d`;
-  const _price=d=>parseFloat((d.chart.result[0].meta.regularMarketPrice||d.chart.result[0].indicators.quote[0].close.filter(v=>v!=null).at(-1)).toFixed(2));
-
+  msg.style.color='#fdba74'; msg.textContent='Yükleniyor…'; msg.style.display='block';
   try{
-    // Firebase livePrices (file watcher tarafından doldurulur) proxy'lerle aynı anda denenir
-    const sources=[
-      fetch(`${AUTO_API}/api/atr/${sym}`,{signal:AbortSignal.timeout(3000)})
-        .then(r=>r.json()).then(d=>{if(!d?.price)throw new Error();return d.price;}),
-      fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(5000)})
-        .then(r=>r.json()).then(d=>{if(!d?.price||(Date.now()/1000-d.ts)>28800)throw new Error('stale');return d.price;}),
-      fetch(`https://corsproxy.io/?${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
-        .then(r=>r.json()).then(d=>_price(d)),
-      fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
-        .then(r=>r.json()).then(d=>_price(d)),
-      fetch(`https://corsproxy.org/?${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
-        .then(r=>r.json()).then(d=>_price(d)),
-    ];
-    if(WORKER_URL) sources.unshift(
-      fetch(`${WORKER_URL}/${sym}`,{signal:AbortSignal.timeout(8000)})
-        .then(r=>r.json()).then(d=>{if(!d?.price)throw new Error();return d.price;})
-    );
-    const p=await Promise.any(sources);
-    $('gc-price').value=p;
+    const d=await gcLoadStockData(sym);
+    if(!d||d.price==null) throw new Error('fiyat yok');
+    $('gc-price').value=d.price;
     msg.style.color='#86efac';
-    msg.textContent=sym+': '+p.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺';
-    msg.style.display='block';
+    const ageS=d.ts?Math.round(Date.now()/1000-d.ts):null;
+    msg.textContent=sym+': '+d.price.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺'+(ageS!=null?' ('+ageS+'s önce)':'');
+    // ATR de varsa otomatik doldur
+    if(d.atr_ort!=null){
+      $('gc-atr').value=d.atr_ort.toFixed(4);
+      gcShowAtrBreakdown(d);
+    }
+    window._gcDirty=true;
   }catch(e){
     msg.style.color='#f87171';
-    msg.textContent='Fiyat alınamadı — manuel girin.';
+    msg.textContent='Veri alınamadı — sunucu çalışıyor mu?';
   }finally{
     btn.disabled=false; btn.textContent='Fiyat Getir';
   }
@@ -4421,20 +4329,8 @@ function renderCostSummary(){
 // ════════════════════════════════════════════════════════
 //  SABAH OTOMASYONU AYARLARI
 // ════════════════════════════════════════════════════════
-const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-// Sayfa server.py üzerinden açıldıysa (port 5050) API aynı origin'de — Firebase'e bakmaya gerek yok
-let AUTO_API = location.port === '5050'
-  ? location.origin
-  : 'http://localhost:5050';
-const _apiReady = location.port === '5050' ? Promise.resolve() : (async()=>{
-  try{
-    const r=await fetch(FIREBASE_URL+'/gridtracker/serverInfo.json',{signal:AbortSignal.timeout(4000)});
-    const d=await r.json();
-    if(d&&d.ip&&d.port){
-      AUTO_API=IS_LOCAL?`http://localhost:${d.port}`:`http://${d.ip}:${d.port}`;
-    }
-  }catch(e){}
-})();
+// Sayfa server.py üzerinden açıldıysa (port 5050) API aynı origin
+const AUTO_API = location.port === '5050' ? location.origin : 'http://localhost:5050';
 
 function _wakeTime(t){ const[h,m]=t.split(':').map(Number); return `${String(m<5?h-1:h).padStart(2,'0')}:${String(m<5?m+55:m-5).padStart(2,'0')}`; }
 
