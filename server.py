@@ -49,22 +49,22 @@ def read_excel():
     if os.path.exists(ATR_FILE):
         try:
             wb = load_workbook(ATR_FILE, data_only=True, read_only=True)
-            ws = wb['Sonuclar']
-            headers = [str(c.value).strip() if c.value else '' for c in next(ws.iter_rows(min_row=1, max_row=1))]
+            ws = wb[wb.sheetnames[0]]
             for row in ws.iter_rows(min_row=2, values_only=True):
                 if not row[0]: continue
-                r = dict(zip(headers, row))
-                sym = str(r.get('Sembol', '')).strip().upper()
+                sym = str(row[0]).strip().upper()
                 if not sym: continue
+                # Sütun sırası: Sembol, Periyod, Birim, Anlık Fiyat, ATR 5dk, ATR 60dk, ATR 120dk, ATR 240dk, ATR Günlük, ATR Haftalık, ATR Ortalama
+                vals = list(row)
                 atr[sym] = {
-                    'price':       _safe(r.get('Anlik Fiyat')),
-                    'atr_5dk':     _safe(r.get('ATR 5dk')),
-                    'atr_60dk':    _safe(r.get('ATR 60dk')),
-                    'atr_120dk':   _safe(r.get('ATR 120dk')),
-                    'atr_240dk':   _safe(r.get('ATR 240dk')),
-                    'atr_gunluk':  _safe(r.get('ATR Gunluk')),
-                    'atr_haftalik':_safe(r.get('ATR Haftalik')),
-                    'atr_ort':     _safe(r.get('ATR Ortalama')),
+                    'price':        _safe(vals[3]),
+                    'atr_5dk':      _safe(vals[4]),
+                    'atr_60dk':     _safe(vals[5]),
+                    'atr_120dk':    _safe(vals[6]),
+                    'atr_240dk':    _safe(vals[7]),
+                    'atr_gunluk':   _safe(vals[8]),
+                    'atr_haftalik': _safe(vals[9]),
+                    'atr_ort':      _safe(vals[10]),
                 }
             wb.close()
         except Exception as e:
@@ -74,23 +74,23 @@ def read_excel():
     if os.path.exists(DD_FILE):
         try:
             wb = load_workbook(DD_FILE, data_only=True, read_only=True)
-            ws = wb['Sonuclar']
-            headers = [str(c.value).strip() if c.value else '' for c in next(ws.iter_rows(min_row=1, max_row=1))]
+            ws = wb[wb.sheetnames[0]]
             for row in ws.iter_rows(min_row=2, values_only=True):
                 if not row[0]: continue
-                r = dict(zip(headers, row))
-                sym = str(r.get('Sembol', '')).strip().upper()
+                sym = str(row[0]).strip().upper()
                 if not sym: continue
+                # Sütun sırası: Sembol, Periyod, Birim, Hisse Fiyatı, Yakın Destek, Yakın Direnç, Orta Destek, Orta Direnç, Uzak Destek, Uzak Direnç, Durum, Trend Gücü
+                vals = list(row)
                 dd[sym] = {
-                    'price2':      _safe(r.get('Hisse Fiyati')),
-                    'yakin_sup':   _safe(r.get('Yakin Destek')),
-                    'yakin_res':   _safe(r.get('Yakin Direnc')),
-                    'orta_sup':    _safe(r.get('Orta Destek')),
-                    'orta_res':    _safe(r.get('Orta Direnc')),
-                    'sup':         _safe(r.get('Uzak Destek')),
-                    'res':         _safe(r.get('Uzak Direnc')),
-                    'durum':       str(r.get('Durum') or '').strip(),
-                    'trend':       str(r.get('Trend Gucu') or '').strip(),
+                    'price2':    _safe(vals[3]),
+                    'yakin_sup': _safe(vals[4]),
+                    'yakin_res': _safe(vals[5]),
+                    'orta_sup':  _safe(vals[6]),
+                    'orta_res':  _safe(vals[7]),
+                    'sup':       _safe(vals[8]),
+                    'res':       _safe(vals[9]),
+                    'durum':     str(vals[10] or '').strip(),
+                    'trend':     str(vals[11] or '').strip(),
                 }
             wb.close()
         except Exception as e:
