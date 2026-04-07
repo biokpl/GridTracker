@@ -3927,6 +3927,7 @@ function _applySR(sym, mode, d, btn, origText){
 async function gcAutoSR(mode='main'){
   const sym=($('gc-sym').value||'').toUpperCase().trim();
   if(!sym){toast('Önce hisse kodu girin','err');return;}
+  await _apiReady;
   const btn=mode==='swing3'?$('gc-sr-btn3'):mode==='swing5'?$('gc-sr-btn2'):$('gc-sr-btn');
   const origText=btn.textContent;
   btn.disabled=true; btn.textContent='Hesaplanıyor…';
@@ -3991,6 +3992,7 @@ async function gcFetchPrice(){
   const btn=$('gc-price-btn');
   const msg=$('gc-price-msg');
   btn.disabled=true; btn.textContent='Getiriliyor…';
+  await _apiReady;
   msg.style.color='#fdba74'; msg.textContent='Fiyat alınıyor…'; msg.style.display='block';
 
   const ticker=sym+'.IS';
@@ -4415,12 +4417,11 @@ function renderCostSummary(){
 let AUTO_API = 'http://localhost:5050';
 const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 // Sunucu IP'sini Firebase'den oku (telefon/uzak cihaz için)
-(async()=>{
+const _apiReady = (async()=>{
   try{
     const r=await fetch(FIREBASE_URL+'/gridtracker/serverInfo.json',{signal:AbortSignal.timeout(4000)});
     const d=await r.json();
     if(d&&d.ip&&d.port){
-      // PC'deyse localhost kullan, değilse gerçek IP
       AUTO_API=IS_LOCAL?`http://localhost:${d.port}`:`http://${d.ip}:${d.port}`;
     }
   }catch(e){}
