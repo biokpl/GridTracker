@@ -1379,15 +1379,8 @@ select.field-input option{background:var(--surface2);}
         <button class="btn btn-ghost" style="flex:1;font-size:11px;padding:8px;display:flex;align-items:center;justify-content:center;border-color:rgba(239,68,68,.25);color:#f87171" onclick="gcReset()">Sıfırla</button>
       </div>
 
-      <!-- Tüm Hisseler Tara -->
-      <button id="gc-scan-btn" class="btn btn-ghost" style="width:100%;margin-top:8px;font-size:10px;padding:8px;border-color:rgba(250,204,21,.3);color:#fde047;display:flex;align-items:center;justify-content:center;gap:6px" onclick="gcScanAll()">
-        <span>📊</span><span>Tüm Hisseler: En İyi Grid'i Bul</span>
-      </button>
     </div>
   </div>
-
-  <!-- Tarama Sonuçları -->
-  <div id="gc-scan-results" style="display:none;margin-bottom:10px"></div>
 
   <!-- Sonuçlar -->
   <div id="gc-results" class="gc-results">
@@ -3977,28 +3970,31 @@ async function gcFetchPrice(){
   if(!sym){toast('Hisse kodu girin','err');return;}
   const btn=$('gc-price-btn');
   const msg=$('gc-price-msg');
-  btn.disabled=true; btn.textContent='Getiriliyor…';
+  btn.disabled=true; btn.textContent='Hesaplanıyor…';
   msg.style.color='#fdba74'; msg.textContent='Yükleniyor…'; msg.style.display='block';
   try{
     const d=await gcLoadStockData(sym);
     if(!d||d.price==null) throw new Error('fiyat yok');
+    // Fiyat
     $('gc-price').value=d.price;
-    // ATR doldur
-    if(d.atr_ort!=null){ $('gc-atr').value=d.atr_ort.toFixed(4); gcShowAtrBreakdown(d); }
-    // En iyi destek/direnç aralığını otomatik seç
-    const capital=parseInt(($('gc-cap').value||'').replace(/[^\d]/g,''))||100000;
+    // ATR
+    if(d.atr_gunluk!=null){ $('gc-atr').value=d.atr_gunluk.toFixed(4); gcShowAtrBreakdown(d); }
+    else if(d.atr_ort!=null){ $('gc-atr').value=d.atr_ort.toFixed(4); gcShowAtrBreakdown(d); }
+    // Sermaye
+    const capital=parseInt(($('gc-cap').value||'').replace(/[^\d]/g,''))||0;
+    if(!capital){ msg.style.color='#f87171'; msg.textContent='Önce sermaye girin'; return; }
+    // En iyi destek/direnç + grid hesapla
     const opt=gcOptimalGrid(d,capital);
-    let rangeNote='';
-    if(opt){
-      $('gc-sup').value=opt.sup;
-      $('gc-res').value=opt.res;
-      rangeNote=` · ${opt.name} aralık · ${opt.N} grid · ${opt.lots} lot`;
-      ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{const b=$(id);if(b){b.style.opacity='0.45';b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');}});
-    }
+    if(!opt){ msg.style.color='#f87171'; msg.textContent='Bu sermaye ile uygun grid bulunamadı'; return; }
+    $('gc-sup').value=opt.sup;
+    $('gc-res').value=opt.res;
+    ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{const b=$(id);if(b){b.style.opacity='0.45';b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');}});
+    window._gcDirty=true;
     const ageS=d.ts?Math.round(Date.now()/1000-d.ts):null;
     msg.style.color='#86efac';
-    msg.textContent=sym+': '+d.price.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺'+(ageS!=null?' ('+ageS+'s önce)':'')+rangeNote;
-    window._gcDirty=true;
+    msg.textContent=`${sym}: ${d.price.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺${ageS!=null?' ('+ageS+'s önce)':''} · ${opt.name} aralık · Optimal: ${opt.N} grid · ${opt.lots} lot`;
+    // Otomatik hesapla
+    calcGridBot();
   }catch(e){
     msg.style.color='#f87171';
     msg.textContent='Veri alınamadı — sunucu çalışıyor mu?';
