@@ -3977,24 +3977,13 @@ async function gcFetchPrice(){
     if(!d||d.price==null) throw new Error('fiyat yok');
     // Fiyat
     $('gc-price').value=d.price;
-    // ATR
+    // ATR — günlük ATR öncelikli
     if(d.atr_gunluk!=null){ $('gc-atr').value=d.atr_gunluk.toFixed(4); gcShowAtrBreakdown(d); }
     else if(d.atr_ort!=null){ $('gc-atr').value=d.atr_ort.toFixed(4); gcShowAtrBreakdown(d); }
-    // Sermaye
-    const capital=parseInt(($('gc-cap').value||'').replace(/[^\d]/g,''))||0;
-    if(!capital){ msg.style.color='#f87171'; msg.textContent='Önce sermaye girin'; return; }
-    // En iyi destek/direnç + grid hesapla
-    const opt=gcOptimalGrid(d,capital);
-    if(!opt){ msg.style.color='#f87171'; msg.textContent='Bu sermaye ile uygun grid bulunamadı'; return; }
-    $('gc-sup').value=opt.sup;
-    $('gc-res').value=opt.res;
-    ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{const b=$(id);if(b){b.style.opacity='0.45';b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');}});
-    window._gcDirty=true;
     const ageS=d.ts?Math.round(Date.now()/1000-d.ts):null;
     msg.style.color='#86efac';
-    msg.textContent=`${sym}: ${d.price.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺${ageS!=null?' ('+ageS+'s önce)':''} · ${opt.name} aralık · Optimal: ${opt.N} grid · ${opt.lots} lot`;
-    // Otomatik hesapla
-    calcGridBot();
+    msg.textContent=`${sym}: ${d.price.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺${ageS!=null?' ('+ageS+'s önce)':''}`;
+    window._gcDirty=true;
   }catch(e){
     msg.style.color='#f87171';
     msg.textContent='Veri alınamadı — sunucu çalışıyor mu?';
@@ -4154,8 +4143,7 @@ function calcGridBot(){
     const daily=(atr/d)*net;
     const used=lots*N*support;
     const util=used/capital*100;
-    if(!best) best={N,d,lots,net,daily,used,util};
-    else break;
+    if(!best||daily>best.daily) best={N,d,lots,net,daily,used,util};
   }
 
   if(!best){toast('Hesaplanamadı — sermaye yetersiz veya aralık dar','err');return;}
