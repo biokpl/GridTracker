@@ -1,24 +1,27 @@
 #!/usr/bin/env python3
 """
-GridTracker Price Server - port 5050
-Yahoo Finance proxy for bist_tracker.html (stdlib only, no pip needed)
+GridTracker Server - port 5050
+- GET /               → bist_tracker.html servis eder
+- GET /api/atr/{SYM}  → Yahoo Finance fiyat
+- GET /api/sr/{SYM}   → Destek/Direnç
+Stdlib only, pip gerekmez.
 """
-from http.server import HTTPServer, BaseHTTPRequestHandler
-import urllib.request, json, socket, threading, time
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+import urllib.request, json, socket, threading, time, os, sys
 
 FIREBASE_URL = 'https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app'
 PORT = 5050
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
 def get_server_ip():
-    """Tailscale IP (100.x.x.x) tercihli, yoksa LAN IP."""
     try:
         for info in socket.getaddrinfo(socket.gethostname(), None):
             ip = info[4][0]
-            if ip.startswith('100.'):
+            if ip.startswith('100.'):   # Tailscale tercihli
                 return ip
     except Exception:
         pass
@@ -33,10 +36,10 @@ def get_server_ip():
 
 def firebase_put(path, data):
     try:
-        url = f'{FIREBASE_URL}/{path}.json'
         body = json.dumps(data).encode()
-        req = urllib.request.Request(url, data=body, method='PUT',
-                                     headers={'Content-Type': 'application/json'})
+        req = urllib.request.Request(
+            f'{FIREBASE_URL}/{path}.json', data=body, method='PUT',
+            headers={'Content-Type': 'application/json'})
         urllib.request.urlopen(req, timeout=5)
     except Exception:
         pass
@@ -62,43 +65,37 @@ def extract_price(data):
 
 def calc_sr(data, mode):
     q = data['chart']['result'][0]['indicators']['quote'][0]
-    highs  = q.get('high', [])
-    lows   = q.get('low', [])
-    closes = q.get('close', [])
-    prices = [(h, l, c) for h, l, c in zip(highs, lows, closes)
+    prices = [(h, l, c) for h, l, c in zip(
+                  q.get('high', []), q.get('low', []), q.get('close', []))
               if h is not None and l is not None and c is not None]
     if not prices:
         raise ValueError('Veri yok')
     current = prices[-1][2]
     if mode == 'main':
-        support    = round(min(p[1] for p in prices), 2)
-        resistance = round(max(p[0] for p in prices), 2)
-        return {'support': support, 'resistance': resistance}
-    W = 2
-    n = len(prices)
-    sh, sl = [], []
+        return {'support': round(min(p[1] for p in prices), 2),
+                'resistance': round(max(p[0] for p in prices), 2)}
+    W, n, sh, sl = 2, len(prices), [], []
     for i in range(W, n - W):
         h, l = prices[i][0], prices[i][1]
-        if all(h >= prices[i - W + j][0] for j in range(W * 2) if j != W):
-            sh.append(h)
-        if all(l <= prices[i - W + j][1] for j in range(W * 2) if j != W):
-            sl.append(l)
-    idx = 4 if mode == 'swing5' else 2 if mode == 'swing3' else 0
+        if all(h >= prices[i - W + j][0] for j in range(W * 2) if j != W): sh.append(h)
+        if all(l <= prices[i - W + j][1] for j in range(W * 2) if j != W): sl.append(l)
+    idx  = 4 if mode == 'swing5' else 2 if mode == 'swing3' else 0
     sups = sorted([p for p in sl if p < current * 0.998], reverse=True)
     ress = sorted([p for p in sh if p > current * 1.002])
-    support    = round((sups[idx] if idx < len(sups) else
-                        (sups[-1] if sups else min(p[1] for p in prices))), 2)
-    resistance = round((ress[idx] if idx < len(ress) else
-                        (ress[-1] if ress else max(p[0] for p in prices))), 2)
-    return {'support': support, 'resistance': resistance}
+    return {
+        'support':    round((sups[idx] if idx < len(sups) else (sups[-1] if sups else min(p[1] for p in prices))), 2),
+        'resistance': round((ress[idx] if idx < len(ress) else (ress[-1] if ress else max(p[0] for p in prices))), 2),
+    }
 
 # ---------------------------------------------------------------------------
 # HTTP Handler
 # ---------------------------------------------------------------------------
 
-class Handler(BaseHTTPRequestHandler):
+class Handler(SimpleHTTPRequestHandler):
+    """API route'ları yakalar, geri kalan her şeyi BASE_DIR'den servis eder."""
+
     def log_message(self, fmt, *args):
-        pass  # sessiz log
+        pass
 
     def send_json(self, code, obj):
         body = json.dumps(obj).encode()
@@ -116,47 +113,62 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        path = self.path.split('?')[0]
+        # Kök URL → doğrudan HTML'e yönlendir
+        if self.path in ('/', ''):
+            self.send_response(302)
+            self.send_header('Location', '/bist_tracker.html')
+            self.end_headers()
+            return
+
+        path  = self.path.split('?')[0]
         parts = path.strip('/').split('/')
 
-        # /api/atr/{SYM}  →  fiyat
+        # /api/atr/{SYM}
         if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'atr':
             sym = parts[2].upper()
             try:
-                data  = yahoo_fetch(sym + '.IS', range_='5d')
-                price = extract_price(data)
-                threading.Thread(
-                    target=firebase_put,
+                price = extract_price(yahoo_fetch(sym + '.IS', '5d'))
+                threading.Thread(target=firebase_put, daemon=True,
                     args=(f'gridtracker/livePrices/{sym}',
-                          {'price': price, 'ts': int(time.time())}),
-                    daemon=True
-                ).start()
+                          {'price': price, 'ts': int(time.time())})).start()
                 self.send_json(200, {'price': price})
             except Exception as e:
                 self.send_json(500, {'error': str(e)})
             return
 
-        # /api/sr/{SYM}?mode={mode}  →  destek/direnç
+        # /api/sr/{SYM}?mode=...
         if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'sr':
             sym  = parts[2].upper()
             qs   = self.path.split('?')[1] if '?' in self.path else ''
-            mode = next((v.split('=')[1] for v in qs.split('&')
-                         if v.startswith('mode=')), 'main')
+            mode = next((v.split('=')[1] for v in qs.split('&') if v.startswith('mode=')), 'main')
             try:
-                data = yahoo_fetch(sym + '.IS', range_='60d')
-                sr   = calc_sr(data, mode)
-                threading.Thread(
-                    target=firebase_put,
-                    args=(f'gridtracker/srCache/{sym}_{mode}', sr),
-                    daemon=True
-                ).start()
+                sr = calc_sr(yahoo_fetch(sym + '.IS', '60d'), mode)
+                threading.Thread(target=firebase_put, daemon=True,
+                    args=(f'gridtracker/srCache/{sym}_{mode}', sr)).start()
                 self.send_json(200, sr)
             except Exception as e:
                 self.send_json(500, {'error': str(e)})
             return
 
-        self.send_response(404)
-        self.end_headers()
+        # /api/health
+        if path == '/api/health':
+            self.send_json(200, {'ok': True})
+            return
+
+        # Statik dosya (bist_tracker.html, sw.js, ikonlar vs.)
+        super().do_GET()
+
+    def translate_path(self, path):
+        # SimpleHTTPRequestHandler'ı BASE_DIR'e kilitle
+        import posixpath, urllib.parse
+        path = posixpath.normpath(urllib.parse.unquote(path.split('?')[0]))
+        parts = path.split('/')
+        path  = BASE_DIR
+        for part in parts:
+            if part in ('', os.curdir, os.pardir):
+                continue
+            path = os.path.join(path, part)
+        return path
 
 # ---------------------------------------------------------------------------
 # Main
@@ -165,12 +177,12 @@ class Handler(BaseHTTPRequestHandler):
 def register():
     ip = get_server_ip()
     firebase_put('gridtracker/serverInfo', {'ip': ip, 'port': PORT})
-    print(f'[GridTracker] sunucu IP Firebase\'e yazıldı: {ip}:{PORT}')
 
 if __name__ == '__main__':
+    os.chdir(BASE_DIR)
     threading.Thread(target=register, daemon=True).start()
     server = HTTPServer(('0.0.0.0', PORT), Handler)
-    print(f'[GridTracker] Price Server çalışıyor → http://0.0.0.0:{PORT}')
+    print(f'GridTracker Server: http://localhost:{PORT}/bist_tracker.html')
     try:
         server.serve_forever()
     except KeyboardInterrupt:

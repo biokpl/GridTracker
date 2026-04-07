@@ -4414,10 +4414,12 @@ function renderCostSummary(){
 // ════════════════════════════════════════════════════════
 //  SABAH OTOMASYONU AYARLARI
 // ════════════════════════════════════════════════════════
-let AUTO_API = 'http://localhost:5050';
 const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-// Sunucu IP'sini Firebase'den oku (telefon/uzak cihaz için)
-const _apiReady = (async()=>{
+// Sayfa server.py üzerinden açıldıysa (port 5050) API aynı origin'de — Firebase'e bakmaya gerek yok
+let AUTO_API = location.port === '5050'
+  ? location.origin
+  : 'http://localhost:5050';
+const _apiReady = location.port === '5050' ? Promise.resolve() : (async()=>{
   try{
     const r=await fetch(FIREBASE_URL+'/gridtracker/serverInfo.json',{signal:AbortSignal.timeout(4000)});
     const d=await r.json();
