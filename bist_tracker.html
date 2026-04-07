@@ -1527,70 +1527,174 @@ async function fbWrite(path,data){
 // ════════════════════════════════════════════════════════
                 // GRID_DATA_START
         window.__GRID_DATA__ = {
-  "lastUpdated": "2026-04-03 18:35:22",
-  "today": "2026-04-03",
-  "todayOverall": 1279586.37,
+  "lastUpdated": "2026-04-07 18:35:22",
+  "today": "2026-04-07",
+  "todayOverall": 1262368.11,
   "todayProfit": {
     "bySymbol": {
       "MIATK": {
         "symbol": "MIATK",
-        "buyCount": 3,
+        "buyCount": 2,
         "sellCount": 1,
-        "pairCount": 3,
-        "openBuys": 0,
-        "carriedIn": 0,
-        "avgBuy": 42.2667,
+        "pairCount": 1,
+        "openBuys": 100,
+        "carriedIn": 150,
+        "avgBuy": 41.1,
         "avgSell": 42.6,
-        "grossProfit": 50.0,
-        "commission": 2.2997,
-        "netProfit": 47.7003,
+        "grossProfit": 0.0,
+        "commission": 0.624,
+        "netProfit": -0.624,
         "pairs": [
           {
             "buyPrice": 42.6,
             "sellPrice": 42.6,
             "qty": 50,
             "gross": 0.0,
-            "comm": 0.426,
-            "net": -0.426,
+            "comm": 0.213,
+            "net": -0.213,
             "buyTime": "10:03:48",
-            "sellTime": "10:02:49",
+            "sellTime": "10:02:07",
             "buyDate": "2026-04-03",
-            "carryover": false
-          },
-          {
-            "buyPrice": 42.6,
-            "sellPrice": 42.6,
-            "qty": 50,
-            "gross": 0.0,
-            "comm": 0.426,
-            "net": -0.426,
-            "buyTime": "10:03:49",
-            "sellTime": "10:02:49",
-            "buyDate": "2026-04-03",
-            "carryover": false
-          },
-          {
-            "buyPrice": 41.6,
-            "sellPrice": 42.6,
-            "qty": 50,
-            "gross": 50.0,
-            "comm": 0.421,
-            "net": 49.579,
-            "buyTime": "15:36:35",
-            "sellTime": "10:02:49",
-            "buyDate": "2026-04-03",
-            "carryover": false
+            "carryover": true
           }
         ],
-        "openPositions": []
+        "openPositions": [
+          {
+            "carryover": false,
+            "commission": 0.213,
+            "date": "2026-04-03",
+            "execPrice": 42.6,
+            "execQty": 50,
+            "symbol": "MIATK",
+            "time": "10:03:49",
+            "type": "Alis"
+          },
+          {
+            "carryover": false,
+            "commission": 0.208,
+            "date": "2026-04-03",
+            "execPrice": 41.6,
+            "execQty": 50,
+            "symbol": "MIATK",
+            "time": "15:36:35",
+            "type": "Alis"
+          },
+          {
+            "symbol": "MIATK",
+            "type": "Alış",
+            "qty": 50,
+            "price": 41.6,
+            "status": "Gerçekleşti",
+            "execQty": 50,
+            "amount": 2080.0,
+            "execPrice": 41.6,
+            "execAmount": 2080.0,
+            "commission": 0.208,
+            "time": "15:51:01",
+            "date": "2026-04-07",
+            "datetime": "2026-04-07 15:51:01",
+            "referans": "787449320",
+            "carryover": false
+          },
+          {
+            "symbol": "MIATK",
+            "type": "Alış",
+            "qty": 50,
+            "price": 40.6,
+            "status": "Gerçekleşti",
+            "execQty": 50,
+            "amount": 2030.0,
+            "execPrice": 40.6,
+            "execAmount": 2030.0,
+            "commission": 0.203,
+            "time": "16:56:32",
+            "date": "2026-04-07",
+            "datetime": "2026-04-07 16:56:32",
+            "referans": "787421696",
+            "carryover": false
+          }
+        ]
       }
     },
-    "totalGross": 50.0,
-    "totalCommission": 2.2997,
-    "totalNet": 47.7003,
-    "openPositions": {}
+    "totalGross": 0.0,
+    "totalCommission": 0.624,
+    "totalNet": -0.624,
+    "openPositions": {
+      "MIATK": [
+        {
+          "carryover": false,
+          "commission": 0.213,
+          "date": "2026-04-03",
+          "execPrice": 42.6,
+          "execQty": 50,
+          "symbol": "MIATK",
+          "time": "10:03:49",
+          "type": "Alis"
+        },
+        {
+          "carryover": false,
+          "commission": 0.208,
+          "date": "2026-04-03",
+          "execPrice": 41.6,
+          "execQty": 50,
+          "symbol": "MIATK",
+          "time": "15:36:35",
+          "type": "Alis"
+        },
+        {
+          "symbol": "MIATK",
+          "type": "Alış",
+          "qty": 50,
+          "price": 41.6,
+          "status": "Gerçekleşti",
+          "execQty": 50,
+          "amount": 2080.0,
+          "execPrice": 41.6,
+          "execAmount": 2080.0,
+          "commission": 0.208,
+          "time": "15:51:01",
+          "date": "2026-04-07",
+          "datetime": "2026-04-07 15:51:01",
+          "referans": "787449320",
+          "carryover": false
+        },
+        {
+          "symbol": "MIATK",
+          "type": "Alış",
+          "qty": 50,
+          "price": 40.6,
+          "status": "Gerçekleşti",
+          "execQty": 50,
+          "amount": 2030.0,
+          "execPrice": 40.6,
+          "execAmount": 2030.0,
+          "commission": 0.203,
+          "time": "16:56:32",
+          "date": "2026-04-07",
+          "datetime": "2026-04-07 16:56:32",
+          "referans": "787421696",
+          "carryover": false
+        }
+      ]
+    }
   },
   "allTrades": [
+    {
+      "symbol": "MIATK",
+      "type": "Alış",
+      "qty": 50,
+      "price": 40.6,
+      "status": "Gerçekleşti",
+      "execQty": 50,
+      "amount": 2030.0,
+      "execPrice": 40.6,
+      "execAmount": 2030.0,
+      "commission": 0.203,
+      "time": "16:56:32",
+      "date": "2026-04-07",
+      "datetime": "2026-04-07 16:56:32",
+      "referans": "787421696"
+    },
     {
       "symbol": "MIATK",
       "type": "Alış",
@@ -1602,58 +1706,90 @@ async function fbWrite(path,data){
       "execPrice": 41.6,
       "execAmount": 2080.0,
       "commission": 0.208,
-      "time": "15:36:35",
-      "date": "2026-04-03",
-      "datetime": "2026-04-03 15:36:35",
-      "referans": "785794438"
-    },
-    {
-      "symbol": "MIATK",
-      "type": "Alış",
-      "qty": 50,
-      "price": 42.6,
-      "status": "Gerçekleşti",
-      "execQty": 50,
-      "amount": 2130.0,
-      "execPrice": 42.6,
-      "execAmount": 2130.0,
-      "commission": 0.213,
-      "time": "10:03:49",
-      "date": "2026-04-03",
-      "datetime": "2026-04-03 10:03:49",
-      "referans": "785248274"
-    },
-    {
-      "symbol": "MIATK",
-      "type": "Alış",
-      "qty": 50,
-      "price": 42.6,
-      "status": "Gerçekleşti",
-      "execQty": 50,
-      "amount": 2130.0,
-      "execPrice": 42.6,
-      "execAmount": 2130.0,
-      "commission": 0.213,
-      "time": "10:03:48",
-      "date": "2026-04-03",
-      "datetime": "2026-04-03 10:03:48",
-      "referans": "785248213"
+      "time": "15:51:01",
+      "date": "2026-04-07",
+      "datetime": "2026-04-07 15:51:01",
+      "referans": "787449320"
     },
     {
       "symbol": "MIATK",
       "type": "Satış",
-      "qty": 391,
+      "qty": 50,
       "price": 42.6,
       "status": "Gerçekleşti",
-      "execQty": 391,
-      "amount": 16656.6,
+      "execQty": 50,
+      "amount": 2130.0,
       "execPrice": 42.6,
-      "execAmount": 16656.6,
+      "execAmount": 2130.0,
+      "commission": 0.213,
+      "time": "10:02:07",
+      "date": "2026-04-07",
+      "datetime": "2026-04-07 10:02:07",
+      "referans": "787421694"
+    },
+    {
+      "amount": 2080.0,
+      "commission": 0.208,
+      "date": "2026-04-03",
+      "datetime": "2026-04-03 15:36:35",
+      "execAmount": 2080.0,
+      "execPrice": 41.6,
+      "execQty": 50,
+      "price": 41.6,
+      "qty": 50,
+      "referans": "785794438",
+      "status": "Gerçekleşti",
+      "symbol": "MIATK",
+      "time": "15:36:35",
+      "type": "Alış"
+    },
+    {
+      "amount": 2130.0,
+      "commission": 0.213,
+      "date": "2026-04-03",
+      "datetime": "2026-04-03 10:03:49",
+      "execAmount": 2130.0,
+      "execPrice": 42.6,
+      "execQty": 50,
+      "price": 42.6,
+      "qty": 50,
+      "referans": "785248274",
+      "status": "Gerçekleşti",
+      "symbol": "MIATK",
+      "time": "10:03:49",
+      "type": "Alış"
+    },
+    {
+      "amount": 2130.0,
+      "commission": 0.213,
+      "date": "2026-04-03",
+      "datetime": "2026-04-03 10:03:48",
+      "execAmount": 2130.0,
+      "execPrice": 42.6,
+      "execQty": 50,
+      "price": 42.6,
+      "qty": 50,
+      "referans": "785248213",
+      "status": "Gerçekleşti",
+      "symbol": "MIATK",
+      "time": "10:03:48",
+      "type": "Alış"
+    },
+    {
+      "amount": 16656.6,
       "commission": 1.66566,
-      "time": "10:02:49",
       "date": "2026-04-03",
       "datetime": "2026-04-03 10:02:49",
-      "referans": "785241159"
+      "execAmount": 16656.6,
+      "execPrice": 42.6,
+      "execQty": 391,
+      "price": 42.6,
+      "qty": 391,
+      "referans": "785241159",
+      "status": "Gerçekleşti",
+      "symbol": "MIATK",
+      "time": "10:02:49",
+      "type": "Satış"
     },
     {
       "amount": 959.2,
@@ -2530,69 +2666,177 @@ async function fbWrite(path,data){
       "updatedAt": "2026-04-02 18:35:23"
     },
     "2026-04-03": {
-      "date": "2026-04-03",
-      "trades": 4,
-      "sells": 1,
       "buys": 3,
-      "grossProfit": 50.0,
-      "commission": 2.2997,
-      "netProfit": 47.7003,
+      "bySymbol": {
+        "MIATK": {
+          "avgBuy": 42.2667,
+          "avgSell": 0,
+          "buyCount": 3,
+          "commission": 0.0,
+          "grossProfit": 0.0,
+          "netProfit": 0.0,
+          "sellCount": 0
+        }
+      },
+      "commission": 0.0,
+      "gross": 0.0,
+      "netProfit": 0.0,
       "overall": 1279586.37,
+      "sells": 0
+    },
+    "2026-04-06": {
+      "buys": 0,
+      "bySymbol": {
+        "MIATK": {
+          "avgBuy": 0,
+          "avgSell": 0,
+          "buyCount": 0,
+          "carriedIn": 150,
+          "commission": 0,
+          "grossProfit": 0,
+          "netProfit": 0,
+          "openBuys": 0,
+          "openPositions": [
+            {
+              "carryover": false,
+              "commission": 0.213,
+              "date": "2026-04-03",
+              "execPrice": 42.6,
+              "execQty": 50,
+              "symbol": "MIATK",
+              "time": "10:03:48",
+              "type": "Alis"
+            },
+            {
+              "carryover": false,
+              "commission": 0.213,
+              "date": "2026-04-03",
+              "execPrice": 42.6,
+              "execQty": 50,
+              "symbol": "MIATK",
+              "time": "10:03:49",
+              "type": "Alis"
+            },
+            {
+              "carryover": false,
+              "commission": 0.208,
+              "date": "2026-04-03",
+              "execPrice": 41.6,
+              "execQty": 50,
+              "symbol": "MIATK",
+              "time": "15:36:35",
+              "type": "Alis"
+            }
+          ],
+          "pairCount": 0,
+          "sellCount": 0,
+          "symbol": "MIATK"
+        }
+      },
+      "commission": 0,
+      "date": "2026-04-06",
+      "grossProfit": 0,
+      "netProfit": 0,
+      "overall": 1313587.3,
+      "sells": 0,
+      "trades": 0,
+      "updatedAt": "2026-04-06 18:35:22"
+    },
+    "2026-04-07": {
+      "date": "2026-04-07",
+      "trades": 3,
+      "sells": 1,
+      "buys": 2,
+      "grossProfit": 0.0,
+      "commission": 0.624,
+      "netProfit": -0.624,
+      "overall": 1262368.11,
       "bySymbol": {
         "MIATK": {
           "symbol": "MIATK",
-          "buyCount": 3,
+          "buyCount": 2,
           "sellCount": 1,
-          "pairCount": 3,
-          "openBuys": 0,
-          "carriedIn": 0,
-          "avgBuy": 42.2667,
+          "pairCount": 1,
+          "openBuys": 100,
+          "carriedIn": 150,
+          "avgBuy": 41.1,
           "avgSell": 42.6,
-          "grossProfit": 50.0,
-          "commission": 2.2997,
-          "netProfit": 47.7003,
+          "grossProfit": 0.0,
+          "commission": 0.624,
+          "netProfit": -0.624,
           "pairs": [
             {
               "buyPrice": 42.6,
               "sellPrice": 42.6,
               "qty": 50,
               "gross": 0.0,
-              "comm": 0.426,
-              "net": -0.426,
+              "comm": 0.213,
+              "net": -0.213,
               "buyTime": "10:03:48",
-              "sellTime": "10:02:49",
+              "sellTime": "10:02:07",
               "buyDate": "2026-04-03",
-              "carryover": false
-            },
-            {
-              "buyPrice": 42.6,
-              "sellPrice": 42.6,
-              "qty": 50,
-              "gross": 0.0,
-              "comm": 0.426,
-              "net": -0.426,
-              "buyTime": "10:03:49",
-              "sellTime": "10:02:49",
-              "buyDate": "2026-04-03",
-              "carryover": false
-            },
-            {
-              "buyPrice": 41.6,
-              "sellPrice": 42.6,
-              "qty": 50,
-              "gross": 50.0,
-              "comm": 0.421,
-              "net": 49.579,
-              "buyTime": "15:36:35",
-              "sellTime": "10:02:49",
-              "buyDate": "2026-04-03",
-              "carryover": false
+              "carryover": true
             }
           ],
-          "openPositions": []
+          "openPositions": [
+            {
+              "carryover": false,
+              "commission": 0.213,
+              "date": "2026-04-03",
+              "execPrice": 42.6,
+              "execQty": 50,
+              "symbol": "MIATK",
+              "time": "10:03:49",
+              "type": "Alis"
+            },
+            {
+              "carryover": false,
+              "commission": 0.208,
+              "date": "2026-04-03",
+              "execPrice": 41.6,
+              "execQty": 50,
+              "symbol": "MIATK",
+              "time": "15:36:35",
+              "type": "Alis"
+            },
+            {
+              "symbol": "MIATK",
+              "type": "Alış",
+              "qty": 50,
+              "price": 41.6,
+              "status": "Gerçekleşti",
+              "execQty": 50,
+              "amount": 2080.0,
+              "execPrice": 41.6,
+              "execAmount": 2080.0,
+              "commission": 0.208,
+              "time": "15:51:01",
+              "date": "2026-04-07",
+              "datetime": "2026-04-07 15:51:01",
+              "referans": "787449320",
+              "carryover": false
+            },
+            {
+              "symbol": "MIATK",
+              "type": "Alış",
+              "qty": 50,
+              "price": 40.6,
+              "status": "Gerçekleşti",
+              "execQty": 50,
+              "amount": 2030.0,
+              "execPrice": 40.6,
+              "execAmount": 2030.0,
+              "commission": 0.203,
+              "time": "16:56:32",
+              "date": "2026-04-07",
+              "datetime": "2026-04-07 16:56:32",
+              "referans": "787421696",
+              "carryover": false
+            }
+          ]
         }
       },
-      "updatedAt": "2026-04-03 18:35:22"
+      "updatedAt": "2026-04-07 18:35:22"
     }
   },
   "overallHistory": [
@@ -2632,8 +2876,18 @@ async function fbWrite(path,data){
       "note": "Otomatik - 18:35"
     },
     {
-      "date": "2026-04-03",
       "amount": 1279586.37,
+      "date": "2026-04-03",
+      "note": "Otomatik - 18:35"
+    },
+    {
+      "amount": 1313587.3,
+      "date": "2026-04-06",
+      "note": "Otomatik - 18:35"
+    },
+    {
+      "date": "2026-04-07",
+      "amount": 1262368.11,
       "note": "Otomatik - 18:35"
     }
   ],
@@ -2668,10 +2922,77 @@ async function fbWrite(path,data){
     }
   ],
   "openPositions": {
-    "date": "2026-04-03",
-    "positions": {}
+    "date": "2026-04-07",
+    "positions": {
+      "MIATK": [
+        {
+          "carryover": false,
+          "commission": 0.213,
+          "date": "2026-04-03",
+          "execPrice": 42.6,
+          "execQty": 50,
+          "symbol": "MIATK",
+          "time": "10:03:49",
+          "type": "Alis"
+        },
+        {
+          "carryover": false,
+          "commission": 0.208,
+          "date": "2026-04-03",
+          "execPrice": 41.6,
+          "execQty": 50,
+          "symbol": "MIATK",
+          "time": "15:36:35",
+          "type": "Alis"
+        },
+        {
+          "symbol": "MIATK",
+          "type": "Alış",
+          "qty": 50,
+          "price": 41.6,
+          "status": "Gerçekleşti",
+          "execQty": 50,
+          "amount": 2080.0,
+          "execPrice": 41.6,
+          "execAmount": 2080.0,
+          "commission": 0.208,
+          "time": "15:51:01",
+          "date": "2026-04-07",
+          "datetime": "2026-04-07 15:51:01",
+          "referans": "787449320",
+          "carryover": false
+        },
+        {
+          "symbol": "MIATK",
+          "type": "Alış",
+          "qty": 50,
+          "price": 40.6,
+          "status": "Gerçekleşti",
+          "execQty": 50,
+          "amount": 2030.0,
+          "execPrice": 40.6,
+          "execAmount": 2030.0,
+          "commission": 0.203,
+          "time": "16:56:32",
+          "date": "2026-04-07",
+          "datetime": "2026-04-07 16:56:32",
+          "referans": "787421696",
+          "carryover": false
+        }
+      ]
+    }
   },
   "settings": {
+    "atrCache": {
+      "EREGL": {
+        "atr240": 0.472857,
+        "atr60": 0.352857,
+        "atrDay": 1.014286,
+        "atrWeek": 2.017143,
+        "composite": 0.819857,
+        "ts": 1775348447446
+      }
+    },
     "botSymbols": [
       "EREGL",
       "MIATK"
@@ -2704,18 +3025,18 @@ async function fbWrite(path,data){
       }
     ],
     "gridCalc": {
-      "atr": 0.91,
+      "atr": 0.8199,
       "capital": 1150000,
-      "currentPrice": 29.58,
-      "resistance": 33,
-      "support": 28.65,
+      "currentPrice": 29.2,
+      "resistance": 30.43,
+      "support": 27.97,
       "symbol": "EREGL"
     },
     "gridInterval": 0,
     "lotTolerance": 0,
     "monthlyTarget": 45000,
-    "trackAccum": 47.7003,
-    "trackLastDate": "2026-04-03",
+    "trackAccum": -0.624,
+    "trackLastDate": "2026-04-07",
     "trackSymbol": "MIATK",
     "trackTarget": 1000
   },
@@ -3546,116 +3867,100 @@ function gcShowAtrBreakdown(row){
     </div>`).join('');
 }
 
+// Yahoo ham verisinden mod'a göre destek/direnç hesapla
+function _calcSR(pd, mode){
+  const q=pd.chart.result[0].indicators.quote[0];
+  const prices=(q.high||[]).map((_,i)=>[q.high[i],q.low[i],q.close[i]]).filter(p=>p[0]&&p[1]&&p[2]);
+  if(!prices.length) throw new Error('Veri yok');
+  const current=prices[prices.length-1][2];
+  let support,resistance;
+  if(mode==='main'){
+    support=Math.round(Math.min(...prices.map(p=>p[1]))*100)/100;
+    resistance=Math.round(Math.max(...prices.map(p=>p[0]))*100)/100;
+  } else {
+    const W=2,n=prices.length,sh=[],sl=[];
+    for(let i=W;i<n-W;i++){
+      const h=prices[i][0],l=prices[i][1];
+      if([...Array(W*2)].every((_,j)=>j===W?true:h>=prices[i-W+j][0])) sh.push(h);
+      if([...Array(W*2)].every((_,j)=>j===W?true:l<=prices[i-W+j][1])) sl.push(l);
+    }
+    const idx=mode==='swing5'?4:mode==='swing3'?2:0;
+    const sups=sl.filter(p=>p<current*.998).sort((a,b)=>b-a);
+    const ress=sh.filter(p=>p>current*1.002).sort((a,b)=>a-b);
+    support=Math.round((sups[idx]||sups[sups.length-1]||Math.min(...prices.map(p=>p[1])))*100)/100;
+    resistance=Math.round((ress[idx]||ress[ress.length-1]||Math.max(...prices.map(p=>p[0])))*100)/100;
+  }
+  return {support,resistance};
+}
+
+function _applySR(sym, mode, d, btn, origText){
+  $('gc-sup').value=d.support;
+  $('gc-res').value=d.resistance;
+  window._gcDirty=true;
+  fbWrite('gridtracker/srCache/'+sym+'_'+mode,{support:d.support,resistance:d.resistance,ts:Math.floor(Date.now()/1000)});
+  ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{
+    const b=$(id);if(!b)return;
+    b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');
+    b.style.opacity='0.45';
+  });
+  btn.classList.add('gc-sr-active','gc-sr-active-'+mode); btn.style.opacity='';
+  const alts=$('gc-sr-alts');
+  const altSups=(d.supports||[]).slice(1,4);
+  const altRes=(d.resistances||[]).slice(1,4);
+  if(alts&&(altSups.length||altRes.length)){
+    alts.style.display='flex';
+    alts.innerHTML=
+      `<div style="flex:1;display:flex;flex-wrap:wrap;gap:2px;align-items:center">
+        <span style="font-size:8px;color:#6a8aaa;margin-right:2px">Alt:</span>`+
+        altSups.map(v=>`<span onclick="$('gc-sup').value=${v};window._gcDirty=true;calcGridBot();" style="cursor:pointer;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:3px;font-size:9px;padding:1px 5px;color:#f87171">${v}</span>`).join('')+
+      `</div>
+      <div style="flex:1;display:flex;flex-wrap:wrap;gap:2px;align-items:center;justify-content:flex-end">
+        <span style="font-size:8px;color:#6a8aaa;margin-right:2px">Alt:</span>`+
+        altRes.map(v=>`<span onclick="$('gc-res').value=${v};window._gcDirty=true;calcGridBot();" style="cursor:pointer;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);border-radius:3px;font-size:9px;padding:1px 5px;color:#4ade80">${v}</span>`).join('')+
+      `</div>`;
+  }
+  btn.disabled=false; btn.textContent=origText;
+  clearTimeout(window._gcSRTimer);
+  window._gcSRTimer=setTimeout(()=>calcGridBot(),80);
+}
+
 async function gcAutoSR(mode='main'){
   const sym=($('gc-sym').value||'').toUpperCase().trim();
   if(!sym){toast('Önce hisse kodu girin','err');return;}
   const btn=mode==='swing3'?$('gc-sr-btn3'):mode==='swing5'?$('gc-sr-btn2'):$('gc-sr-btn');
   const origText=btn.textContent;
   btn.disabled=true; btn.textContent='Hesaplanıyor…';
+
+  const ticker=sym+'.IS';
+  const yfUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=60d`;
+
   try{
-    const r=await fetch(`http://localhost:5050/api/sr/${sym}?mode=${mode}`,{signal:AbortSignal.timeout(12000)});
-    const d=await r.json();
-    if(d.error){toast(d.error,'err');return;}
-    $('gc-sup').value=d.support;
-    $('gc-res').value=d.resistance;
-    window._gcDirty=true;
-    // PC'de başarılı → Firebase srCache'e yaz (telefon buradan okur)
-    fbWrite('gridtracker/srCache/'+sym+'_'+mode,{support:d.support,resistance:d.resistance,ts:Math.floor(Date.now()/1000)});
-    // Seçili buton vurgusu
-    const modeClass='gc-sr-active-'+mode;
-    ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{
-      const b=$(id); if(!b) return;
-      b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');
-      b.style.opacity='0.45';
-    });
-    btn.classList.add('gc-sr-active', modeClass);
-    btn.style.opacity='';
-    // Alternatif seviyeler
-    const alts=$('gc-sr-alts');
-    const altSups=(d.supports||[]).slice(1,4);
-    const altRes=(d.resistances||[]).slice(1,4);
-    if(alts && (altSups.length||altRes.length)){
-      alts.style.display='flex';
-      alts.innerHTML=
-        `<div style="flex:1;display:flex;flex-wrap:wrap;gap:2px;align-items:center">
-          <span style="font-size:8px;color:#6a8aaa;margin-right:2px">Alt:</span>`+
-          altSups.map(v=>`<span onclick="$('gc-sup').value=${v};window._gcDirty=true;calcGridBot();" style="cursor:pointer;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);border-radius:3px;font-size:9px;padding:1px 5px;color:#f87171">${v}</span>`).join('')+
-        `</div>
-        <div style="flex:1;display:flex;flex-wrap:wrap;gap:2px;align-items:center;justify-content:flex-end">
-          <span style="font-size:8px;color:#6a8aaa;margin-right:2px">Alt:</span>`+
-          altRes.map(v=>`<span onclick="$('gc-res').value=${v};window._gcDirty=true;calcGridBot();" style="cursor:pointer;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.3);border-radius:3px;font-size:9px;padding:1px 5px;color:#4ade80">${v}</span>`).join('')+
-        `</div>`;
-    }
+    // Tüm kaynaklar aynı anda — ilk başarılı cevap kazanır
+    const d=await Promise.any([
+      fetch(`http://localhost:5050/api/sr/${sym}?mode=${mode}`,{signal:AbortSignal.timeout(3000)})
+        .then(r=>r.json()).then(r=>{if(r.error)throw new Error(r.error);return r;}),
+      fetch(`https://corsproxy.io/?${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
+        .then(r=>r.json()).then(pd=>_calcSR(pd,mode)),
+      fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
+        .then(r=>r.json()).then(pd=>_calcSR(pd,mode)),
+      fetch(`https://corsproxy.org/?${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
+        .then(r=>r.json()).then(pd=>_calcSR(pd,mode)),
+    ]);
     toast(`↓ ${d.support} ₺   |   ↑ ${d.resistance} ₺`,'suc');
-    clearTimeout(window._gcSRTimer);
-    window._gcSRTimer=setTimeout(()=>calcGridBot(),80);
+    _applySR(sym,mode,d,btn,origText);
   }catch(e){
-    // Sunucuya ulaşılamazsa: 4 proxy aynı anda, ilk cevap veren kazanır
+    // Tüm kaynaklar başarısız → Firebase srCache
     try{
-      btn.textContent='Alternatif…';
-      const ticker=sym+'.IS';
-      const yfUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=60d`;
-      const proxies=[
-        `https://corsproxy.io/?${encodeURIComponent(yfUrl)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`,
-        `https://corsproxy.org/?${encodeURIComponent(yfUrl)}`,
-        `https://thingproxy.freeboard.io/fetch/${yfUrl}`,
-      ];
-      const pd=await Promise.any(proxies.map(pu=>
-        fetch(pu,{signal:AbortSignal.timeout(12000)})
-          .then(r=>{if(!r.ok)throw new Error('bad');return r.json();})
-          .then(d=>{if(!d?.chart?.result?.[0])throw new Error('no data');return d;})
-      ));
-      const q=pd.chart.result[0].indicators.quote[0];
-      const prices=(q.high||[]).map((_,i)=>[q.high[i],q.low[i],q.close[i]]).filter(p=>p[0]&&p[1]&&p[2]);
-      if(!prices.length) throw new Error('Veri yok');
-      const current=prices[prices.length-1][2];
-      let support,resistance;
-      if(mode==='main'){
-        support=Math.round(Math.min(...prices.map(p=>p[1]))*100)/100;
-        resistance=Math.round(Math.max(...prices.map(p=>p[0]))*100)/100;
-      } else {
-        const W=2,n=prices.length;
-        const sh=[],sl=[];
-        for(let i=W;i<n-W;i++){
-          const h=prices[i][0],l=prices[i][1];
-          if([...Array(W*2)].every((_,j)=>j===W?true:h>=prices[i-W+j][0])) sh.push(h);
-          if([...Array(W*2)].every((_,j)=>j===W?true:l<=prices[i-W+j][1])) sl.push(l);
-        }
-        const idx=mode==='swing5'?4:mode==='swing3'?2:0;
-        const sups=sl.filter(p=>p<current*.998).sort((a,b)=>b-a);
-        const ress=sh.filter(p=>p>current*1.002).sort((a,b)=>a-b);
-        support=Math.round((sups[idx]||sups[sups.length-1]||Math.min(...prices.map(p=>p[1])))*100)/100;
-        resistance=Math.round((ress[idx]||ress[ress.length-1]||Math.max(...prices.map(p=>p[0])))*100)/100;
-      }
-      $('gc-sup').value=support; $('gc-res').value=resistance;
-      window._gcDirty=true;
-      // Firebase'e kaydet — telefon buradan da okuyabilir
-      fbWrite('gridtracker/srCache/'+sym+'_'+mode,{support,resistance,ts:Math.floor(Date.now()/1000)});
-      ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{const b=$(id);if(b){b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');b.style.opacity='0.45';}});
-      btn.classList.add('gc-sr-active','gc-sr-active-'+mode); btn.style.opacity='';
-      toast(`↓ ${support} ₺   |   ↑ ${resistance} ₺`,'suc');
-      clearTimeout(window._gcSRTimer);
-      window._gcSRTimer=setTimeout(()=>calcGridBot(),80);
+      const fr=await fetch(FIREBASE_URL+'/gridtracker/srCache/'+sym+'_'+mode+'.json',{signal:AbortSignal.timeout(4000)});
+      const fc=await fr.json();
+      if(!fc?.support) throw new Error('no cache');
+      const age=Math.round((Date.now()/1000-fc.ts)/3600);
+      toast(`↓ ${fc.support} ₺   |   ↑ ${fc.resistance} ₺  (${age}s önce)`,'inf');
+      _applySR(sym,mode,fc,btn,origText);
     }catch(e2){
-      // Tüm proxy'ler başarısız → Firebase srCache'den oku
-      try{
-        const fr=await fetch(FIREBASE_URL+'/gridtracker/srCache/'+sym+'_'+mode+'.json',{signal:AbortSignal.timeout(4000)});
-        const fc=await fr.json();
-        if(fc&&fc.support&&fc.resistance){
-          $('gc-sup').value=fc.support; $('gc-res').value=fc.resistance;
-          window._gcDirty=true;
-          ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{const b=$(id);if(b){b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');b.style.opacity='0.45';}});
-          btn.classList.add('gc-sr-active','gc-sr-active-'+mode); btn.style.opacity='';
-          const age=Math.round((Date.now()/1000-fc.ts)/3600);
-          toast(`↓ ${fc.support} ₺   |   ↑ ${fc.resistance} ₺  (${age}s önce)`,'inf');
-          clearTimeout(window._gcSRTimer);
-          window._gcSRTimer=setTimeout(()=>calcGridBot(),80);
-        } else { toast('Veri bulunamadı — PC\'de bir kez deneyin','err'); }
-      }catch(e3){ toast('Veri bulunamadı — PC\'de bir kez deneyin','err'); }
+      toast('Destek/Direnç alınamadı','err');
+      btn.disabled=false; btn.textContent=origText;
     }
-  }finally{
-    btn.disabled=false; btn.textContent=origText;
   }
 }
 
@@ -3695,57 +4000,39 @@ async function gcFetchPrice(){
   btn.disabled=true; btn.textContent='Getiriliyor…';
   msg.style.color='#fdba74'; msg.textContent='Fiyat alınıyor…'; msg.style.display='block';
 
-  function _gcSetPrice(p){
+  const ticker=sym+'.IS';
+  const yfUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=5d`;
+  const _price=d=>parseFloat((d.chart.result[0].meta.regularMarketPrice||d.chart.result[0].indicators.quote[0].close.filter(v=>v!=null).at(-1)).toFixed(2));
+
+  try{
+    const p=await Promise.any([
+      fetch(`http://localhost:5050/api/atr/${sym}`,{signal:AbortSignal.timeout(3000)})
+        .then(r=>r.json()).then(d=>{if(!d?.price)throw new Error();return d.price;}),
+      fetch(`https://corsproxy.io/?${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
+        .then(r=>r.json()).then(d=>_price(d)),
+      fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
+        .then(r=>r.json()).then(d=>_price(d)),
+      fetch(`https://corsproxy.org/?${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
+        .then(r=>r.json()).then(d=>_price(d)),
+    ]);
     $('gc-price').value=p;
     msg.style.color='#86efac';
     msg.textContent=sym+': '+p.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺';
     msg.style.display='block';
+  }catch(e){
+    // Firebase livePrices fallback (sunucu her çalışmada yazar, 8 saat geçerli)
+    try{
+      const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(4000)});
+      const d=await r.json();
+      if(d?.price&&(Date.now()/1000-d.ts)<28800){ gcShowPrice(sym,d.price,d.ts); }
+      else throw new Error();
+    }catch(e2){
+      msg.style.color='#f87171';
+      msg.textContent='Fiyat alınamadı — manuel girin.';
+    }
+  }finally{
     btn.disabled=false; btn.textContent='Fiyat Getir';
   }
-
-  // 1. Localhost:5050 — PC'de anında bağlanır, telefonda anında reddedilir
-  try{
-    const r=await fetch(`http://localhost:5050/api/atr/${sym}`,{signal:AbortSignal.timeout(3000)});
-    const d=await r.json();
-    if(d&&d.price){ _gcSetPrice(d.price); return; }
-  }catch(e){}
-
-  // 2. Yahoo Finance — corsproxy.io (regularMarketPrice meta'dan)
-  try{
-    const ticker=sym+'.IS';
-    const yfUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=5d`;
-    const r=await fetch(`https://corsproxy.io/?${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(15000)});
-    const d=await r.json();
-    const p=d.chart.result[0].meta.regularMarketPrice
-           || d.chart.result[0].indicators.quote[0].close.filter(v=>v!=null).at(-1);
-    if(p){ _gcSetPrice(parseFloat(p.toFixed(2))); return; }
-  }catch(e){}
-
-  // 3. Yahoo Finance — allorigins yedek proxy
-  try{
-    const ticker=sym+'.IS';
-    const yfUrl=`https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=5d`;
-    const r=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(15000)});
-    const d=await r.json();
-    const p=d.chart.result[0].meta.regularMarketPrice
-           || d.chart.result[0].indicators.quote[0].close.filter(v=>v!=null).at(-1);
-    if(p){ _gcSetPrice(parseFloat(p.toFixed(2))); return; }
-  }catch(e){}
-
-  // 4. Firebase livePrices (sunucu her fiyat çekişinde buraya yazar, 8 saat geçerli)
-  try{
-    const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(4000)});
-    const d=await r.json();
-    if(d&&d.price&&(Date.now()/1000-d.ts)<28800){
-      gcShowPrice(sym,d.price,d.ts);
-      btn.disabled=false; btn.textContent='Fiyat Getir'; return;
-    }
-  }catch(e){}
-
-  // 5. Başarısız
-  msg.style.color='#f87171';
-  msg.textContent='Fiyat alınamadı — manuel girin.';
-  btn.disabled=false; btn.textContent='Fiyat Getir';
 }
 
 function gcShowPrice(sym,price,ts){
