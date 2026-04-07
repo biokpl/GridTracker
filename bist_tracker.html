@@ -1478,6 +1478,8 @@ select.field-input option{background:var(--surface2);}
 //  FİREBASE
 // ════════════════════════════════════════════════════════
 const FIREBASE_URL='https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app';
+// Cloudflare Worker URL — deploy ettikten sonra buraya yaz, boş bırakırsan devre dışı
+const WORKER_URL='';
 
 // BİST işlem günü sayacı — resmi/dini tatil OLMAYAN Pzt-Cum günlerini sayar
 function bistDayCount(y,mo){
@@ -4001,7 +4003,7 @@ async function gcFetchPrice(){
 
   try{
     // Firebase livePrices (file watcher tarafından doldurulur) proxy'lerle aynı anda denenir
-    const p=await Promise.any([
+    const sources=[
       fetch(`${AUTO_API}/api/atr/${sym}`,{signal:AbortSignal.timeout(3000)})
         .then(r=>r.json()).then(d=>{if(!d?.price)throw new Error();return d.price;}),
       fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(5000)})
@@ -4012,7 +4014,12 @@ async function gcFetchPrice(){
         .then(r=>r.json()).then(d=>_price(d)),
       fetch(`https://corsproxy.org/?${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
         .then(r=>r.json()).then(d=>_price(d)),
-    ]);
+    ];
+    if(WORKER_URL) sources.unshift(
+      fetch(`${WORKER_URL}/${sym}`,{signal:AbortSignal.timeout(8000)})
+        .then(r=>r.json()).then(d=>{if(!d?.price)throw new Error();return d.price;})
+    );
+    const p=await Promise.any(sources);
     $('gc-price').value=p;
     msg.style.color='#86efac';
     msg.textContent=sym+': '+p.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺';
