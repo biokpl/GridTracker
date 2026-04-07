@@ -3936,9 +3936,12 @@ async function gcAutoSR(mode='main'){
 
   try{
     // Tüm kaynaklar aynı anda — ilk başarılı cevap kazanır
+    // Firebase srCache (file watcher tarafından doldurulur) proxy'lerden önce gelir
     const d=await Promise.any([
       fetch(`http://localhost:5050/api/sr/${sym}?mode=${mode}`,{signal:AbortSignal.timeout(3000)})
         .then(r=>r.json()).then(r=>{if(r.error)throw new Error(r.error);return r;}),
+      fetch(FIREBASE_URL+'/gridtracker/srCache/'+sym+'_'+mode+'.json',{signal:AbortSignal.timeout(5000)})
+        .then(r=>r.json()).then(fc=>{if(!fc?.support)throw new Error('no cache');return fc;}),
       fetch(`https://corsproxy.io/?${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
         .then(r=>r.json()).then(pd=>_calcSR(pd,mode)),
       fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
@@ -3949,18 +3952,8 @@ async function gcAutoSR(mode='main'){
     toast(`↓ ${d.support} ₺   |   ↑ ${d.resistance} ₺`,'suc');
     _applySR(sym,mode,d,btn,origText);
   }catch(e){
-    // Tüm kaynaklar başarısız → Firebase srCache
-    try{
-      const fr=await fetch(FIREBASE_URL+'/gridtracker/srCache/'+sym+'_'+mode+'.json',{signal:AbortSignal.timeout(4000)});
-      const fc=await fr.json();
-      if(!fc?.support) throw new Error('no cache');
-      const age=Math.round((Date.now()/1000-fc.ts)/3600);
-      toast(`↓ ${fc.support} ₺   |   ↑ ${fc.resistance} ₺  (${age}s önce)`,'inf');
-      _applySR(sym,mode,fc,btn,origText);
-    }catch(e2){
-      toast('Destek/Direnç alınamadı','err');
-      btn.disabled=false; btn.textContent=origText;
-    }
+    toast('Destek/Direnç alınamadı','err');
+    btn.disabled=false; btn.textContent=origText;
   }
 }
 
@@ -4005,9 +3998,12 @@ async function gcFetchPrice(){
   const _price=d=>parseFloat((d.chart.result[0].meta.regularMarketPrice||d.chart.result[0].indicators.quote[0].close.filter(v=>v!=null).at(-1)).toFixed(2));
 
   try{
+    // Firebase livePrices (file watcher tarafından doldurulur) proxy'lerle aynı anda denenir
     const p=await Promise.any([
       fetch(`http://localhost:5050/api/atr/${sym}`,{signal:AbortSignal.timeout(3000)})
         .then(r=>r.json()).then(d=>{if(!d?.price)throw new Error();return d.price;}),
+      fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(5000)})
+        .then(r=>r.json()).then(d=>{if(!d?.price||(Date.now()/1000-d.ts)>28800)throw new Error('stale');return d.price;}),
       fetch(`https://corsproxy.io/?${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
         .then(r=>r.json()).then(d=>_price(d)),
       fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(yfUrl)}`,{signal:AbortSignal.timeout(12000)})
@@ -4020,16 +4016,8 @@ async function gcFetchPrice(){
     msg.textContent=sym+': '+p.toLocaleString('tr-TR',{minimumFractionDigits:2})+' ₺';
     msg.style.display='block';
   }catch(e){
-    // Firebase livePrices fallback (sunucu her çalışmada yazar, 8 saat geçerli)
-    try{
-      const r=await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json',{signal:AbortSignal.timeout(4000)});
-      const d=await r.json();
-      if(d?.price&&(Date.now()/1000-d.ts)<28800){ gcShowPrice(sym,d.price,d.ts); }
-      else throw new Error();
-    }catch(e2){
-      msg.style.color='#f87171';
-      msg.textContent='Fiyat alınamadı — manuel girin.';
-    }
+    msg.style.color='#f87171';
+    msg.textContent='Fiyat alınamadı — manuel girin.';
   }finally{
     btn.disabled=false; btn.textContent='Fiyat Getir';
   }

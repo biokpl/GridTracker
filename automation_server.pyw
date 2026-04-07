@@ -399,6 +399,53 @@ _watcher_loop._last_sched = None
 _watcher_loop._last_price_update = 0
 
 
+def _fetch_and_cache_sr(symbols):
+    """Her sembol için 3 mod SR verisini Yahoo'dan çekip Firebase'e yazar."""
+    for sym in symbols:
+        for mode in ('main', 'swing5', 'swing3'):
+            try:
+                ticker = sym + '.IS'
+                url = f'https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=60d'
+                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    data = json.loads(resp.read())
+                q = data['chart']['result'][0]['indicators']['quote'][0]
+                meta = data['chart']['result'][0].get('meta', {})
+                prices = [(h, l, c) for h, l, c in zip(q['high'], q['low'], q['close']) if h and l and c]
+                if len(prices) < 5: continue
+                current = meta.get('regularMarketPrice') or prices[-1][2]
+                # Fiyatı livePrices'a yaz (henüz yazılmadıysa)
+                if mode == 'main':
+                    urllib.request.urlopen(urllib.request.Request(
+                        f'{FIREBASE_URL}/gridtracker/livePrices/{sym}.json',
+                        data=json.dumps({'price': round(current, 2), 'ts': int(time.time())}).encode(),
+                        method='PUT', headers={'Content-Type': 'application/json'}
+                    ), timeout=5)
+                if mode == 'main':
+                    support = round(min(p[1] for p in prices), 2)
+                    resistance = round(max(p[0] for p in prices), 2)
+                else:
+                    W, n = 2, len(prices)
+                    sh, sl = [], []
+                    for i in range(W, n - W):
+                        h, l, _ = prices[i]
+                        if all(h >= prices[i+j][0] for j in range(-W, W+1) if j != 0): sh.append(round(h, 2))
+                        if all(l <= prices[i+j][1] for j in range(-W, W+1) if j != 0): sl.append(round(l, 2))
+                    idx = 4 if mode == 'swing5' else 2
+                    sups = sorted([p for p in sl if p < current * 0.998], reverse=True)
+                    ress = sorted([p for p in sh if p > current * 1.002])
+                    support = sups[idx] if len(sups) > idx else (sups[-1] if sups else round(min(p[1] for p in prices[-20:]), 2))
+                    resistance = ress[idx] if len(ress) > idx else (ress[-1] if ress else round(max(p[0] for p in prices[-20:]), 2))
+                urllib.request.urlopen(urllib.request.Request(
+                    f'{FIREBASE_URL}/gridtracker/srCache/{sym}_{mode}.json',
+                    data=json.dumps({'support': support, 'resistance': resistance, 'ts': int(time.time())}).encode(),
+                    method='PUT', headers={'Content-Type': 'application/json'}
+                ), timeout=5)
+                print(f'[SR] {sym}/{mode}: {support} / {resistance}')
+            except Exception as e:
+                print(f'[SR] {sym}/{mode} hata: {e}')
+
+
 def atr_file_watcher():
     """Masaüstünde 3*.xlsx belirince otomatik Firebase'e yaz ve dosyayı sil."""
     desktop_dir = Path.home() / 'Desktop'
@@ -437,18 +484,32 @@ def atr_file_watcher():
                         atrDay = _v('ATR - DAY')
                         atrWeek= _v('ATR - WEEK')
                         composite = round(((atr60 or 0)*2 + (atr240 or 0)*3 + (atrDay or 0)*4 + (atrWeek or 0)*1) / 10, 6)
+                        # Fiyat sütunlarını dene (MatriksIQ formatı)
+                        price = None
+                        for pcol in ('Son', 'Son Fiyat', 'Fiyat', 'Kapanış', 'Close', 'Last'):
+                            v = d.get(pcol)
+                            if v is not None:
+                                try: price = round(float(v), 2); break
+                                except: pass
                         payload = json.dumps({
                             'atr60': atr60, 'atr240': atr240,
                             'atrDay': atrDay, 'atrWeek': atrWeek,
                             'composite': composite, 'ts': int(time.time()*1000)
                         }).encode()
-                        req = urllib.request.Request(
+                        urllib.request.urlopen(urllib.request.Request(
                             f'{FIREBASE_URL}/gridtracker/settings/atrCache/{sym}.json',
                             data=payload, method='PUT',
                             headers={'Content-Type': 'application/json'}
-                        )
-                        urllib.request.urlopen(req, timeout=8)
+                        ), timeout=8)
+                        if price:
+                            urllib.request.urlopen(urllib.request.Request(
+                                f'{FIREBASE_URL}/gridtracker/livePrices/{sym}.json',
+                                data=json.dumps({'price': price, 'ts': int(time.time())}).encode(),
+                                method='PUT', headers={'Content-Type': 'application/json'}
+                            ), timeout=8)
                         saved.append(sym)
+                    # SR verisini arka planda çek ve Firebase'e yaz
+                    threading.Thread(target=_fetch_and_cache_sr, args=(saved,), daemon=True).start()
                     desktop.unlink()
                     print(f'[ATR] Firebase\'e kaydedildi: {", ".join(saved)} — dosya silindi.')
         except Exception as e:
