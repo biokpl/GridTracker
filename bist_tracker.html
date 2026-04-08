@@ -1350,9 +1350,9 @@ select.field-input option{background:var(--surface2);}
         <div class="gc-label">ATR (Bileşik)</div>
         <div style="display:flex;gap:4px;align-items:center">
           <input class="field-input" id="gc-atr" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="flex:1;padding:4px 8px;font-size:12px;height:auto" oninput="this.value=this.value.replace(/,/g,'.')" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur();$('gc-sup').focus();}">
-          <button id="gc-atr-load-btn" class="btn btn-ghost" style="font-size:9px;padding:4px 8px;border-color:rgba(99,179,237,.3);color:#7dd3fc;white-space:nowrap" onclick="gcLoadAtrExcel()">ATR Getir</button>
+          <button id="gc-atr-load-btn" class="btn btn-ghost" style="font-size:9px;padding:4px 8px;border-color:rgba(99,179,237,.3);color:#7dd3fc;white-space:nowrap" onclick="gcLoadAtrExcel()">ATR / Ortalama</button>
         </div>
-        <div id="gc-atr-breakdown" style="visibility:hidden;margin-top:5px;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:3px;min-height:34px"></div>
+        <div id="gc-atr-breakdown" style="visibility:hidden;margin-top:5px;display:grid;grid-template-columns:repeat(6,1fr);gap:3px;min-height:34px"></div>
       </div>
 
       <!-- Destek | Direnç -->
@@ -3837,15 +3837,22 @@ function gcShowAtrBreakdown(row){
   const bd=$('gc-atr-breakdown');
   if(!bd) return;
   bd.style.visibility='visible';
-  const items=[['60DK',row.atr_60dk],['240DK',row.atr_240dk],['Günlük',row.atr_gunluk],['Haftalık',row.atr_haftalik]];
+  const items=[
+    ['5DK',   row.atr_5dk],
+    ['60DK',  row.atr_60dk],
+    ['120DK', row.atr_120dk],
+    ['240DK', row.atr_240dk],
+    ['Günlük',row.atr_gunluk],
+    ['Haftalık',row.atr_haftalik],
+  ];
   bd.innerHTML=items.map(([lbl,val])=>`
-    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:5px;padding:3px 5px;text-align:center">
-      <div style="font-size:9px;color:#7a9abf;letter-spacing:.5px;font-weight:600;padding-bottom:2px;margin-bottom:2px;background-image:linear-gradient(90deg,transparent 0%,rgba(122,154,191,.35) 35%,rgba(122,154,191,.35) 65%,transparent 100%);background-size:100% 1px;background-repeat:no-repeat;background-position:bottom">${lbl}</div>
-      <div style="font-size:10px;font-family:var(--mono);color:#7dd3fc">${val!=null?val.toFixed(3):'—'}</div>
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:5px;padding:3px 4px;text-align:center">
+      <div style="font-size:8px;color:#7a9abf;letter-spacing:.4px;font-weight:600;padding-bottom:2px;margin-bottom:2px;background-image:linear-gradient(90deg,transparent 0%,rgba(122,154,191,.35) 35%,rgba(122,154,191,.35) 65%,transparent 100%);background-size:100% 1px;background-repeat:no-repeat;background-position:bottom">${lbl}</div>
+      <div style="font-size:9px;font-family:var(--mono);color:${val!=null?'#7dd3fc':'#3a4a5a'}">${val!=null?val.toFixed(3):'—'}</div>
     </div>`).join('');
 }
 
-function _applySR(sym, sup, res, btn, origText){
+function _applySR(sym, sup, res, btn, origText, mode){
   $('gc-sup').value=sup;
   $('gc-res').value=res;
   window._gcDirty=true;
@@ -3854,10 +3861,15 @@ function _applySR(sym, sup, res, btn, origText){
     b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');
     b.style.opacity='0.45';
   });
-  if(btn){btn.classList.add('gc-sr-active','gc-sr-active-main');btn.style.opacity='';}
+  if(btn){
+    const cls=mode==='swing3'?'gc-sr-active-swing3':mode==='swing5'?'gc-sr-active-swing5':'gc-sr-active-main';
+    btn.classList.add('gc-sr-active',cls);
+    btn.style.opacity='';
+    btn.disabled=false;
+    btn.textContent=origText;
+  }
   const alts=$('gc-sr-alts');
   if(alts) alts.style.display='none';
-  if(btn){btn.disabled=false;btn.textContent=origText;}
   clearTimeout(window._gcSRTimer);
   window._gcSRTimer=setTimeout(()=>calcGridBot(),80);
 }
@@ -3878,7 +3890,7 @@ async function gcAutoSR(mode='main'){
     else{sup=d.yakin_sup; res=d.yakin_res;}
     if(!sup||!res) throw new Error('seviye yok');
     toast(`↓ ${sup} ₺   |   ↑ ${res} ₺`,'suc');
-    _applySR(sym,sup,res,btn,origText);
+    _applySR(sym,sup,res,btn,origText,mode);
   }catch(e){
     toast('Destek/Direnç alınamadı','err');
     btn.disabled=false; btn.textContent=origText;
@@ -3984,6 +3996,11 @@ async function gcFetchPrice(){
     msg.style.color='#86efac';
     msg.textContent=`${sym}: ${d.price.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺${ageS!=null?' ('+ageS+'s önce)':''}`;
     window._gcDirty=true;
+    // Orta destek/direnç otomatik doldur (Ort. butonuna basılmış gibi)
+    if(d.orta_sup&&d.orta_res){
+      const btn2=$('gc-sr-btn2');
+      _applySR(sym,d.orta_sup,d.orta_res,btn2,btn2?.textContent,'swing5');
+    }
   }catch(e){
     msg.style.color='#f87171';
     msg.textContent='Veri alınamadı — sunucu çalışıyor mu?';
