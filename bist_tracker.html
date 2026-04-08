@@ -3150,23 +3150,25 @@ async function fbWrite(path,data){
       "updatedAt": "2026-04-02 18:35:23"
     },
     "2026-04-03": {
+      "date": "2026-04-03",
+      "trades": 3,
       "buys": 3,
+      "sells": 0,
+      "grossProfit": 0.0,
+      "commission": 0.0,
+      "netProfit": 0.0,
+      "overall": 1279586.37,
       "bySymbol": {
         "MIATK": {
           "avgBuy": 42.2667,
           "avgSell": 0,
           "buyCount": 3,
+          "sellCount": 0,
           "commission": 0.0,
           "grossProfit": 0.0,
-          "netProfit": 0.0,
-          "sellCount": 0
+          "netProfit": 0.0
         }
-      },
-      "commission": 0.0,
-      "gross": 0.0,
-      "netProfit": 0.0,
-      "overall": 1279586.37,
-      "sells": 0
+      }
     },
     "2026-04-06": {
       "buys": 0,
@@ -4510,8 +4512,8 @@ function renderMonthly(){
     const rowBg=isBest?'background:rgba(34,197,94,.04)':isWorst?'background:rgba(239,68,68,.04)':'';
     const badge=isBest?'<span style="font-size:7px;background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.2);border-radius:3px;padding:1px 4px;margin-left:4px;vertical-align:middle">EN İYİ</span>':isWorst?'<span style="font-size:7px;background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.2);border-radius:3px;padding:1px 4px;margin-left:4px;vertical-align:middle">EN KÖTÜ</span>':'';
     return `<tr style="${rowBg}">
-      <td style="color:#7b92b5;font-weight:600">${d.date.slice(5).replace('-','.')}${badge}</td>
-      <td class="td-dim">${d.trades||'—'}</td>
+      <td style="color:#7b92b5;font-weight:600">${(d.date||'').slice(5).replace('-','.')}${badge}</td>
+      <td class="td-dim">${d.trades!=null?d.trades:'—'}</td>
       <td class="${d.grossProfit>0?'td-pos':d.grossProfit<0?'td-neg':''}">${d.grossProfit?fxs(d.grossProfit):'—'}</td>
       <td class="td-amb">${d.commission?fx(d.commission):'—'}</td>
       <td class="${nc}" style="font-weight:600">${d.netProfit?fxs(d.netProfit):'—'}</td>
