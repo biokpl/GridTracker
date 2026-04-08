@@ -196,8 +196,8 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 #pg-gridcalc *{font-family:'Inter',sans-serif!important;font-variant-numeric:tabular-nums;}
 /* SIFIRLA button */
 @keyframes gc-reset-pulse{
-  0%,100%{box-shadow:0 0 6px 1px rgba(239,68,68,.5),0 0 18px 4px rgba(239,68,68,.25),0 0 40px 8px rgba(239,68,68,.1),inset 0 0 8px rgba(239,68,68,.12);}
-  50%{box-shadow:0 0 12px 3px rgba(239,68,68,.8),0 0 30px 8px rgba(239,68,68,.4),0 0 60px 16px rgba(239,68,68,.18),inset 0 0 14px rgba(239,68,68,.22);}
+  0%,100%{box-shadow:0 0 4px 1px rgba(239,68,68,.25),0 0 10px 2px rgba(239,68,68,.1);}
+  50%{box-shadow:0 0 8px 2px rgba(239,68,68,.4),0 0 18px 5px rgba(239,68,68,.18);}
 }
 @keyframes gc-reset-border{
   0%,100%{border-color:rgba(239,68,68,.6);}
@@ -216,7 +216,7 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
   animation:spin 3s linear infinite;z-index:0;
 }
 .gc-btn-reset::after{
-  content:'';position:absolute;inset:1px;border-radius:7px;background:rgba(15,17,21,1);z-index:1;
+  content:'';position:absolute;inset:1px;border-radius:7px;background:linear-gradient(135deg,rgba(60,20,20,.85),rgba(30,12,12,.9));z-index:1;
 }
 .gc-btn-reset span{position:relative;z-index:2;}
 .gc-btn-reset:hover{transform:scale(1.04);color:#fff;}
