@@ -1368,11 +1368,9 @@ document.addEventListener('DOMContentLoaded',async()=>{
 # ──────────────────────────────────────────────────────────
 #  YAPILANDIRMA
 # ──────────────────────────────────────────────────────────
-DESKTOP    = Path.home() / 'Desktop'
-FILE1      = DESKTOP / '1.xlsx'
-FILE2      = DESKTOP / '2.xlsx'
-
 SCRIPT_DIR = Path(__file__).parent
+FILE1      = SCRIPT_DIR / '1.xlsx'
+FILE2      = SCRIPT_DIR / '2.xlsx'
 HTML_FILE  = SCRIPT_DIR / 'bist_tracker.html'
 DATA_JSON  = SCRIPT_DIR / 'data.json'
 LOG_FILE   = SCRIPT_DIR / 'grid_tracker.log'
