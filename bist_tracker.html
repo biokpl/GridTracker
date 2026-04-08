@@ -838,11 +838,16 @@ select.field-input option{background:var(--surface2);}
   </div>
 
   <!-- Günlük & Aylık P&L -->
-  <div class="kpi-strip" style="margin-bottom:10px">
+  <div class="kpi-strip three" style="margin-bottom:10px">
     <div class="kpi">
       <div class="kpi-label"><span class="kpi-icon">💎</span>Günlük Net Kar</div>
       <div class="kpi-val" id="h-net">—</div>
-      <div class="kpi-sub">₺ Bugün</div>
+      <div class="kpi-sub">Kapatılan pozisyonlar</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label"><span class="kpi-icon">📊</span>Gerçek Kar</div>
+      <div class="kpi-val" id="h-realnet">—</div>
+      <div class="kpi-sub" id="h-realnet-sub">Açık P&amp;L dahil</div>
     </div>
     <div class="kpi">
       <div class="kpi-label"><span class="kpi-icon">📅</span>Aylık Net Kar</div>
@@ -4212,6 +4217,32 @@ function renderHome(){
   setpnl('h-gross',tp.totalGross||0);
   const hc=$('h-comm');if(hc)hc.textContent=fx(tp.totalCommission||0)+' ₺';
   setpnl('h-net',tp.totalNet||0);
+
+  // Gerçek Kar (açık pozisyon P&L dahil)
+  {
+    const openPos=tp.openPositions||{};
+    const stocks=D.stocks||{};
+    let unrealized=0, missingPrice=false;
+    for(const sym of Object.keys(openPos)){
+      const curPrice=(stocks[sym]||{}).price;
+      if(!curPrice){missingPrice=true;continue;}
+      for(const pos of openPos[sym]){
+        unrealized+=(curPrice-pos.execPrice)*pos.execQty - pos.commission;
+      }
+    }
+    const realNet=(tp.totalNet||0)+unrealized;
+    const rEl=$('h-realnet'), rSub=$('h-realnet-sub');
+    if(rEl){
+      rEl.textContent=((realNet>=0?'+':'')+fxi(realNet)+' ₺');
+      rEl.className='kpi-val '+(realNet>0?'pos':realNet<0?'neg':'');
+    }
+    if(rSub){
+      const openCount=Object.values(openPos).reduce((s,a)=>s+a.length,0);
+      rSub.textContent=openCount>0
+        ?(missingPrice?`${openCount} açık · fiyat bekleniyor`:`${openCount} açık pos. dahil`)
+        :'Açık pozisyon yok';
+    }
+  }
 
   // Trades — symMode filtresine göre hesaplanır, renderSymTable() da günceller
   updateTradesCard();
