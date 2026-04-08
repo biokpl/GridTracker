@@ -838,21 +838,25 @@ select.field-input option{background:var(--surface2);}
   </div>
 
   <!-- Günlük & Aylık P&L -->
-  <div class="kpi-strip three" style="margin-bottom:10px">
+  <div class="kpi-strip" style="margin-bottom:10px">
     <div class="kpi">
       <div class="kpi-label"><span class="kpi-icon">💎</span>Günlük Net Kar</div>
       <div class="kpi-val" id="h-net">—</div>
       <div class="kpi-sub">Kapatılan pozisyonlar</div>
     </div>
     <div class="kpi">
-      <div class="kpi-label"><span class="kpi-icon">📊</span>Açık Pozisyon İle..</div>
-      <div class="kpi-val" id="h-realnet">—</div>
-      <div class="kpi-sub" id="h-realnet-sub">Açık P&amp;L dahil</div>
-    </div>
-    <div class="kpi">
       <div class="kpi-label"><span class="kpi-icon">📅</span>Aylık Net Kar</div>
       <div class="kpi-val" id="h-mnet">—</div>
       <div class="kpi-sub" id="h-mdays">—</div>
+    </div>
+  </div>
+
+  <!-- Açık Pozisyon İle Beklenen Günlük Kar -->
+  <div style="margin:0 18px 10px;text-align:center">
+    <div class="kpi" style="display:inline-block;width:100%;padding:8px 12px;">
+      <div class="kpi-label"><span class="kpi-icon">📊</span>Açık Pozisyon İle Beklenen Günlük Kar</div>
+      <div class="kpi-val" id="h-realnet">—</div>
+      <div class="kpi-sub" id="h-realnet-sub">Açık P&amp;L dahil</div>
     </div>
   </div>
 
