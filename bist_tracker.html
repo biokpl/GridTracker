@@ -5056,6 +5056,7 @@ function renderGridResults(b,support,resistance,atr,capital,commFrac,currentPric
 }
 
 function changeMonth(dir){
+  if(!S.month){const now=new Date();S.month={y:now.getFullYear(),m:now.getMonth()};}
   S.month.m+=dir;
   if(S.month.m<0){S.month.m=11;S.month.y--;}
   if(S.month.m>11){S.month.m=0;S.month.y++;}
