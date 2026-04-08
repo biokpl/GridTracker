@@ -3825,11 +3825,16 @@ async function gcLoadAtrExcel(){
     $('gc-atr').value=(d.atr_ort).toFixed(4);
     window._gcDirty=true;
     gcShowAtrBreakdown(d);
+    // Orta destek/direnç güncelle
+    if(d.orta_sup&&d.orta_res){
+      const btn2=$('gc-sr-btn2');
+      _applySR(sym,d.orta_sup,d.orta_res,btn2,btn2?.textContent,'swing5');
+    }
     toast('ATR yüklendi','suc');
   }catch(e){
     toast('ATR alınamadı','err');
   }finally{
-    btn.disabled=false; btn.textContent='ATR Getir';
+    btn.disabled=false; btn.textContent='ATR / Ortalama';
   }
 }
 
