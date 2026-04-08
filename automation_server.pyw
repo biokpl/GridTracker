@@ -233,59 +233,6 @@ def get_atr(symbol):
         return _cors(jsonify({'error': str(e)})), 500
 
 
-# ── GET /api/atr-excel[?symbol=EREGL] ─────────────────────
-@app.route('/api/atr-excel', methods=['GET', 'OPTIONS'])
-def get_atr_excel():
-    if request.method == 'OPTIONS':
-        return _cors(Response('', 204))
-    try:
-        import openpyxl
-        desktop = Path.home() / 'Desktop' / '3.xlsx'
-        if not desktop.exists():
-            return _cors(jsonify({'error': 'Masaüstünde 3.xlsx bulunamadı. Lütfen MatriksIQ\'dan dışa aktarın.'})), 404
-        wb = openpyxl.load_workbook(desktop, read_only=True, data_only=True)
-        ws = wb.active
-        rows = list(ws.iter_rows(values_only=True))
-        wb.close()
-        if len(rows) < 2:
-            return _cors(jsonify({'error': 'Excel dosyasında veri yok'})), 400
-        headers = [str(h).strip() if h else '' for h in rows[0]]
-        symbol_filter = (request.args.get('symbol') or '').upper().strip()
-        results = []
-        for row in rows[1:]:
-            if not any(row):
-                continue
-            d = dict(zip(headers, row))
-            sym = str(d.get('Sembol') or '').upper().strip()
-            if symbol_filter and sym != symbol_filter:
-                continue
-            def _v(k):
-                v = d.get(k)
-                return round(float(v), 6) if v is not None else None
-            results.append({
-                'symbol':   sym,
-                'price':    _v('Fiyat'),
-                'atr60':    _v('ATR - 60DK'),
-                'atr240':   _v('ATR - 240DK'),
-                'atrDay':   _v('ATR - DAY'),
-                'atrWeek':  _v('ATR - WEEK'),
-                'natr60':   _v('nATR - 60DK'),
-                'natr240':  _v('nATR - 240DK'),
-                'natrDay':  _v('nATR - DAY'),
-                'natrWeek': _v('nATR - WEEK'),
-            })
-        if not results:
-            msg = f'{symbol_filter} Excel dosyasında bulunamadı' if symbol_filter else 'Veri bulunamadı'
-            return _cors(jsonify({'error': msg})), 404
-        try:
-            desktop.unlink()
-        except Exception:
-            pass
-        return _cors(jsonify({'data': results}))
-    except Exception as e:
-        return _cors(jsonify({'error': str(e)})), 500
-
-
 # ── Task Scheduler setup ───────────────────────────────────
 def setup_autostart():
     """Sunucuyu Windows başlangıcında otomatik başlatmak için Registry'e ekler (admin gerekmez)."""
