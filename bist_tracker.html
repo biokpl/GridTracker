@@ -194,6 +194,34 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 #pg-gridcalc .tbl-wrap::-webkit-scrollbar-thumb{background:rgba(255,255,255,.06);border-radius:2px;}
 #pg-gridcalc .tbl-wrap{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.06) transparent;}
 #pg-gridcalc *{font-family:'Inter',sans-serif!important;font-variant-numeric:tabular-nums;}
+/* SIFIRLA button */
+@keyframes gc-reset-pulse{
+  0%,100%{box-shadow:0 0 6px 1px rgba(239,68,68,.5),0 0 18px 4px rgba(239,68,68,.25),0 0 40px 8px rgba(239,68,68,.1),inset 0 0 8px rgba(239,68,68,.12);}
+  50%{box-shadow:0 0 12px 3px rgba(239,68,68,.8),0 0 30px 8px rgba(239,68,68,.4),0 0 60px 16px rgba(239,68,68,.18),inset 0 0 14px rgba(239,68,68,.22);}
+}
+@keyframes gc-reset-border{
+  0%,100%{border-color:rgba(239,68,68,.6);}
+  50%{border-color:rgba(248,113,113,1);}
+}
+.gc-btn-reset{
+  position:relative;flex:1;padding:8px 6px;display:flex;align-items:center;justify-content:center;gap:5px;
+  font-size:10px!important;font-weight:800;letter-spacing:1.8px;color:#fca5a5;
+  background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.6);border-radius:8px;cursor:pointer;
+  animation:gc-reset-pulse 2s ease-in-out infinite,gc-reset-border 2s ease-in-out infinite;
+  transition:transform .1s;overflow:hidden;
+}
+.gc-btn-reset::before{
+  content:'';position:absolute;inset:-1px;border-radius:8px;
+  background:conic-gradient(from 0deg,transparent 0%,rgba(239,68,68,.15) 10%,transparent 20%,transparent 80%,rgba(239,68,68,.15) 90%,transparent 100%);
+  animation:spin 3s linear infinite;z-index:0;
+}
+.gc-btn-reset::after{
+  content:'';position:absolute;inset:1px;border-radius:7px;background:rgba(15,17,21,1);z-index:1;
+}
+.gc-btn-reset span{position:relative;z-index:2;}
+.gc-btn-reset:hover{transform:scale(1.04);color:#fff;}
+.gc-btn-reset:active{transform:scale(.97);}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 /* DESTEK/DİRENÇ input glow */
 #gc-sup:focus{box-shadow:0 3px 10px rgba(248,113,113,.25),0 0 0 1px rgba(248,113,113,.2)!important;}
 #gc-res:focus{box-shadow:0 -3px 10px rgba(74,222,128,.25),0 0 0 1px rgba(74,222,128,.2)!important;}
@@ -1377,7 +1405,7 @@ select.field-input option{background:var(--surface2);}
       <div style="display:flex;gap:6px;margin-top:10px">
         <button class="btn btn-ghost" style="flex:1.3;font-size:9px!important;padding:8px 4px;display:flex;align-items:center;justify-content:center;text-align:center;border-color:rgba(99,179,237,.3);color:#7dd3fc;line-height:1.4" onclick="gcAtrRange()">Grid Aralığı Öner</button>
         <button class="btn btn-ghost" style="flex:2;font-size:11px;padding:8px;display:flex;align-items:center;justify-content:center;border-color:rgba(249,115,22,.4);color:#fdba74;font-weight:600" onclick="calcGridBot()">Hesapla</button>
-        <button class="btn btn-ghost" style="flex:1;font-size:11px;padding:8px;display:flex;align-items:center;justify-content:center;gap:4px;border-color:rgba(239,68,68,.55);color:#f87171;background:rgba(239,68,68,.08);box-shadow:0 0 8px rgba(239,68,68,.2);font-weight:600" onclick="gcReset()">✕ Sıfırla</button>
+        <button class="gc-btn-reset" onclick="gcReset()"><span>✕ SIFIRLA</span></button>
       </div>
 
     </div>
