@@ -3361,7 +3361,7 @@ function go(id,btn){
   if(id==='pg-overall') renderOverall();
   if(id==='pg-trades') renderMonthly();
   if(id==='pg-sermaye') renderSermaye();
-  if(id==='pg-gridcalc'){ renderGridCalcPage(); setTimeout(()=>{const c=$('gc-cap');if(c)c.focus();},120); }
+  if(id==='pg-gridcalc'){ renderGridCalcPage(); setTimeout(()=>{const res=$('gc-results');if(res&&!res.classList.contains('on')){const c=$('gc-cap');if(c)c.focus();}},120); }
 }
 
 // ════════════════════════════════════════════════════════
