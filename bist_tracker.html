@@ -196,28 +196,17 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 #pg-gridcalc *{font-family:'Inter',sans-serif!important;font-variant-numeric:tabular-nums;}
 /* SIFIRLA button */
 @keyframes gc-reset-pulse{
-  0%,100%{box-shadow:0 0 3px 1px rgba(239,68,68,.15),0 0 8px 2px rgba(239,68,68,.07);}
-  50%{box-shadow:0 0 7px 2px rgba(239,68,68,.28),0 0 16px 4px rgba(239,68,68,.12);}
+  0%,100%{box-shadow:0 0 4px 1px rgba(239,68,68,.25),0 0 10px 2px rgba(239,68,68,.1);}
+  50%{box-shadow:0 0 8px 2px rgba(239,68,68,.4),0 0 18px 5px rgba(239,68,68,.18);}
 }
 .gc-btn-reset{
   position:relative;flex:1;padding:8px 6px;display:flex;align-items:center;justify-content:center;gap:5px;
   font-size:10px!important;font-weight:800;letter-spacing:1.8px;color:#fca5a5;
   background:linear-gradient(135deg,rgba(55,18,18,.9),rgba(28,10,10,.95));
-  border:none;border-radius:8px;cursor:pointer;
-  animation:gc-reset-pulse 5s ease-in-out infinite;
-  transition:transform .1s;overflow:hidden;
+  border:1px solid rgba(239,68,68,.55);border-radius:8px;cursor:pointer;
+  animation:gc-reset-pulse 3s ease-in-out infinite;
+  transition:transform .1s;
 }
-.gc-btn-reset::before{
-  content:'';position:absolute;
-  top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,rgba(239,68,68,.04) 0%,rgba(239,68,68,.75) 50%,rgba(239,68,68,.04) 100%);
-}
-.gc-btn-reset::after{
-  content:'';position:absolute;
-  bottom:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,rgba(239,68,68,.04) 0%,rgba(239,68,68,.75) 50%,rgba(239,68,68,.04) 100%);
-}
-.gc-btn-reset span{position:relative;}
 .gc-btn-reset:hover{transform:scale(1.04);color:#fff;}
 .gc-btn-reset:active{transform:scale(.97);}
 /* DESTEK/DİRENÇ input glow */
