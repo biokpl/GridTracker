@@ -15,7 +15,7 @@ Kullanım:
   python evening_automation.py --setup    # Task Scheduler'a iki görev ekle
 """
 
-import os, sys, time, logging, subprocess, argparse, shutil
+import os, sys, time, logging, subprocess, argparse
 from pathlib import Path
 from datetime import date, datetime
 
@@ -38,7 +38,6 @@ pyautogui.FAILSAFE = True
 pyautogui.PAUSE    = 0.05
 
 SCRIPT_DIR = Path(__file__).parent
-DESKTOP    = Path.home() / 'Desktop'
 LOG_FILE   = SCRIPT_DIR / 'evening_automation.log'
 
 _log_handlers = [logging.FileHandler(LOG_FILE, encoding='utf-8')]
@@ -195,20 +194,7 @@ def run(mode='normal'):
     click(5106, 12,  wait=1)
     click(2681, 753, wait=0.5)
 
-    # ── Adım 3: Masaüstündeki dosyaları GridTracker klasörüne taşı ─────
-    for fname in ['1.xlsx', '2.xlsx']:
-        src = DESKTOP / fname
-        dst = SCRIPT_DIR / fname
-        if src.exists():
-            try:
-                shutil.copy2(str(src), str(dst))
-                log.info(f'Kopyalandı: {fname}  →  {SCRIPT_DIR}')
-            except Exception as e:
-                log.warning(f'Kopyalanamadı ({fname}): {e}')
-        else:
-            log.warning(f'Masaüstünde bulunamadı: {src}')
-
-    # ── Adım 4: Excel verilerini işle ve Firebase'e yaz ─────
+    # ── Adım 3: Excel verilerini işle ve Firebase'e yaz ─────
     log.info('Excel verileri işleniyor ve Firebase güncelleniyor...')
     grid_script = SCRIPT_DIR / 'grid_tracker_service.pyw'
     if grid_script.exists():
