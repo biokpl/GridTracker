@@ -4597,7 +4597,7 @@ function renderGridCalcPage(){
   // Tüm alanlar doluysa otomatik hesapla — her cihazda sonuçlar görünsün
   if(gc.symbol&&gc.capital>0&&gc.support>0&&gc.resistance>0&&gc.atr>0){
     // Kayıtlı ATR breakdown varsa geri yükle
-    if(gc.atrRow){window._gcAtrRow=gc.atrRow;gcShowAtrBreakdown(gc.atrRow);}
+    if(gc.atrRow){window._gcAtrRow=gc.atrRow;window._gcAtrKey=gc.atrKey||'';gcShowAtrBreakdown(gc.atrRow);}
     // Kayıtlı SR modu varsa butonu aktif göster
     if(gc.srMode){
       window._gcSRMode=gc.srMode;
@@ -4664,30 +4664,31 @@ function gcShowAtrBreakdown(row){
   if(!bd) return;
   bd.style.visibility='visible';
   const items=[
-    ['5DK',   row.atr_5dk],
-    ['60DK',  row.atr_60dk],
-    ['120DK', row.atr_120dk],
-    ['240DK', row.atr_240dk],
-    ['Günlük',row.atr_gunluk],
-    ['Haftalık',row.atr_haftalik],
+    ['5DK',      'atr_5dk',      row.atr_5dk],
+    ['60DK',     'atr_60dk',     row.atr_60dk],
+    ['120DK',    'atr_120dk',    row.atr_120dk],
+    ['240DK',    'atr_240dk',    row.atr_240dk],
+    ['Günlük',   'atr_gunluk',   row.atr_gunluk],
+    ['Haftalık', 'atr_haftalik', row.atr_haftalik],
   ];
-  const curAtr=parseFloat(($('gc-atr').value||'').replace(',','.'))||0;
-  bd.innerHTML=items.map(([lbl,val])=>{
+  const selKey=window._gcAtrKey||null;
+  bd.innerHTML=items.map(([lbl,key,val])=>{
     if(val==null) return `<div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:5px;padding:3px 4px;text-align:center;opacity:.35"><div style="font-size:8px;color:#7a9abf;letter-spacing:.4px;font-weight:600">${lbl}</div><div style="font-size:9px;font-family:var(--mono);color:#3a4a5a">—</div></div>`;
-    const sel=curAtr>0&&Math.abs(val-curAtr)<0.00011;
+    const sel=selKey===key;
     const base=sel
       ?'background:rgba(99,179,237,.15);border:1px solid rgba(99,179,237,.7);border-radius:5px;padding:3px 4px;text-align:center;cursor:pointer;box-shadow:0 0 8px rgba(99,179,237,.25);'
       :'background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:5px;padding:3px 4px;text-align:center;cursor:pointer;';
-    return `<div style="${base}" onclick="gcSelectAtr(${val})">
+    return `<div style="${base}" onclick="gcSelectAtr('${key}',${val})">
       <div style="font-size:8px;color:${sel?'#93c5fd':'#7a9abf'};letter-spacing:.4px;font-weight:600;padding-bottom:2px;margin-bottom:2px;background-image:linear-gradient(90deg,transparent 0%,rgba(122,154,191,.35) 35%,rgba(122,154,191,.35) 65%,transparent 100%);background-size:100% 1px;background-repeat:no-repeat;background-position:bottom">${lbl}</div>
       <div style="font-size:9px;font-family:var(--mono);color:${sel?'#bfdbfe':'#7dd3fc'};font-weight:${sel?700:400}">${val.toFixed(3)}</div>
     </div>`;
   }).join('');
 }
 
-function gcSelectAtr(val){
+function gcSelectAtr(key,val){
   $('gc-atr').value=val.toFixed(4);
   window._gcDirty=true;
+  window._gcAtrKey=key;
   if(window._gcAtrRow) gcShowAtrBreakdown(window._gcAtrRow);
   clearTimeout(window._gcAtrSelTimer);
   window._gcAtrSelTimer=setTimeout(()=>calcGridBot(),100);
@@ -4762,7 +4763,7 @@ function gcReset(){
   const bb=$('gc-bar-buy');const bs=$('gc-bar-sell');
   if(bb)bb.style.width='0%';if(bs)bs.style.width='0%';
   const bd=$('gc-atr-breakdown');if(bd){bd.style.visibility='hidden';bd.innerHTML='';}
-  window._gcAtrRow=null; window._gcSRMode='';
+  window._gcAtrRow=null; window._gcSRMode=''; window._gcAtrKey='';
   const sa=$('gc-sr-alts');if(sa){sa.style.display='none';sa.innerHTML='';}
   ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{const b=$(id);if(b){b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');b.style.opacity='';}});
   toast('GridBot ayarları sıfırlandı','inf');
@@ -4976,7 +4977,7 @@ function calcGridBot(){
 
   // Persist — localStorage + Firebase
   window._gcDirty=false;
-  S.settings.gridCalc={symbol:sym,capital,support,resistance,atr,currentPrice,srMode:window._gcSRMode||'',atrRow:window._gcAtrRow||null};
+  S.settings.gridCalc={symbol:sym,capital,support,resistance,atr,currentPrice,srMode:window._gcSRMode||'',atrRow:window._gcAtrRow||null,atrKey:window._gcAtrKey||''};
   save();
   fbWrite('gridtracker/settings/gridCalc',S.settings.gridCalc);
 
