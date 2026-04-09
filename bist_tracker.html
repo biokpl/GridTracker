@@ -1367,7 +1367,7 @@ select.field-input option{background:var(--surface2);}
       <!-- Sermaye -->
       <div style="margin-bottom:6px">
         <div class="gc-label">SERMAYE (₺)</div>
-        <input class="field-input" id="gc-cap" type="text" inputmode="numeric" autocomplete="off" placeholder="1.000.000 ₺" style="width:100%;padding:4px 8px;font-size:12px;height:auto" oninput="const r=this.value.replace(/[^\d]/g,'');this.value=r?parseInt(r).toLocaleString('tr-TR'):'';" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();gcFetchPrice();}">
+        <input class="field-input" id="gc-cap" type="text" inputmode="numeric" autocomplete="off" placeholder="1.000.000 ₺" style="width:100%;padding:4px 8px;font-size:12px;height:auto" oninput="const r=this.value.replace(/[^\d]/g,'');this.value=r?parseInt(r).toLocaleString('tr-TR'):'';" onfocus="this.select()" onkeydown="if(event.key==='Enter'||event.key==='Tab'){event.preventDefault();this.blur();gcFetchPrice();}">
       </div>
 
       <!-- ATR alanı -->
@@ -4134,7 +4134,7 @@ function go(id,btn){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('on'));
   document.getElementById(id).classList.add('on');
   btn.classList.add('on');
-  try{localStorage.setItem('gt_lastPage',id);}catch(e){}
+  try{sessionStorage.setItem('gt_lastPage',id);}catch(e){}
   if(id==='pg-settings'){ renderSettings(); loadAutoSettings(); loadHolidays(); }
   if(id==='pg-monthly') renderMonthly();
   if(id==='pg-overall') renderOverall();
@@ -5486,7 +5486,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   if(loadCache()){ syncSettings(); renderAll(false); }
   // Son açık sekmeyi geri yükle
   try{
-    const lastPage=localStorage.getItem('gt_lastPage');
+    const lastPage=sessionStorage.getItem('gt_lastPage');
     if(lastPage&&PAGES.includes(lastPage)&&lastPage!=='pg-home'){
       const btn=[...document.querySelectorAll('.nav-btn')].find(b=>(b.getAttribute('onclick')||'').includes("'"+lastPage+"'"));
       if(btn) go(lastPage,btn);
