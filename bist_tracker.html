@@ -4958,20 +4958,26 @@ function calcGridBot(){
 
   if(minN>maxN){toast('ATR aralığa göre çok büyük — girdileri kontrol edin','err');return;}
 
+  // Bot kurulum fiyatı: currentPrice varsa kullan, yoksa orta noktaya düş
+  const refPrice=(currentPrice>support&&currentPrice<resistance)?currentPrice:midPrice;
+
   let best=null;
   for(let N=minN;N<=maxN;N++){
     const d=range/N;
-    const lots=Math.floor(capital/(N*support));
+    // Kaç buy seviyesi var: currentPrice'ın altındaki grid sayısı
+    const buyLevels=Math.max(1,Math.round((refPrice-support)/d));
+    // Tüm alımlar refPrice'tan yapıldığı için sermaye = buyLevels × lots × refPrice
+    const lots=Math.floor(capital/(buyLevels*refPrice));
     if(lots<1) continue;
-    const avg_buy=support+(N-1)*d/2;
     const gross=lots*d;
-    const comm=lots*avg_buy*2*commFrac;
+    // Komisyon: alım refPrice'tan, satım refPrice+d'den → her tur ≈ 2×refPrice×commFrac
+    const comm=lots*refPrice*2*commFrac;
     const net=gross-comm;
     if(net<=0) continue;
     const daily=(atr/d)*net;
-    const used=lots*N*support;
+    const used=buyLevels*lots*refPrice;
     const util=used/capital*100;
-    if(!best||daily>best.daily) best={N,d,lots,net,daily,used,util};
+    if(!best||daily>best.daily) best={N,d,lots,net,daily,used,util,buyLevels};
   }
 
   if(!best){toast('Hesaplanamadı — sermaye yetersiz veya aralık dar','err');return;}
