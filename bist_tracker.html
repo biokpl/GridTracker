@@ -4988,10 +4988,12 @@ function calcGridBot(){
   const midPrice=(support+resistance)/2;
   const minSpacing=midPrice*0.005;
 
-  const minN=Math.max(2,Math.ceil(range/(atr*0.3)));
-  const maxN=Math.min(100,Math.floor(range/minSpacing));
+  const maxN=Math.min(200,Math.floor(range/minSpacing));
+  // minN: grid aralığı ATR'nin en fazla %30'u kadar olmalı; kısa periyot ATR seçilmişse kısıt kalkıyor
+  const minNfromATR=Math.ceil(range/(atr*0.3));
+  const minN=(minNfromATR<=maxN)?Math.max(2,minNfromATR):2;
 
-  if(minN>maxN){toast('ATR aralığa göre çok büyük — girdileri kontrol edin','err');return;}
+  if(maxN<2){toast('Destek-Direnç aralığı çok dar','err');return;}
 
   // Bot kurulum fiyatı: currentPrice varsa kullan, yoksa orta noktaya düş
   const refPrice=(currentPrice>support&&currentPrice<resistance)?currentPrice:midPrice;
