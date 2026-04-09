@@ -4980,7 +4980,7 @@ function calcGridBot(){
     const net=gross-comm;
     if(net<=0) continue;
     const daily=(atr/d)*net;
-    const used=sellLevels*lots*refPrice;   // ilk kurulum sermayesi
+    const used=lots*capPerLot;   // ilk kurulum + aşağı rezerv toplamı
     const util=used/capital*100;
     if(!best||daily>best.daily) best={N,d,lots,net,daily,used,util,sellLevels,buyLevels};
   }
