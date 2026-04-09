@@ -4596,6 +4596,18 @@ function renderGridCalcPage(){
   const pr=$('gc-price');if(pr&&gc.currentPrice)pr.value=gc.currentPrice;
   // Tüm alanlar doluysa otomatik hesapla — her cihazda sonuçlar görünsün
   if(gc.symbol&&gc.capital>0&&gc.support>0&&gc.resistance>0&&gc.atr>0){
+    // Kayıtlı SR modu varsa butonu aktif göster
+    if(gc.srMode){
+      window._gcSRMode=gc.srMode;
+      const btnId=gc.srMode==='swing3'?'gc-sr-btn3':gc.srMode==='swing5'?'gc-sr-btn2':'gc-sr-btn';
+      ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{const b=$(id);if(b){b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');b.style.opacity='0.45';}});
+      const ab=$(btnId);
+      if(ab){
+        const cls=gc.srMode==='swing3'?'gc-sr-active-swing3':gc.srMode==='swing5'?'gc-sr-active-swing5':'gc-sr-active-main';
+        ab.classList.add('gc-sr-active',cls);
+        ab.style.opacity='';
+      }
+    }
     if(!window._gcCalcTs||Date.now()-window._gcCalcTs>3000) calcGridBot();
   }
 }
@@ -4667,6 +4679,7 @@ function _applySR(sym, sup, res, btn, origText, mode){
   $('gc-sup').value=sup;
   $('gc-res').value=res;
   window._gcDirty=true;
+  window._gcSRMode=mode;
   ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{
     const b=$(id);if(!b)return;
     b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');
@@ -4944,7 +4957,7 @@ function calcGridBot(){
 
   // Persist — localStorage + Firebase
   window._gcDirty=false;
-  S.settings.gridCalc={symbol:sym,capital,support,resistance,atr,currentPrice};
+  S.settings.gridCalc={symbol:sym,capital,support,resistance,atr,currentPrice,srMode:window._gcSRMode||''};
   save();
   fbWrite('gridtracker/settings/gridCalc',S.settings.gridCalc);
 
