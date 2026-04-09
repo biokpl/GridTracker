@@ -4485,17 +4485,23 @@ function renderMonthly(){
   if(wr){wr.textContent=winRate!==null?'%'+winRate:'—';wr.className='kpi-val '+(winRate===null?'':(winRate>=60?'pos':winRate>=40?'':'neg'));}
   const wrs=$('m-winrate-sub');
   if(wrs)wrs.textContent=tRows.length?(winDays+'/'+tRows.length+' Gün'):'Karlı Gün';
-  // Target bar
+  // Target bar — tracked symbol karı hariç tutulur
   const target=S.settings.monthlyTarget||0;
+  const trackSym=(S.settings.trackSymbol||'').toUpperCase();
+  let netForTarget=st.net;
+  if(trackSym){
+    const trackMonthNet=st.rows.reduce((s,d)=>s+((d.bySymbol||{})[trackSym]?.netProfit||0),0);
+    netForTarget=st.net-trackMonthNet;
+  }
   const mtt=$('m-target');
   if(mtt){
     if(target>0){
-      const rawPct=Math.round(st.net/target*100);
+      const rawPct=Math.round(netForTarget/target*100);
       const pctClamped=Math.max(0,Math.min(rawPct,100));
       const done=rawPct>=100;
       $('m-target-fill').style.width=pctClamped+'%';
       $('m-target-fill').className='m-target-fill'+(done?' done':'');
-      $('m-target-txt').textContent=done?'Hedefe ulaşıldı!':'Hedefe '+fxi(Math.max(0,target-st.net))+' ₺ kaldı';
+      $('m-target-txt').textContent=done?'Hedefe ulaşıldı!':'Hedefe '+fxi(Math.max(0,target-netForTarget))+' ₺ kaldı';
       $('m-target-pct').textContent='%'+rawPct;
       $('m-target-pct').className='m-target-pct'+(done?' done':'');
       mtt.style.display='block';
