@@ -5559,7 +5559,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
     if(pid==='pg-monthly'||pid==='pg-trades') renderMonthly();
     if(pid==='pg-overall') renderOverall();
     if(pid==='pg-settings'){ renderSettings(); }
-    if(pid==='pg-gridcalc'){ renderGridCalcPage(); }
+    renderGridCalcPage(); // ATR tablosu + sonuçlar her zaman geri yüklensin
     if(showToast) toast('Veri güncellendi','ok',2000);
   }
   function setNestedD(path,data){
