@@ -4847,8 +4847,13 @@ async function gcFetchPrice(){
     // Fiyat
     $('gc-price').value=d.price;
     // ATR — günlük ATR öncelikli
-    if(d.atr_gunluk!=null){ $('gc-atr').value=d.atr_gunluk.toFixed(4); gcShowAtrBreakdown(d); }
-    else if(d.atr_ort!=null){ $('gc-atr').value=d.atr_ort.toFixed(4); gcShowAtrBreakdown(d); }
+    if(d.atr_gunluk!=null||d.atr_ort!=null){
+      if(d.atr_gunluk!=null) $('gc-atr').value=d.atr_gunluk.toFixed(4);
+      else $('gc-atr').value=d.atr_ort.toFixed(4);
+      window._gcAtrRow=d;
+      try{localStorage.setItem('gt_atrRow',JSON.stringify(d));}catch(e){}
+      gcShowAtrBreakdown(d);
+    }
     const ageS=d.ts?Math.round(Date.now()/1000-d.ts):null;
     msg.style.color='#86efac';
     msg.textContent=`${sym}: ${d.price.toLocaleString('tr-TR',{minimumFractionDigits:2})} ₺${ageS!=null?' ('+ageS+'s önce)':''}`;
