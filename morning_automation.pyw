@@ -643,6 +643,20 @@ def check_skip_today():
     return False
 
 
+def _send_notify(title, body, tag='gridtracker'):
+    """automation_server /api/notify endpoint'ine POST atar."""
+    import urllib.request as _ur, json as _json
+    try:
+        payload = _json.dumps({'title': title, 'body': body, 'tag': tag}).encode()
+        req = _ur.Request('http://127.0.0.1:5050/api/notify',
+                          data=payload, method='POST',
+                          headers={'Content-Type': 'application/json'})
+        _ur.urlopen(req, timeout=5)
+        log.info(f'[Push] Bildirim gönderildi: {title}')
+    except Exception as e:
+        log.warning(f'[Push] Bildirim gönderilemedi: {e}')
+
+
 def run():
     log.info('══════════════════════════════════════════')
     log.info('  SABAH OTOMASYONU BAŞLIYOR')
@@ -740,6 +754,7 @@ def run():
     log.info('══════════════════════════════════════════')
     log.info('  SABAH OTOMASYONU TAMAMLANDI')
     log.info('══════════════════════════════════════════')
+    _send_notify('☀️ Sabah Otomasyonu Tamamlandı', 'MatriksIQ botları başarıyla başlatıldı.', 'morning-done')
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

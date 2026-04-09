@@ -4505,6 +4505,8 @@ function renderMonthly(){
       $('m-target-pct').textContent='%'+rawPct;
       $('m-target-pct').className='m-target-pct'+(done?' done':'');
       mtt.style.display='block';
+      if(done&&!(S._targetAlerted)){S._targetAlerted=true;sendPushNotify('🎯 Aylık Hedefe Ulaşıldı!','Bu ay '+fxi(target)+' ₺ hedefine ulaştınız.','target-done');}
+      if(!done) S._targetAlerted=false;
     }else{mtt.style.display='none';}
   }
   renderHTrack();
@@ -4549,7 +4551,7 @@ function renderHTrack(){
   $('h-track-pct').textContent='%'+rawPct;
   $('h-track-pct').className='h-track-pct'+(done?' done':'');
   ht.style.display='block';
-  if(done&&rawPct>=100&&!(S._trackAlerted)){S._trackAlerted=true;toast(sym+' hedefine ulaşıldı! 🎯','ok',4000);}
+  if(done&&rawPct>=100&&!(S._trackAlerted)){S._trackAlerted=true;toast(sym+' hedefine ulaşıldı! 🎯','ok',4000);sendPushNotify('🎯 '+sym+' TAKİP Hedefine Ulaşıldı!',sym+' için '+fxi(trackTarget)+' ₺ hedefine ulaştınız.','track-done');}
   if(!done) S._trackAlerted=false;
   const totalPaid=(D&&D.birikimTx)?D.birikimTx.filter(t=>t.trackPayment).reduce((s,t)=>s+Math.abs(t.amount),0):0;
   const pe=$('h-track-paid');
@@ -5589,8 +5591,53 @@ document.addEventListener('DOMContentLoaded',async()=>{
 });
 </script>
 <script>
+// ── Push Bildirimleri ─────────────────────────────────
+const VAPID_PUBLIC_KEY='BD5u-XkJ90U0fFjGHsCRUgGu-CfMD-a0DO_3_YwPQruhJLiFJwI5eI-Q4Z9BzCF_z_AfzBUAohx6d3Kwzqp7-DA';
+
+function _urlB64ToUint8(b64){
+  const p='='.repeat((4-b64.length%4)%4);
+  const b=(b64+p).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(b);
+  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+
+// Bildirim isteğini Firebase'e yaz — Python server okuyup push gönderir
+async function sendPushNotify(title, body, tag){
+  try{
+    await fetch(FIREBASE_URL+'/gridtracker/pushQueue/'+tag+'.json',{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({title, body, tag, ts:Date.now()})
+    });
+  }catch(e){}
+}
+
+async function initPush(){
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)) return;
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      const perm=await Notification.requestPermission();
+      if(perm!=='granted') return;
+      sub=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:_urlB64ToUint8(VAPID_PUBLIC_KEY)
+      });
+    }
+    // Subscription'ı Firebase'e kaydet (cihaz başına ayrı key)
+    const subStr=JSON.stringify(sub);
+    const subKey=btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(-40);
+    await fetch(FIREBASE_URL+'/gridtracker/pushSubscriptions/'+subKey+'.json',{
+      method:'PUT',headers:{'Content-Type':'application/json'},body:subStr
+    });
+  }catch(e){}
+}
+
 if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  navigator.serviceWorker.register('./sw.js')
+    .then(()=>{ setTimeout(initPush, 2000); })
+    .catch(()=>{});
 }
 
 // ── Swipe navigasyon ──────────────────────────────────

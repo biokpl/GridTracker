@@ -15,6 +15,12 @@ import sys, os, re, json, subprocess, argparse, configparser, threading, time, u
 from pathlib import Path
 from datetime import date
 
+for _pkg in ['pywebpush']:
+    try:
+        __import__(_pkg)
+    except ImportError:
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', _pkg])
+
 FIREBASE_URL = 'https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app'
 
 if sys.platform == 'win32':
@@ -250,6 +256,108 @@ def setup_autostart():
         print(f'Registry hatası: {e}')
 
 
+# ── Web Push ──────────────────────────────────────────
+VAPID_KEYS_FILE = SCRIPT_DIR / 'vapid_keys.json'
+VAPID_CLAIMS    = {'sub': 'mailto:gridtracker@local'}
+
+def _load_vapid():
+    try:
+        return json.loads(VAPID_KEYS_FILE.read_text(encoding='utf-8'))
+    except Exception:
+        return None
+
+def send_push_to_all(title, body, tag='gridtracker'):
+    """Firebase'deki tüm push subscription'larına bildirim gönderir."""
+    keys = _load_vapid()
+    if not keys:
+        print('[Push] VAPID keys bulunamadı')
+        return
+    try:
+        from pywebpush import webpush, WebPushException
+        # Tüm subscription'ları çek
+        req = urllib.request.urlopen(
+            f'{FIREBASE_URL}/gridtracker/pushSubscriptions.json', timeout=10)
+        subs = json.loads(req.read().decode())
+        if not subs or not isinstance(subs, dict):
+            print('[Push] Kayıtlı cihaz yok')
+            return
+        payload = json.dumps({'title': title, 'body': body, 'tag': tag})
+        sent = 0
+        for sub_key, sub_data in subs.items():
+            try:
+                if isinstance(sub_data, str):
+                    sub_data = json.loads(sub_data)
+                webpush(
+                    subscription_info=sub_data,
+                    data=payload,
+                    vapid_private_key=keys['privateKey'],
+                    vapid_claims=VAPID_CLAIMS
+                )
+                sent += 1
+            except WebPushException as e:
+                status = e.response.status_code if e.response else 0
+                if status in (404, 410):
+                    # Geçersiz subscription — sil
+                    try:
+                        urllib.request.urlopen(urllib.request.Request(
+                            f'{FIREBASE_URL}/gridtracker/pushSubscriptions/{sub_key}.json',
+                            method='DELETE'
+                        ), timeout=5)
+                    except Exception:
+                        pass
+                print(f'[Push] {sub_key[:12]}... hata: {e}')
+            except Exception as e:
+                print(f'[Push] Gönderim hatası: {e}')
+        print(f'[Push] Gönderildi: {sent}/{len(subs)} cihaz — {title}')
+    except Exception as e:
+        print(f'[Push] Genel hata: {e}')
+
+
+def _check_push_queue():
+    """Firebase pushQueue'yu kontrol et, yeni bildirim varsa gönder."""
+    try:
+        req = urllib.request.urlopen(
+            f'{FIREBASE_URL}/gridtracker/pushQueue.json', timeout=10)
+        queue = json.loads(req.read().decode())
+        if not queue or not isinstance(queue, dict):
+            return
+        for tag, item in queue.items():
+            if not isinstance(item, dict):
+                continue
+            ts = item.get('ts', 0)
+            # 60 saniyeden eski bildirimleri atla (stale)
+            if time.time()*1000 - ts > 60000:
+                continue
+            title = item.get('title', 'GridTracker')
+            body  = item.get('body', '')
+            threading.Thread(
+                target=send_push_to_all,
+                args=(title, body, tag),
+                daemon=True
+            ).start()
+        # Queue'yu temizle
+        urllib.request.urlopen(urllib.request.Request(
+            f'{FIREBASE_URL}/gridtracker/pushQueue.json',
+            data=b'null', method='PUT',
+            headers={'Content-Type': 'application/json'}
+        ), timeout=5)
+    except Exception:
+        pass
+
+
+# ── /api/notify endpoint ──────────────────────────────
+@app.route('/api/notify', methods=['POST', 'OPTIONS'])
+def api_notify():
+    if request.method == 'OPTIONS':
+        return _cors(Response('', 204))
+    data  = request.get_json(force=True) or {}
+    title = data.get('title', 'GridTracker')
+    body  = data.get('body', '')
+    tag   = data.get('tag', 'gridtracker')
+    threading.Thread(target=send_push_to_all, args=(title, body, tag), daemon=True).start()
+    return _cors(jsonify({'ok': True}))
+
+
 def fb_write(path, data):
     """Firebase Realtime Database'e REST API ile veri yazar."""
     url = f'{FIREBASE_URL}/{path}.json'
@@ -334,6 +442,9 @@ def _watcher_loop():
         except Exception as e:
             print(f'[Fiyat] Güncelleme hatası: {e}')
         _watcher_loop._last_price_update = time.time()
+
+    # --- Push queue kontrol ---
+    _check_push_queue()
 
     # --- Heartbeat yaz ---
     try:

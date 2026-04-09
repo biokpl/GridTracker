@@ -14,9 +14,37 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Firebase ve diğer dış API'ler her zaman ağdan gitsin
   if(!e.request.url.startsWith(self.location.origin)) return;
   e.respondWith(
     caches.match(e.request).then(r => r || fetch(e.request))
+  );
+});
+
+// ── Push bildirimleri ──────────────────────────────────
+self.addEventListener('push', e => {
+  let data = {};
+  try { data = e.data ? e.data.json() : {}; } catch(err) {}
+  const title = data.title || 'GridTracker';
+  const options = {
+    body:    data.body  || '',
+    icon:    './icon-192.png',
+    badge:   './icon-192.png',
+    tag:     data.tag   || 'gridtracker',
+    renotify: true,
+    vibrate: [200, 100, 200],
+    data:    data
+  };
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(
+    clients.matchAll({type:'window', includeUncontrolled:true}).then(list => {
+      for(const c of list){
+        if(c.url.includes('bist_tracker') && 'focus' in c) return c.focus();
+      }
+      return clients.openWindow('./bist_tracker.html');
+    })
   );
 });

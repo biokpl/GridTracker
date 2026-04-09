@@ -147,6 +147,20 @@ def bring_to_front(title):
 #  ANA OTOMASYON
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+def _send_notify(title, body, tag='gridtracker'):
+    """automation_server /api/notify endpoint'ine POST atar."""
+    import urllib.request as _ur, json as _json
+    try:
+        payload = _json.dumps({'title': title, 'body': body, 'tag': tag}).encode()
+        req = _ur.Request('http://127.0.0.1:5050/api/notify',
+                          data=payload, method='POST',
+                          headers={'Content-Type': 'application/json'})
+        _ur.urlopen(req, timeout=5)
+        log.info(f'[Push] Bildirim gönderildi: {title}')
+    except Exception as e:
+        log.warning(f'[Push] Bildirim gönderilemedi: {e}')
+
+
 def run(mode='normal'):
     """
     mode='normal' → 18:35 görevi tarafından tetiklenir (arefe günü ise çıkar)
@@ -213,6 +227,7 @@ def run(mode='normal'):
     log.info('══════════════════════════════════════════')
     log.info('  AKSAM OTOMASYONU TAMAMLANDI')
     log.info('══════════════════════════════════════════')
+    _send_notify('🌙 Akşam Otomasyonu Tamamlandı', 'Günlük veriler işlendi ve kaydedildi.', 'evening-done')
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

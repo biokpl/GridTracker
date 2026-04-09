@@ -1,0 +1,19 @@
+{
+  "buys": 3,
+  "bySymbol": {
+    "MIATK": {
+      "avgBuy": 42.2667,
+      "avgSell": 0,
+      "buyCount": 3,
+      "commission": 0.0,
+      "grossProfit": 0.0,
+      "netProfit": 0.0,
+      "sellCount": 0
+    }
+  },
+  "commission": 0.0,
+  "gross": 0.0,
+  "netProfit": 0.0,
+  "overall": 1279586.37,
+  "sells": 0
+}
