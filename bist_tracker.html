@@ -4591,14 +4591,12 @@ function renderGridCalcPage(){
   // Hisse kodu her zaman yükle (dirty flag'den bağımsız)
   const s=$('gc-sym');if(s&&!s.value)s.value=gc.symbol||'EREGL';
 
-  // ATR tablosunu HER ZAMAN geri yükle — dirty flag veya alan kontrolünden bağımsız
-  if(!window._gcAtrRow){
-    const atrRowSrc=gc.atrRow||(()=>{try{const v=localStorage.getItem('gt_atrRow');return v?JSON.parse(v):null;}catch(e){return null;}})();
-    if(atrRowSrc){
-      window._gcAtrRow=atrRowSrc;
-      window._gcAtrKey=gc.atrKey||localStorage.getItem('gt_atrKey')||'';
-      gcShowAtrBreakdown(atrRowSrc);
-    }
+  // ATR tablosunu HER ZAMAN geri yükle — hiçbir koşula bağlı değil
+  const atrRowSrc=window._gcAtrRow||gc.atrRow||(()=>{try{const v=localStorage.getItem('gt_atrRow');return v?JSON.parse(v):null;}catch(e){return null;}})();
+  if(atrRowSrc){
+    window._gcAtrRow=atrRowSrc;
+    window._gcAtrKey=window._gcAtrKey||gc.atrKey||localStorage.getItem('gt_atrKey')||'';
+    gcShowAtrBreakdown(atrRowSrc);
   }
 
   // Kullanıcı alanları düzenliyorsa Firebase güncellemesi input'ları sıfırlamasın
