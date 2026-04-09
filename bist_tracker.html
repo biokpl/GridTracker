@@ -4964,20 +4964,25 @@ function calcGridBot(){
   let best=null;
   for(let N=minN;N<=maxN;N++){
     const d=range/N;
-    // Kaç buy seviyesi var: currentPrice'ın altındaki grid sayısı
+    // Üstte kaç sat gridi var → kurulumda bu kadar lot currentPrice'tan alınır
+    const sellLevels=Math.max(1,Math.round((resistance-refPrice)/d));
+    // Altta kaç al gridi var → fiyat düşerse kademeli alım yapılır
     const buyLevels=Math.max(1,Math.round((refPrice-support)/d));
-    // Tüm alımlar refPrice'tan yapıldığı için sermaye = buyLevels × lots × refPrice
-    const lots=Math.floor(capital/(buyLevels*refPrice));
+    // Toplam worst-case sermaye:
+    //   İlk kurulum  : sellLevels × lots × refPrice
+    //   Aşağı kademeli: buyLevels × lots × (refPrice + support) / 2
+    const avgDownPrice=(refPrice+support)/2;
+    const capPerLot=sellLevels*refPrice+buyLevels*avgDownPrice;
+    const lots=Math.floor(capital/capPerLot);
     if(lots<1) continue;
     const gross=lots*d;
-    // Komisyon: alım refPrice'tan, satım refPrice+d'den → her tur ≈ 2×refPrice×commFrac
     const comm=lots*refPrice*2*commFrac;
     const net=gross-comm;
     if(net<=0) continue;
     const daily=(atr/d)*net;
-    const used=buyLevels*lots*refPrice;
+    const used=sellLevels*lots*refPrice;   // ilk kurulum sermayesi
     const util=used/capital*100;
-    if(!best||daily>best.daily) best={N,d,lots,net,daily,used,util,buyLevels};
+    if(!best||daily>best.daily) best={N,d,lots,net,daily,used,util,sellLevels,buyLevels};
   }
 
   if(!best){toast('Hesaplanamadı — sermaye yetersiz veya aralık dar','err');return;}
