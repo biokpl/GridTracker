@@ -4599,8 +4599,9 @@ function renderGridCalcPage(){
   const pr=$('gc-price');if(pr&&gc.currentPrice)pr.value=gc.currentPrice;
   // Tüm alanlar doluysa otomatik hesapla — her cihazda sonuçlar görünsün
   if(gc.symbol&&gc.capital>0&&gc.support>0&&gc.resistance>0&&gc.atr>0){
-    // Kayıtlı ATR breakdown varsa geri yükle
-    if(gc.atrRow){window._gcAtrRow=gc.atrRow;window._gcAtrKey=gc.atrKey||'';gcShowAtrBreakdown(gc.atrRow);}
+    // Kayıtlı ATR breakdown varsa geri yükle — önce Firebase, yoksa localStorage
+    const atrRowSrc=gc.atrRow||(()=>{try{const s=localStorage.getItem('gt_atrRow');return s?JSON.parse(s):null;}catch(e){return null;}})();
+    if(atrRowSrc){window._gcAtrRow=atrRowSrc;window._gcAtrKey=gc.atrKey||'';gcShowAtrBreakdown(atrRowSrc);}
     // Kayıtlı SR modu varsa butonu aktif göster
     if(gc.srMode){
       window._gcSRMode=gc.srMode;
@@ -4648,6 +4649,7 @@ async function gcLoadAtrExcel(){
     $('gc-atr').value=(d.atr_ort).toFixed(4);
     window._gcDirty=true;
     window._gcAtrRow=d;
+    try{localStorage.setItem('gt_atrRow',JSON.stringify(d));}catch(e){}
     gcShowAtrBreakdown(d);
     // Orta destek/direnç güncelle
     if(d.orta_sup&&d.orta_res){
@@ -4767,6 +4769,7 @@ function gcReset(){
   if(bb)bb.style.width='0%';if(bs)bs.style.width='0%';
   const bd=$('gc-atr-breakdown');if(bd){bd.style.visibility='hidden';bd.innerHTML='';}
   window._gcAtrRow=null; window._gcSRMode=''; window._gcAtrKey='';
+  try{localStorage.removeItem('gt_atrRow');}catch(e){}
   const sa=$('gc-sr-alts');if(sa){sa.style.display='none';sa.innerHTML='';}
   ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{const b=$(id);if(b){b.classList.remove('gc-sr-active','gc-sr-active-main','gc-sr-active-swing5','gc-sr-active-swing3');b.style.opacity='';}});
   toast('GridBot ayarları sıfırlandı','inf');
