@@ -4590,6 +4590,17 @@ function renderGridCalcPage(){
   const gc=S.settings.gridCalc||{};
   // Hisse kodu her zaman yükle (dirty flag'den bağımsız)
   const s=$('gc-sym');if(s&&!s.value)s.value=gc.symbol||'EREGL';
+
+  // ATR tablosunu HER ZAMAN geri yükle — dirty flag veya alan kontrolünden bağımsız
+  if(!window._gcAtrRow){
+    const atrRowSrc=gc.atrRow||(()=>{try{const v=localStorage.getItem('gt_atrRow');return v?JSON.parse(v):null;}catch(e){return null;}})();
+    if(atrRowSrc){
+      window._gcAtrRow=atrRowSrc;
+      window._gcAtrKey=gc.atrKey||localStorage.getItem('gt_atrKey')||'';
+      gcShowAtrBreakdown(atrRowSrc);
+    }
+  }
+
   // Kullanıcı alanları düzenliyorsa Firebase güncellemesi input'ları sıfırlamasın
   if(window._gcDirty) return;
   const c=$('gc-cap');if(c&&gc.capital)c.value=gc.capital.toLocaleString('tr-TR');
@@ -4599,9 +4610,6 @@ function renderGridCalcPage(){
   const pr=$('gc-price');if(pr&&gc.currentPrice)pr.value=gc.currentPrice;
   // Tüm alanlar doluysa otomatik hesapla — her cihazda sonuçlar görünsün
   if(gc.symbol&&gc.capital>0&&gc.support>0&&gc.resistance>0&&gc.atr>0){
-    // Kayıtlı ATR breakdown varsa geri yükle — önce Firebase, yoksa localStorage
-    const atrRowSrc=gc.atrRow||(()=>{try{const s=localStorage.getItem('gt_atrRow');return s?JSON.parse(s):null;}catch(e){return null;}})();
-    if(atrRowSrc){window._gcAtrRow=atrRowSrc;window._gcAtrKey=gc.atrKey||'';gcShowAtrBreakdown(atrRowSrc);}
     // Kayıtlı SR modu varsa butonu aktif göster
     if(gc.srMode){
       window._gcSRMode=gc.srMode;
@@ -4649,7 +4657,7 @@ async function gcLoadAtrExcel(){
     $('gc-atr').value=(d.atr_ort).toFixed(4);
     window._gcDirty=true;
     window._gcAtrRow=d;
-    try{localStorage.setItem('gt_atrRow',JSON.stringify(d));}catch(e){}
+    try{localStorage.setItem('gt_atrRow',JSON.stringify(d));localStorage.setItem('gt_atrKey',window._gcAtrKey||'');}catch(e){}
     gcShowAtrBreakdown(d);
     // Orta destek/direnç güncelle
     if(d.orta_sup&&d.orta_res){
@@ -4694,6 +4702,7 @@ function gcSelectAtr(key,val){
   $('gc-atr').value=val.toFixed(4);
   window._gcDirty=true;
   window._gcAtrKey=key;
+  try{localStorage.setItem('gt_atrKey',key);}catch(e){}
   if(window._gcAtrRow) gcShowAtrBreakdown(window._gcAtrRow);
   clearTimeout(window._gcAtrSelTimer);
   window._gcAtrSelTimer=setTimeout(()=>calcGridBot(),100);
