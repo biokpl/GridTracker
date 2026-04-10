@@ -63,9 +63,11 @@ pyautogui.PAUSE    = 0.05
 # (sol_x, ust_y, genislik, yukseklik)
 PANEL_REGION = (370, 62, 1088, 588)
 
-# Badge merkezinden "Calistir" butonuna offset (tum explorer'lar icin ayni)
-CALISTIR_OFFSET_X = 403
-CALISTIR_OFFSET_Y =  27
+# "Calistir" butonunun sabit x koordinati (tum satirlar icin ayni sutun)
+# Badge center x her template'e gore farklı olabilir, bu yüzden x sabit kullanilir.
+# ATR ile dogrulanmistir: Calistir x=910
+CALISTIR_X       = 910
+CALISTIR_OFFSET_Y =  27   # Badge center y'den Calistir y'ye offset
 
 # Parametreler penceresi "Bitir" butonu (tum explorer'lar icin ayni konum)
 BITIR_X = 1220
@@ -274,7 +276,7 @@ def step2_run_explorer(explorer):
         log.error(f'{name} satirinin template\'i bulunamadi: {template_file}')
         return False
 
-    btn_x = center.x + CALISTIR_OFFSET_X
+    btn_x = CALISTIR_X
     btn_y = center.y + CALISTIR_OFFSET_Y
     log.info(f'{name} badge: ({center.x}, {center.y})  ->  Calistir: ({btn_x}, {btn_y})')
 
