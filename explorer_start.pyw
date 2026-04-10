@@ -65,9 +65,9 @@ PANEL_REGION = (370, 62, 1088, 588)
 
 # "Calistir" butonunun sabit x koordinati (tum satirlar icin ayni sutun)
 # Badge center x her template'e gore farklı olabilir, bu yüzden x sabit kullanilir.
-# ATR ile dogrulanmistir: Calistir x=910
-CALISTIR_X       = 910
-CALISTIR_OFFSET_Y =  27   # Badge center y'den Calistir y'ye offset
+# Piksel analizi ile dogrulandi: buton x=886-940, TAM MERKEZ x=913
+CALISTIR_X        = 913
+CALISTIR_OFFSET_Y =  30   # Badge center y'den Calistir buton merkezine offset
 
 # Parametreler penceresi "Bitir" butonu (tum explorer'lar icin ayni konum)
 BITIR_X = 1220
