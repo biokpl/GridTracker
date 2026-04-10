@@ -63,11 +63,13 @@ pyautogui.PAUSE    = 0.05
 # (sol_x, ust_y, genislik, yukseklik)
 PANEL_REGION = (370, 62, 1088, 588)
 
-# "Calistir" butonunun sabit x koordinati (tum satirlar icin ayni sutun)
-# Badge center x her template'e gore farklı olabilir, bu yüzden x sabit kullanilir.
-# Piksel analizi ile dogrulandi: buton x=886-940, TAM MERKEZ x=913
-CALISTIR_X        = 913
-CALISTIR_OFFSET_Y =  30   # Badge center y'den Calistir buton merkezine offset
+# Calistir butonunun template dosyasi (tum satirlarda ayni gorunum)
+# Template match ile her satirda tam merkez bulunur — offset hesabina gerek kalmaz
+CALISTIR_TMPL = 'tmpl_calistir_btn.png'
+
+# Yedek: template bulunamazsa kullanilacak sabit deger (kullanici olcumu: x=926)
+CALISTIR_X        = 926
+CALISTIR_OFFSET_Y =  35   # badge center y'den yaklasik offset (yedek icin)
 
 # Parametreler penceresi "Bitir" butonu (tum explorer'lar icin ayni konum)
 BITIR_X = 1220
@@ -267,23 +269,58 @@ def step2_run_explorer(explorer):
     template_file = explorer['tmpl']
     log.info(f'Adim 2: {name} araniyor...')
 
-    center = find_template(template_file, confidence=0.80)
-    if not center:
+    # Badge'i bul — satirin yaklasik y konumunu ogrenmek icin
+    badge = find_template(template_file, confidence=0.80)
+    if not badge:
         log.info('Dusuk confidence ile tekrar deneniyor...')
-        center = find_template(template_file, confidence=0.65)
+        badge = find_template(template_file, confidence=0.65)
 
-    if not center:
+    if not badge:
         log.error(f'{name} satirinin template\'i bulunamadi: {template_file}')
         return False
 
-    btn_x = CALISTIR_X
-    btn_y = center.y + CALISTIR_OFFSET_Y
-    log.info(f'{name} badge: ({center.x}, {center.y})  ->  Calistir: ({btn_x}, {btn_y})')
+    log.info(f'{name} badge: ({badge.x}, {badge.y})')
+
+    # Calistir butonunu badge y'sine en yakin olani bul
+    btn_x, btn_y = _find_calistir_for_row(badge.y)
+    log.info(f'{name} Calistir: ({btn_x}, {btn_y})')
 
     click(btn_x, btn_y, wait=1.5)
     log.info(f'{name} Calistir tiklandi.')
     save_screenshot(f'{name}_parametreler_acildi')
     return True
+
+
+def _find_calistir_for_row(badge_y):
+    """
+    Explorer panelindeki tüm Çalıştır butonlarini bulur,
+    badge_y'ye en yakin olani dondurur.
+    Template bulunamazsa yedek koordinat hesaplar.
+    """
+    tmpl_path = SCRIPT_DIR / CALISTIR_TMPL
+    if not tmpl_path.exists():
+        log.warning(f'Calistir template yok: {CALISTIR_TMPL} — yedek koordinat kullaniliyor.')
+        return CALISTIR_X, badge_y + CALISTIR_OFFSET_Y
+
+    try:
+        import cv2  # noqa
+        btns = list(pyautogui.locateAllOnScreen(str(tmpl_path),
+                                                confidence=0.85,
+                                                region=PANEL_REGION))
+    except Exception as e:
+        log.warning(f'Calistir template araması hatasi: {e} — yedek koordinat kullaniliyor.')
+        return CALISTIR_X, badge_y + CALISTIR_OFFSET_Y
+
+    if not btns:
+        log.warning('Calistir template ekranda bulunamadi — yedek koordinat kullaniliyor.')
+        return CALISTIR_X, badge_y + CALISTIR_OFFSET_Y
+
+    # Badge y'sine en yakin butonu sec
+    closest = min(btns, key=lambda b: abs((b.top + b.height // 2) - badge_y))
+    cx = closest.left + closest.width  // 2
+    cy = closest.top  + closest.height // 2
+    log.info(f'  {len(btns)} Calistir bulundu, en yakin: ({cx},{cy})  badge_y={badge_y}')
+    return cx, cy
 
 
 # ════════════════════════════════════════════════════════════
