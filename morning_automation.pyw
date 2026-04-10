@@ -751,6 +751,21 @@ def run():
     # ── Adım 13: Son tıklama ─────────────────────────────────
     click(2026, 878)
 
+    # ── Adım 14: Explorer otomasyonu ─────────────────────────
+    explorer_script = SCRIPT_DIR / 'explorer_start.pyw'
+    if explorer_script.exists():
+        log.info('Adım 14: Explorer otomasyonu başlatılıyor...')
+        result = subprocess.run(
+            [sys.executable, str(explorer_script)],
+            cwd=str(SCRIPT_DIR),
+        )
+        if result.returncode == 0:
+            log.info('Explorer otomasyonu başarıyla tamamlandı.')
+        else:
+            log.warning(f'Explorer otomasyonu hata kodu ile bitti: {result.returncode}')
+    else:
+        log.warning(f'Explorer script bulunamadı: {explorer_script}')
+
     log.info('══════════════════════════════════════════')
     log.info('  SABAH OTOMASYONU TAMAMLANDI')
     log.info('══════════════════════════════════════════')
