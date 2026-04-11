@@ -31,7 +31,8 @@ self.addEventListener('push', e => {
     badge:   './icon-192.png',
     tag:     data.tag   || 'gridtracker',
     renotify: true,
-    vibrate: [200, 100, 200],
+    silent:  false,
+    vibrate: [300, 100, 300, 100, 300],
     data:    data
   };
   e.waitUntil(self.registration.showNotification(title, options));
