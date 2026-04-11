@@ -267,7 +267,7 @@ def handle_dialogs():
 
     for attempt in range(30):
         # ── Uyarı: template ile bul ve tıkla ──────────────────
-        center = _locate_template('uyari_eski_btn.png', confidence=0.60)
+        center = _locate_template('uyari_eski_btn.png', confidence=0.75)
         if center:
             pyautogui.click(center)
             log.info(f'Uyarı #{attempt+1}: "Eski Versiyon İle Devam Et" tıklandı @ {center}')
