@@ -785,11 +785,11 @@ if __name__ == '__main__':
                         help='Hafta sonu/tatil kontrolünü atla (test için)')
     args = parser.parse_args()
 
+    global FORCE_NOW
     if args.test:
         DRY_RUN = True
         log.info('TEST MODU — Mouse hareketi yok')
     if args.now:
-        global FORCE_NOW
         FORCE_NOW = True
         log.info('--now: Hafta sonu/tatil kontrolü atlanıyor')
 
