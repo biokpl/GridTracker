@@ -27,6 +27,7 @@ for _pkg in ['pyautogui', 'pygetwindow', 'pillow']:
 
 import pyautogui
 import pygetwindow as gw
+import pyperclip
 
 # ── Argümanlar ───────────────────────────────────────────────
 ap = argparse.ArgumentParser()
@@ -396,19 +397,21 @@ def step5_export(explorer):
 
     save_screenshot(f'{name}_dosya_diyalogu')
 
-    # 3. Windows dosya kayit diyalogu
-    log.info(f'Dosya adi yaziliyor: {filename}')
+    # 3. Windows dosya kayit diyalogu — tam yol yaz (klasör ne olursa olsun)
+    full_path = str(SCRIPT_DIR / filename)
+    log.info(f'Dosya yolu yaziliyor: {full_path}')
     if not DRY_RUN:
         pyautogui.hotkey('ctrl', 'a')
         time.sleep(0.2)
-        pyautogui.typewrite(filename, interval=0.05)
+        pyperclip.copy(full_path)
+        pyautogui.hotkey('ctrl', 'v')
         time.sleep(0.3)
         pyautogui.press('enter')   # Kaydet
         time.sleep(1)
         pyautogui.press('enter')   # Ustune yaz onay
         time.sleep(1)
     else:
-        log.info(f'[DRY] Dosya adi yazilacakti: {filename} + 2x Enter')
+        log.info(f'[DRY] Dosya yolu yazilacakti: {full_path} + 2x Enter')
         time.sleep(2)
 
     save_screenshot(f'{name}_dosya_kaydedildi')
