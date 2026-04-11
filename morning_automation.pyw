@@ -107,8 +107,7 @@ logging.basicConfig(
 log = logging.getLogger('MorningAuto')
 
 DESKTOP  = Path.home() / 'Desktop'
-DRY_RUN   = False   # --test argümanı ile True olur
-FORCE_NOW = False   # --now argümanı ile True olur (hafta sonu/tatil atla)
+DRY_RUN  = False   # --test argümanı ile True olur
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -663,7 +662,7 @@ def run():
     log.info('  SABAH OTOMASYONU BAŞLIYOR')
     log.info('══════════════════════════════════════════')
 
-    if not FORCE_NOW and check_skip_today():
+    if check_skip_today():
         return
 
     # ── Adım 1: MatriksIQ'yu başlat ────────────────────────
@@ -781,16 +780,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='MatriksIQ Sabah Otomasyonu')
     parser.add_argument('--test', action='store_true',
                         help='Adımları logla, mouse hareketi yapma')
-    parser.add_argument('--now', action='store_true',
-                        help='Hafta sonu/tatil kontrolünü atla (test için)')
     args = parser.parse_args()
 
     if args.test:
         DRY_RUN = True
         log.info('TEST MODU — Mouse hareketi yok')
-    if args.now:
-        FORCE_NOW = True
-        log.info('--now: Hafta sonu/tatil kontrolü atlanıyor')
 
     try:
         run()
