@@ -1398,11 +1398,11 @@ select.field-input option{background:var(--surface2);}
       <div class="gc-field-row" style="margin-bottom:3px;margin-top:8px">
         <div style="flex:1;min-width:0">
           <div class="gc-label" style="text-align:center">DESTEK (₺)</div>
-          <input class="field-input" id="gc-sup" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;padding:4px 8px;font-size:12px;height:auto;border-bottom:1px solid transparent;border-image:linear-gradient(90deg,transparent 5%,rgba(248,113,113,.15) 17%,rgba(248,113,113,.55) 50%,rgba(248,113,113,.15) 83%,transparent 95%) 0 0 1 0;box-shadow:0 4px 8px rgba(248,113,113,.08),0 6px 14px rgba(248,113,113,.04)" oninput="this.value=this.value.replace(/,/g,'.')" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur();$('gc-res').focus();}">
+          <input class="field-input" id="gc-sup" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;padding:4px 8px;font-size:12px;height:auto;border-bottom:1px solid transparent;border-image:linear-gradient(90deg,transparent 5%,rgba(248,113,113,.15) 17%,rgba(248,113,113,.55) 50%,rgba(248,113,113,.15) 83%,transparent 95%) 0 0 1 0;box-shadow:0 4px 8px rgba(248,113,113,.08),0 6px 14px rgba(248,113,113,.04)" oninput="this.value=this.value.replace(/,/g,'.')" onblur="(function(el){const v=parseFloat(el.value);if(!isNaN(v)){const p=parseFloat(($('gc-price').value||'').replace(',','.')||v;const t=getBistTickSize(p);el.value=parseFloat((Math.round(v/t)*t).toFixed(10));}})(this)" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur();$('gc-res').focus();}">
         </div>
         <div style="flex:1;min-width:0">
           <div class="gc-label" style="text-align:center">DİRENÇ (₺)</div>
-          <input class="field-input" id="gc-res" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;padding:4px 8px;font-size:12px;height:auto;border-top:1px solid transparent;border-image:linear-gradient(90deg,transparent 5%,rgba(74,222,128,.15) 17%,rgba(74,222,128,.55) 50%,rgba(74,222,128,.15) 83%,transparent 95%) 1 0 0 0;box-shadow:0 -4px 8px rgba(74,222,128,.08),0 -6px 14px rgba(74,222,128,.04)" oninput="this.value=this.value.replace(/,/g,'.')" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur();$('gc-atr').focus();}">
+          <input class="field-input" id="gc-res" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" style="width:100%;padding:4px 8px;font-size:12px;height:auto;border-top:1px solid transparent;border-image:linear-gradient(90deg,transparent 5%,rgba(74,222,128,.15) 17%,rgba(74,222,128,.55) 50%,rgba(74,222,128,.15) 83%,transparent 95%) 1 0 0 0;box-shadow:0 -4px 8px rgba(74,222,128,.08),0 -6px 14px rgba(74,222,128,.04)" oninput="this.value=this.value.replace(/,/g,'.')" onblur="(function(el){const v=parseFloat(el.value);if(!isNaN(v)){const p=parseFloat(($('gc-price').value||'').replace(',','.')||v;const t=getBistTickSize(p);el.value=parseFloat((Math.round(v/t)*t).toFixed(10));}})(this)" onfocus="this.select()" onkeydown="if(event.key==='Enter'){this.blur();$('gc-atr').focus();}">
         </div>
       </div>
       <div id="gc-sr-alts" style="display:none;margin-bottom:5px;flex-direction:row;gap:4px"></div>
@@ -6656,8 +6656,11 @@ function gcSelectAtr(key,val){
 }
 
 function _applySR(sym, sup, res, btn, origText, mode){
-  $('gc-sup').value=sup;
-  $('gc-res').value=res;
+  const _srPrice=parseFloat(($('gc-price').value||'').replace(',','.'))||((sup+res)/2);
+  const _srTick=getBistTickSize(_srPrice);
+  const _fx2=v=>parseFloat((Math.round(v/_srTick)*_srTick).toFixed(10));
+  $('gc-sup').value=_fx2(sup);
+  $('gc-res').value=_fx2(res);
   window._gcDirty=true;
   window._gcSRMode=mode;
   ['gc-sr-btn','gc-sr-btn2','gc-sr-btn3'].forEach(id=>{
