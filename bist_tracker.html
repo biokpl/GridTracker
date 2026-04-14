@@ -7080,9 +7080,10 @@ function renderGridResults(b,support,resistance,atr,capital,commFrac,currentPric
     if(trigExact) trigExact.textContent='~'+triggers+' / Gün';
   }
 
-  // Al/Sat dağılımı — bar
+  // Al/Sat dağılımı — bar; her seviye tick'e hizalanır
+  const tick=getBistTickSize(currentPrice>0?currentPrice:(support+resistance)/2);
   const levels=[];
-  for(let i=b.N;i>=0;i--) levels.push(support+i*b.d);
+  for(let i=b.N;i>=0;i--) levels.push(roundToTick(support+i*b.d,tick));
   const buyLevels=levels.filter(p=>p<splitRef);
   const sellLevels=levels.filter(p=>p>=splitRef);
   const total=levels.length;
