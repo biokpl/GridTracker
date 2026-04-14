@@ -6497,7 +6497,7 @@ function renderHTrack(){
   $('h-track-fill').style.width=pctClamped+'%';
   $('h-track-fill').className='h-track-fill'+(done?' done':'');
   const tv=Math.round(total)||0;
-  $('h-track-txt').textContent=done?'Hedefe ulaşıldı!':fxi(tv)+' / '+fxi(trackTarget)+' ₺  (gerçekleşmiş kar)';
+  $('h-track-txt').textContent=done?'Hedefe ulaşıldı!':fxi(tv)+' ₺ / '+fxi(trackTarget)+' ₺   —   %'+rawPct;
   $('h-track-pct').textContent='%'+rawPct;
   $('h-track-pct').className='h-track-pct'+(done?' done':'');
   ht.style.display='block';
