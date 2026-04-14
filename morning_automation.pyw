@@ -412,11 +412,12 @@ def navigate_to_ceptel():
 
     for attempt in range(3):
         bring_to_front('Vivaldi')
-        time.sleep(0.5)
+        time.sleep(2.0)                      # Vivaldi tam hazır olsun
         pyautogui.hotkey('ctrl', 'l')        # Adres çubuğuna odaklan
-        time.sleep(0.8)
+        time.sleep(1.5)                      # Adres çubuğu aktif olsun
+        pyperclip.copy(MESSAGES_URL)         # URL'yi panoya kopyala
         pyautogui.hotkey('ctrl', 'a')        # Mevcut URL'yi seç
-        pyautogui.typewrite(MESSAGES_URL, interval=0.03)
+        pyautogui.hotkey('ctrl', 'v')        # Yapıştır (typewrite yerine)
         time.sleep(0.3)
         pyautogui.press('enter')
         log.info(f'Sayfa yükleniyor (10 saniye)... (deneme {attempt+1}/3)')
@@ -752,6 +753,7 @@ def run():
     click(2026, 878)
 
     # ── Adım 14: Explorer otomasyonu ─────────────────────────
+    explorer_ok = True
     explorer_script = SCRIPT_DIR / 'explorer_start.pyw'
     if explorer_script.exists():
         log.info('Adım 14: Explorer otomasyonu başlatılıyor...')
@@ -761,15 +763,23 @@ def run():
         )
         if result.returncode == 0:
             log.info('Explorer otomasyonu başarıyla tamamlandı.')
+        elif result.returncode == 2:
+            log.warning('Explorer otomasyonu kısmen tamamlandı (bazı explorer\'lar başarısız).')
+            explorer_ok = False
         else:
-            log.warning(f'Explorer otomasyonu hata kodu ile bitti: {result.returncode}')
+            log.warning(f'Explorer otomasyonu başarısız (kod: {result.returncode}).')
+            explorer_ok = False
     else:
         log.warning(f'Explorer script bulunamadı: {explorer_script}')
+        explorer_ok = False
 
     log.info('══════════════════════════════════════════')
     log.info('  SABAH OTOMASYONU TAMAMLANDI')
     log.info('══════════════════════════════════════════')
-    _send_notify('☀️ Sabah Otomasyonu Tamamlandı', 'MatriksIQ botları başarıyla başlatıldı.', 'morning-done')
+    if explorer_ok:
+        _send_notify('☀️ Sabah Otomasyonu Tamamlandı', 'Tüm adımlar başarıyla tamamlandı.', 'morning-done')
+    else:
+        _send_notify('⚠️ Sabah Otomasyonu - Sorun', 'Explorer adımı tamamlanamadı, kontrol edin.', 'morning-warn')
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

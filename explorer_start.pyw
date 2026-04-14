@@ -479,31 +479,49 @@ def run():
         return False
 
     basari = 0
+    MAX_DENEME = 2
     for explorer in EXPLORERS:
         name = explorer['name']
+        tamamlandi = False
 
-        # Adim 2: Explorer listesinde Calistir'a tikla
-        if not step2_run_explorer(explorer):
-            log.warning(f'{name} atlandi (Calistir bulunamadi).')
-            continue
+        for deneme in range(1, MAX_DENEME + 1):
+            if deneme > 1:
+                log.info(f'{name} yeniden deneniyor ({deneme}/{MAX_DENEME})...')
+                time.sleep(5)
 
-        # Adim 3: Parametreler penceresinde Bitir'e tikla
-        step3_click_bitir(name)
+            # Adim 2: Explorer listesinde Calistir'a tikla
+            if not step2_run_explorer(explorer):
+                log.warning(f'{name} atlandi (Calistir bulunamadi) — deneme {deneme}.')
+                continue
 
-        # Adim 4: Sonuclar penceresi acilana kadar bekle
-        if not step4_wait_for_results(name):
-            log.warning(f'{name} sonuc penceresi acilamadi (timeout).')
-            continue
+            # Adim 3: Parametreler penceresinde Bitir'e tikla
+            step3_click_bitir(name)
 
-        # Adim 5: Export et, Oneri kapat, sonrasi tiklama
-        if step5_export(explorer):
-            basari += 1
-            log.info(f'{name} basariyla tamamlandi.')
-        else:
-            log.warning(f'{name} export adiminda sorun olustu.')
+            # Adim 4: Sonuclar penceresi acilana kadar bekle
+            if not step4_wait_for_results(name):
+                log.warning(f'{name} sonuc penceresi acilamadi (timeout) — deneme {deneme}.')
+                continue
 
-    log.info(f'Tamamlandi: {basari}/{len(EXPLORERS)} explorer tamamlandi.')
-    return basari == len(EXPLORERS)
+            # Adim 5: Export et, Oneri kapat, sonrasi tiklama
+            if step5_export(explorer):
+                basari += 1
+                log.info(f'{name} basariyla tamamlandi.')
+                tamamlandi = True
+                break
+            else:
+                log.warning(f'{name} export adiminda sorun olustu — deneme {deneme}.')
+
+        if not tamamlandi:
+            log.error(f'{name} {MAX_DENEME} denemede de tamamlanamadi.')
+
+    toplam = len(EXPLORERS)
+    log.info(f'Tamamlandi: {basari}/{toplam} explorer tamamlandi.')
+    if basari == toplam:
+        sys.exit(0)       # Tam basari
+    elif basari > 0:
+        sys.exit(2)       # Kismi basari
+    else:
+        sys.exit(1)       # Tum explorer basarisiz
 
 
 if __name__ == '__main__':
