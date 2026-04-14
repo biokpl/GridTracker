@@ -6418,7 +6418,7 @@ function renderMonthly(){
     tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">◫</div><div class="empty-text">Bu ay veri yok</div></div></td></tr>`; return;
   }
   $('m-days').textContent=bistDayCount(S.month.y,S.month.m)+'. İşlem Günü';
-  const mset=(id,v)=>{const e=$(id);if(!e)return;e.textContent=v?fx(v)+' ₺':'—';e.className='kpi-val '+(v>0?'pos':v<0?'neg':'');};
+  const mset=(id,v)=>{const e=$(id);if(!e)return;e.textContent=v?fxi(v)+' ₺':'—';e.className='kpi-val '+(v>0?'pos':v<0?'neg':'');};
   mset('m-gross',st.gross); $('m-comm').textContent=st.comm?fx(st.comm)+' ₺':'—'; mset('m-net',st.net);
   const avg=st.tdays?st.net/st.tdays:0;
   const ea=$('m-avg'); if(ea){ea.textContent=avg?fx(avg)+' ₺':'—';ea.className='kpi-val kpi-muted';}
@@ -6472,9 +6472,9 @@ function renderMonthly(){
     return `<tr style="${rowBg}">
       <td style="color:#7b92b5;font-weight:600">${(d.date||'').slice(5).replace('-','.')}${badge}</td>
       <td class="td-dim">${d.trades!=null?d.trades:'—'}</td>
-      <td class="${d.grossProfit>0?'td-pos':d.grossProfit<0?'td-neg':''}">${d.grossProfit?fxs(d.grossProfit):'—'}</td>
+      <td class="${d.grossProfit>0?'td-pos':d.grossProfit<0?'td-neg':''}">${d.grossProfit?fxsi(d.grossProfit):'—'}</td>
       <td class="td-amb">${d.commission?fx(d.commission):'—'}</td>
-      <td class="${nc}" style="font-weight:600">${d.netProfit?fxs(d.netProfit):'—'}</td>
+      <td class="${nc}" style="font-weight:600">${d.netProfit?fxsi(d.netProfit):'—'}</td>
       <td style="color:#4e6080">${d.overall?fxi(d.overall)+'₺':'—'}</td>
     </tr>`;
   }).join('');
@@ -6497,7 +6497,7 @@ function renderHTrack(){
   $('h-track-fill').style.width=pctClamped+'%';
   $('h-track-fill').className='h-track-fill'+(done?' done':'');
   const tv=Math.round(total)||0;
-  $('h-track-txt').textContent=done?'Hedefe ulaşıldı!':fxi(tv)+' ₺ / '+fxi(trackTarget)+' ₺   —   %'+rawPct;
+  $('h-track-txt').textContent=done?'Hedefe ulaşıldı!':fxi(tv)+' ₺ / '+fxi(trackTarget)+' ₺';
   $('h-track-pct').textContent='%'+rawPct;
   $('h-track-pct').className='h-track-pct'+(done?' done':'');
   ht.style.display='block';
@@ -6569,7 +6569,7 @@ function renderGridCalcPage(){
         ab.style.opacity='';
       }
     }
-    if(!window._gcCalcTs||Date.now()-window._gcCalcTs>3000) calcGridBot();
+    if(!window._gcFixedMode&&(!window._gcCalcTs||Date.now()-window._gcCalcTs>3000)) calcGridBot();
   }
 }
 
@@ -6952,6 +6952,7 @@ function roundToTick(value,tick){
 }
 
 function calcGridBot(){
+  window._gcFixedMode=false;
   const sym=($('gc-sym').value||'').toUpperCase().trim();
   const capital=parseInt(($('gc-cap').value||'').replace(/[^\d]/g,''))||0;
   const support=parseFloat(($('gc-sup').value||'').replace(',','.'))||0;
@@ -7052,6 +7053,7 @@ function calcGridBotFixed(fixedD){
   const used=lots*capPerLot;
   const util=used/capital*100;
   const result={N,d,lots,net,daily,used,util,sellLevels,buyLevels};
+  window._gcFixedMode=true;
   renderGridResults(result,support,resistance,atr,capital,commFrac,currentPrice);
 }
 
