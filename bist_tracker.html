@@ -7067,7 +7067,7 @@ function renderGridResults(b,support,resistance,atr,capital,commFrac,currentPric
   const triggers=(atr/b.d).toFixed(1).replace('.',',');
   const heroSub=$('gc-hero-sub');
   heroSub.innerHTML='<span>~'+triggers+' / Gün tetiklenme</span>';
-  $('gc-n').textContent=b.N+' Grid';
+  $('gc-n').textContent=(b.N+1)+' Grid';
   $('gc-d').textContent=fx2(b.d)+' ₺';
   $('gc-lots').textContent=b.lots.toLocaleString('tr-TR')+' Lot';
   $('gc-used').textContent=fxi(b.used)+' ₺';
