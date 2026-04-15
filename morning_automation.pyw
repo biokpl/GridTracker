@@ -248,49 +248,17 @@ def _locate_template(template_name, confidence=0.75, region=None):
         return None
 
 
-def _find_tamam_anywhere():
-    """
-    Ekranda görünür tüm üst düzey pencerelerde 'Tamam' çocuk butonu arar.
-    Bulursa (hwnd, merkez_x, merkez_y) döner; bulamazsa (None, None, None).
-    """
-    import win32gui
-    result = {'hwnd': None, 'cx': None, 'cy': None}
-
-    def _check(hwnd, _):
-        if not win32gui.IsWindowVisible(hwnd):
-            return True
-        child = _find_child_button(hwnd, 'Tamam')
-        if child and win32gui.IsWindowVisible(child):
-            rect = win32gui.GetWindowRect(child)
-            result['hwnd'] = child
-            result['cx']   = (rect[0] + rect[2]) // 2
-            result['cy']   = (rect[1] + rect[3]) // 2
-            return False
-        return True
-
-    try:
-        win32gui.EnumWindows(_check, None)
-    except Exception:
-        pass
-    return result['hwnd'], result['cx'], result['cy']
-
-
-def _tamam_still_open():
-    """Ekranda görünür 'Tamam' butonu olan bir pencere hala açık mı?"""
-    hwnd, _, _ = _find_tamam_anywhere()
-    return hwnd is not None
-
-
 def handle_dialogs():
     """
-    MatriksIQ dialog döngüsü:
-      Aşama 1 — Uyarı 'Eski Versiyon İle Devam Et': 0 veya daha fazla çıkabilir.
-                Template ile bulunur, her biri tıklanır.
-      Aşama 2 — Bilgi 'Tamam': HER ZAMAN çıkar (uyari_sayisi=0 olsa da).
-                Birincil: win32gui ile 'Tamam' butonu bulunup tıklanır.
-                Yedek  : son_uyari_pos+offset, ardından mouse+100.
-                Doğrulama: tıklama sonrası dialog kapandı mı kontrol edilir.
-                Max 3 deneme.
+    MatriksIQ dialog döngüsü (template tabanlı — uyarı ile aynı yöntem):
+      Aşama 1 — Uyarı 'Eski Versiyon İle Devam Et':
+                 0 veya daha fazla kez çıkabilir.
+                 uyari_eski_btn.png template ile bulunur, her biri tıklanır.
+      Aşama 2 — Bilgi 'Tamam':
+                 HER ZAMAN çıkar (uyari_sayisi=0 olsa da).
+                 tamam_btn.png template ile bulunur (birincil yöntem).
+                 Template yoksa / bulunamazsa son_uyari_pos+offset yedek devreye girer.
+                 Max 3 deneme, her denemede 2s bekleme.
     """
     if DRY_RUN:
         log.info('[DRY] Dialog döngüsü: Uyarı×N → Bilgi → Tamam')
@@ -298,7 +266,7 @@ def handle_dialogs():
 
     log.info('Dialog döngüsü başladı...')
 
-    # ── Aşama 1: Uyarı döngüsü ────────────────────────────────────────────
+    # ── Aşama 1: Uyarı döngüsü ──────────────────────────────────────────
     uyari_sayisi = 0
     son_uyari_pos = None
     for _ in range(10):    # güvenlik sınırı: en fazla 10 uyarı
@@ -316,46 +284,66 @@ def handle_dialogs():
             log.info(f'Uyarı penceresi kalmadı ({uyari_sayisi} adet işlendi).')
             break
 
-    # ── Aşama 2: Bilgi → Tamam ────────────────────────────────────────────
+    # ── Aşama 2: Bilgi → Tamam ──────────────────────────────────────────
     # Bilgi penceresi her zaman çıkar; son uyarıdan sonra 2s bekle
-    log.info('Bilgi penceresi bekleniyor (2s)...')
+    log.info('Bilgi/Tamam penceresi bekleniyor (2s)...')
     time.sleep(2)
+
+    tamam_tmpl = SCRIPT_DIR / 'tamam_btn.png'
+    has_tamam_tmpl = tamam_tmpl.exists()
+    if not has_tamam_tmpl:
+        log.warning('tamam_btn.png bulunamadı — offset yedek kullanılacak. '
+                    'Template oluşturmak için debug ekranı kaydediliyor...')
+        # Bilgi penceresi görünür durumdayken ekran görüntüsü al — template kesimi için
+        try:
+            pyautogui.screenshot(str(SCRIPT_DIR / 'debug_bilgi_dialog.png'))
+            log.info('debug_bilgi_dialog.png kaydedildi — bu görüntüden tamam_btn.png oluşturun.')
+        except Exception as e:
+            log.debug(f'Ekran görüntüsü alınamadı: {e}')
 
     for deneme in range(3):
         if deneme > 0:
             log.info(f'Tamam yeniden deneniyor ({deneme+1}/3)...')
             time.sleep(2)
 
-        # Yöntem 1: win32gui — en güvenilir
-        hwnd, cx, cy = _find_tamam_anywhere()
-        if hwnd:
-            pyautogui.click(cx, cy)
-            log.info(f'Bilgi/Tamam (win32gui) tıklandı @ ({cx},{cy})')
-            time.sleep(1.5)
-            if not _tamam_still_open():
-                log.info('Bilgi dialog başarıyla kapatıldı (win32gui).')
-                return
-            log.warning('win32gui tıklaması sonrası dialog hala açık, yedek yönteme geçiliyor...')
+        # Yöntem 1: tamam_btn.png template (uyarı_eski_btn.png ile aynı yaklaşım)
+        if has_tamam_tmpl:
+            center = _locate_template('tamam_btn.png', confidence=0.75)
+            if center:
+                pyautogui.click(center)
+                log.info(f'Bilgi/Tamam (template) tıklandı @ {center}')
+                time.sleep(1.5)
+                # Doğrulama: template hala görünüyor mu?
+                if not _locate_template('tamam_btn.png', confidence=0.75):
+                    log.info('Bilgi dialog başarıyla kapatıldı (template).')
+                    return
+                log.warning('Template tıklaması sonrası Tamam hala görünüyor...')
+                continue   # Tekrar dene
 
-        # Yöntem 2: son uyarı konumu + offset
+        # Yöntem 2: son uyarı konumu + offset (template yoksa veya bulunamazsa)
         if son_uyari_pos:
             tx = int(son_uyari_pos.x) - 12
             ty = int(son_uyari_pos.y) + 43
             pyautogui.click(tx, ty)
             log.info(f'Bilgi/Tamam (uyarı offset) tıklandı @ ({tx},{ty})')
             time.sleep(1.5)
-            if not _tamam_still_open():
+            # Offset yönteminde doğrulama: template varsa kontrol et
+            if has_tamam_tmpl and not _locate_template('tamam_btn.png', confidence=0.75):
                 log.info('Bilgi dialog kapatıldı (uyarı offset).')
                 return
+            elif not has_tamam_tmpl:
+                log.info('Bilgi/Tamam offset ile tıklandı (doğrulama template yok).')
+                return   # Template yoksa doğrulayamayız, devam et
 
-        # Yöntem 3: mevcut mouse konumu + 100 (eski yedek)
-        mx, my = pyautogui.position()
-        pyautogui.click(mx, my + 100)
-        log.info(f'Bilgi/Tamam (mouse+100) tıklandı @ ({mx},{my+100})')
-        time.sleep(1.5)
-        if not _tamam_still_open():
-            log.info('Bilgi dialog kapatıldı (mouse+100).')
-            return
+        # Yöntem 3: mevcut mouse + 100 (son çare)
+        else:
+            mx, my = pyautogui.position()
+            pyautogui.click(mx, my + 100)
+            log.info(f'Bilgi/Tamam (mouse+100) tıklandı @ ({mx},{my+100})')
+            time.sleep(1.5)
+            if not has_tamam_tmpl or not _locate_template('tamam_btn.png', confidence=0.75):
+                log.info('Bilgi/Tamam mouse+100 ile tıklandı.')
+                return
 
     log.warning('Tamam butonu 3 denemede tıklanamadı — handle_dialogs sona erdi.')
 
@@ -816,13 +804,15 @@ def run():
     # Bilgi (en son)           → 'Tamam'
     handle_dialogs()
 
-    # Dialog kapandı mı doğrula — hala açıksa uyarı bildirimi gönder
-    if not DRY_RUN and _tamam_still_open():
-        log.warning('Bilgi dialog handle_dialogs sonrası hala açık! Bildirim gönderiliyor.')
-        _send_notify('⚠️ Sabah Otomasyonu - Dialog Sorunu',
-                     'Bilgi penceresi kapatılamadı. Explorer başlatılamıyor olabilir.',
-                     'morning-dialog-warn')
-        time.sleep(2)
+    # Dialog kapandı mı doğrula — template varsa kontrol et
+    if not DRY_RUN:
+        tamam_tmpl = SCRIPT_DIR / 'tamam_btn.png'
+        if tamam_tmpl.exists() and _locate_template('tamam_btn.png', confidence=0.75):
+            log.warning('Bilgi dialog handle_dialogs sonrası hala açık! Bildirim gönderiliyor.')
+            _send_notify('⚠️ Sabah Otomasyonu - Dialog Sorunu',
+                         'Bilgi penceresi kapatılamadı. Explorer başlatılamıyor olabilir.',
+                         'morning-dialog-warn')
+            time.sleep(2)
 
     # ── Adım 13: Son tıklama ─────────────────────────────────
     click(2026, 878)
