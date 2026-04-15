@@ -1636,10 +1636,11 @@ def read_file2(path):
 # ──────────────────────────────────────────────────────────
 def calc_profit(trades, carried_over=None):
     """
-    FIFO eşleştirme.
+    Fiyat bazlı eşleştirme (Grid Bot mantığı).
     carried_over : {sembol: [önceki günden devredilen eşleşmemiş alış işlemleri]}
-    Kural: devredilen alışın komisyonu dünkü hesapta zaten düşüldü,
-           bugün tekrar sayılmaz; yalnızca bugünkü satış komisyonu sayılır.
+    Kural: Her satış için satış fiyatından DÜŞÜK alışları tercih et
+           (en yakın düşük fiyat önce). Düşük alış yoksa en düşük fiyatlı alışı kullan.
+           Devredilen alışın komisyonu dünkü hesapta zaten düşüldü, bugün tekrar sayılmaz.
     """
     if carried_over is None:
         carried_over = {}
@@ -1657,19 +1658,28 @@ def calc_profit(trades, carried_over=None):
         today_buys  = [t for t in sym_trades if t['type'] == 'Alış']
         today_sells = [t for t in sym_trades if t['type'] == 'Satış']
 
-        # FIFO kuyruğu: önceki günden devredenler önce, sonra bugünkü alışlar
+        # Alış havuzu: önceki günden devredenler + bugünkü alışlar
         carried   = [dict(t, carryover=True)  for t in carried_over.get(sym, [])]
         buy_queue = carried + list(today_buys)
 
         pairs = []
         for sell in today_sells:
             sell_remaining = sell['execQty']
-            sell_cpl = sell['commission'] / sell['execQty']  # komisyon / lot
+            sell_price     = sell['execPrice']
+            sell_cpl       = sell['commission'] / sell['execQty']  # komisyon / lot
 
             while sell_remaining > 0 and buy_queue:
-                buy       = buy_queue[0]
+                # Grid bot mantığı: satış fiyatından DÜŞÜK alışları tercih et,
+                # en yakın (en yüksek) düşük fiyat önce. Düşük alış yoksa en düşük fiyatlı.
+                lower = [(i, b) for i, b in enumerate(buy_queue)
+                         if b['execPrice'] < sell_price]
+                if lower:
+                    idx, buy = max(lower, key=lambda x: x[1]['execPrice'])
+                else:
+                    idx, buy = min(enumerate(buy_queue), key=lambda x: x[1]['execPrice'])
+
                 match_qty = min(buy['execQty'], sell_remaining)
-                gross     = (sell['execPrice'] - buy['execPrice']) * match_qty
+                gross     = (sell_price - buy['execPrice']) * match_qty
 
                 # Orantılı komisyon: satış tarafı her zaman, alış tarafı devredilmemişse
                 buy_cpl  = buy['commission'] / buy['execQty']
@@ -1679,7 +1689,7 @@ def calc_profit(trades, carried_over=None):
 
                 pairs.append({
                     'buyPrice':  round(buy['execPrice'],  4),
-                    'sellPrice': round(sell['execPrice'], 4),
+                    'sellPrice': round(sell_price,        4),
                     'qty':       match_qty,
                     'gross':     round(gross,      4),
                     'comm':      round(pair_comm,  4),
@@ -1693,10 +1703,10 @@ def calc_profit(trades, carried_over=None):
                 sell_remaining -= match_qty
 
                 if match_qty >= buy['execQty']:
-                    buy_queue.pop(0)          # alış tamamen tükendi
+                    buy_queue.pop(idx)        # alış tamamen tükendi
                 else:
                     # Alış kısmen tükendi → kalan miktarı güncelle
-                    buy_queue[0] = dict(buy,
+                    buy_queue[idx] = dict(buy,
                         execQty=buy['execQty'] - match_qty,
                         commission=buy_cpl * (buy['execQty'] - match_qty)
                     )
