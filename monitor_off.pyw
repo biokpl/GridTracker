@@ -2,25 +2,27 @@
 # -*- coding: utf-8 -*-
 """
 monitor_off.pyw
-Samsung LS49AG95 fiziksel monitörünü sabah otomasyonundan önce kapat.
-09:11'de çalışır, iş günleri + arife günleri (hafta sonu/tatilde atlar).
+Samsung LS49AG95 fiziksel monitörünü sabah otomasyonundan önce kapat ve izle.
 
-Birincil yöntem : SetDisplayConfig  — Samsung'u Windows aktif ekran listesinden çıkarır.
-                  Bu sayede AnyDesk fare/klavye olayları monitörü uyandıramaz.
-İkincil yöntem  : DDC/CI            — Ekrana fiziksel güç kapatma sinyali gönderir.
+─ Kapatma (09:11, iş günleri)
+    SetDisplayConfig ile Samsung Windows aktif listesinden çıkarılır.
+    AnyDesk fare/klavye olayları artık monitörü uyandıramaz.
 
-Geri açma      : --restore          — Samsung'u extend modunda yeniden aktif eder.
-                  Zamanlanmış görev  MatriksIQ_Monitor_Ac  16:55'te otomatik açar.
-                  Masaüstü kısayolu  "Monitörü Geri Aç.lnk" ile elle açılabilir.
+─ Otomatik geri açma (arka plan watcher)
+    Windows login'de otomatik başlar (Registry autostart).
+    Kullanıcı fiziksel güç tuşuna basınca HPD algılanır (QDC_ALL_PATHS targetAvailable),
+    SetDisplayConfig restore çağrılır — ekranda masaüstü belirir.
+    Klavye kısayolu veya masaüstü kısayoluna gerek yok.
 
 Kullanım:
-  pythonw monitor_off.pyw            # Ekranı kapat (09:11 göreviyle)
-  python  monitor_off.pyw --restore  # Samsung'u geri aç (extend modu)
-  python  monitor_off.pyw --setup    # İki Task Scheduler görevi + masaüstü kısayolu
-  python  monitor_off.pyw --test     # Hafta sonu/tatil atlamasız, direkt kapat
+  pythonw monitor_off.pyw            # Ekranı kapat (09:11 göreviyle çalışır)
+  pythonw monitor_off.pyw --watch    # Watcher — arka planda HPD izle (login'de otomatik)
+  python  monitor_off.pyw --restore  # Elle geri aç (extend modu)
+  python  monitor_off.pyw --setup    # Task Scheduler + Registry autostart + kısayol
+  python  monitor_off.pyw --test     # Tatil atlamasız, direkt kapat (test)
 """
 
-import sys, time, logging, subprocess, argparse, ctypes, gc
+import sys, time, logging, subprocess, argparse, ctypes
 import ctypes.wintypes as wt
 from ctypes import Structure, byref, sizeof, c_wchar
 from pathlib import Path
@@ -43,23 +45,27 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-TASK_NAME_OFF     = 'MatriksIQ_Monitor_Kapat'
-TASK_NAME_RESTORE = 'MatriksIQ_Monitor_Ac'
-TASK_TIME_OFF     = '09:11'
-TASK_TIME_RESTORE = '16:55'          # Eve dönme öncesi Samsung'u geri aç
 SCRIPT_DIR        = Path(__file__).parent
-TARGET_MODEL      = 'LS49AG95'       # Hedef monitör (kısmi eşleşme, case-insensitive)
-STARTUP_DELAY_SEC = 20               # Sistem sürücüleri yüklensin
+TARGET_MODEL      = 'LS49AG95'       # Hedef monitör (kısmi, case-insensitive)
+STARTUP_DELAY_SEC = 20               # Boot sonrası sürücülerin yüklenmesi için
+
+TASK_NAME_OFF     = 'MatriksIQ_Monitor_Kapat'
+TASK_TIME_OFF     = '09:11'
+
+# Watcher ayarları
+DISABLED_FLAG          = SCRIPT_DIR / '.samsung_disabled'
+POLL_INTERVAL_SEC      = 8           # Her N saniyede bir QDC_ALL_PATHS kontrol
+WAIT_AFTER_DISABLE_SEC = 180         # Samsung "No Signal" sonrası kapanır; en az 3dk bekle
 
 
 # ══════════════════════════════════════════════════════════════════════
 #  BÖLÜM 1 — Tatil kontrolü
 # ══════════════════════════════════════════════════════════════════════
 
-def check_skip_today():
+def check_skip_today() -> bool:
     """
     Bugün hafta sonu veya Türkiye resmi/dini tatili ise True döner.
-    Arife günleri tatil sayılmaz — sabah otomasyonu arife günleri de çalışır.
+    Arife günleri tatil sayılmaz (sabah otomasyonu arife günleri de çalışır).
     """
     import holidays as _holidays
     today = date.today()
@@ -74,15 +80,13 @@ def check_skip_today():
 
 
 # ══════════════════════════════════════════════════════════════════════
-#  BÖLÜM 2 — Windows SetDisplayConfig (BİRİNCİL yöntem)
+#  BÖLÜM 2 — Windows SetDisplayConfig
 # ══════════════════════════════════════════════════════════════════════
 #
-#  SetDisplayConfig ile Samsung ekranı Windows'un aktif listesinden çıkarıyoruz.
-#  Artık Windows o ekrana hiç sinyal göndermez; AnyDesk fare/klavye olayları
-#  DPMS wake tetikleyemez çünkü ekran Windows için "yok" sayılıyor.
-#
-#  Geri açmak: SetDisplayConfig(SDC_TOPOLOGY_EXTEND) ile tüm ekranları extend
-#  modunda yeniden aktif et.  Bu --restore / 16:55 görevi ile yapılır.
+#  Kapatma  : Samsung'u Windows aktif ekran listesinden çıkar.
+#             Windows artık o porta sinyal göndermez → AnyDesk uyandıramaz.
+#  Geri açma: SDC_TOPOLOGY_EXTEND ile tüm ekranları extend modunda aç.
+#  Algılama : QDC_ALL_PATHS + targetAvailable → Samsung fiziksel durumu.
 # ──────────────────────────────────────────────────────────────────────
 
 # ── ctypes yapıları ────────────────────────────────────────────────────
@@ -111,7 +115,7 @@ class _PATH_TARGET_INFO(Structure):
         ('scaling',          wt.UINT),
         ('refreshRate',      _RATIONAL),
         ('scanLineOrdering', wt.UINT),
-        ('targetAvailable',  wt.BOOL),
+        ('targetAvailable',  wt.BOOL),   # Fiziksel varlık bayrağı
         ('statusFlags',      wt.UINT),
     ]
 
@@ -123,7 +127,7 @@ class _PATH_INFO(Structure):
     ]
 
 class _MODE_INFO(Structure):
-    # infoType(4) + id(4) + adapterId(8) + union(max 48 = TARGET_MODE)  → 64 byte
+    # infoType(4) + id(4) + adapterId(8) + union(max 48=TARGET_MODE) = 64 byte
     _fields_ = [
         ('infoType',   wt.UINT),
         ('id',         wt.UINT),
@@ -152,148 +156,130 @@ class _TARGET_DEVICE_NAME(Structure):
     ]
 
 # Windows sabitleri
-_QDC_ONLY_ACTIVE_PATHS             = 0x00000002
-_SDC_USE_SUPPLIED_DISPLAY_CONFIG   = 0x00000020
-_SDC_APPLY                         = 0x00000080
-_SDC_NO_OPTIMIZATION               = 0x00000100
-_SDC_SAVE_TO_DATABASE              = 0x00000200
-_SDC_ALLOW_CHANGES                 = 0x00000400
-_SDC_TOPOLOGY_EXTEND               = 0x00000004
-_DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME = 2
-_ERROR_SUCCESS                     = 0
+_QDC_ONLY_ACTIVE_PATHS           = 0x00000002
+_QDC_ALL_PATHS                   = 0x00000001
+_SDC_USE_SUPPLIED_DISPLAY_CONFIG = 0x00000020
+_SDC_APPLY                       = 0x00000080
+_SDC_SAVE_TO_DATABASE            = 0x00000200
+_SDC_ALLOW_CHANGES               = 0x00000400
+_SDC_TOPOLOGY_EXTEND             = 0x00000004
+_DISPLAYCONFIG_INFO_GET_TARGET   = 2
+_ERROR_SUCCESS                   = 0
+
+
+def _find_samsung_in_paths(qdc_flags: int) -> tuple:
+    """
+    Verilen QDC flags ile QueryDisplayConfig çalıştır.
+    Samsung bulunursa (adapterId, targetId, targetAvailable) tuple döner, yoksa None.
+    QDC_ALL_PATHS ile targetAvailable=False olan yollar da dahildir.
+    """
+    user32 = ctypes.windll.user32
+    np, nm = wt.UINT(0), wt.UINT(0)
+    if user32.GetDisplayConfigBufferSizes(qdc_flags, byref(np), byref(nm)) != _ERROR_SUCCESS:
+        return None
+    paths = (_PATH_INFO * np.value)()
+    modes = (_MODE_INFO * nm.value)()
+    if user32.QueryDisplayConfig(qdc_flags, byref(np), paths, byref(nm), modes, None) != _ERROR_SUCCESS:
+        return None
+
+    for i in range(np.value):
+        p = paths[i]
+        ni = _TARGET_DEVICE_NAME()
+        ni.header.type                = _DISPLAYCONFIG_INFO_GET_TARGET
+        ni.header.size                = sizeof(_TARGET_DEVICE_NAME)
+        ni.header.adapterId.LowPart   = p.targetInfo.adapterId.LowPart
+        ni.header.adapterId.HighPart  = p.targetInfo.adapterId.HighPart
+        ni.header.id                  = p.targetInfo.id
+        r = user32.DisplayConfigGetDeviceInfo(byref(ni))
+        fname = ni.monitorFriendlyDeviceName if r == _ERROR_SUCCESS else ''
+        dpath = ni.monitorDevicePath         if r == _ERROR_SUCCESS else ''
+        if (TARGET_MODEL.lower() in fname.lower()
+                or TARGET_MODEL.lower() in dpath.lower()):
+            return (
+                (p.targetInfo.adapterId.LowPart, p.targetInfo.adapterId.HighPart),
+                p.targetInfo.id,
+                bool(p.targetInfo.targetAvailable),
+                np.value,
+                paths,
+                nm.value,
+                modes,
+            )
+    return None
+
+
+def _samsung_is_physically_on() -> bool:
+    """
+    QDC_ALL_PATHS ile Samsung targetAvailable=True mi?
+    True  → Samsung fiziksel olarak AÇIK (HPD hattı aktif).
+    False → Samsung fiziksel olarak KAPALI veya bulunamadı.
+    """
+    result = _find_samsung_in_paths(_QDC_ALL_PATHS)
+    if result is None:
+        return False
+    return result[2]  # targetAvailable
 
 
 def _win_disable_samsung() -> bool:
-    """
-    SetDisplayConfig ile Samsung LS49AG95 ekranını Windows aktif listesinden çıkar.
-    Başarılıysa True, herhangi bir hata/eşleşme yoksa False döner.
-    """
+    """Samsung'u Windows aktif ekran listesinden çıkar."""
     user32 = ctypes.windll.user32
+    result = _find_samsung_in_paths(_QDC_ONLY_ACTIVE_PATHS)
 
-    # Tampon boyutlarını al
-    num_paths = wt.UINT(0)
-    num_modes = wt.UINT(0)
-    ret = user32.GetDisplayConfigBufferSizes(
-        _QDC_ONLY_ACTIVE_PATHS, byref(num_paths), byref(num_modes)
-    )
-    if ret != _ERROR_SUCCESS:
-        log.error(f'GetDisplayConfigBufferSizes hata: {ret}')
+    if result is None:
+        log.warning(f'{TARGET_MODEL} aktif yollarda bulunamadı — SetDisplayConfig atlandı.')
         return False
 
-    paths = (_PATH_INFO  * num_paths.value)()
-    modes = (_MODE_INFO  * num_modes.value)()
+    adapter_id, target_id, _, n, paths, nm, modes = result
+    log.info(f'Aktif ekran yolu: {n} adet — Samsung bulundu.')
 
-    ret = user32.QueryDisplayConfig(
-        _QDC_ONLY_ACTIVE_PATHS,
-        byref(num_paths), paths,
-        byref(num_modes), modes,
-        None,
-    )
-    if ret != _ERROR_SUCCESS:
-        log.error(f'QueryDisplayConfig hata: {ret}')
-        return False
-
-    n = num_paths.value
-    log.info(f'Aktif ekran yolu: {n} adet')
-
-    # Samsung yolunu bul
-    samsung_idx = -1
+    # Samsung olmadan yeni yol dizisi
+    new_list = []
     for i in range(n):
-        p  = paths[i]
-        ni = _TARGET_DEVICE_NAME()
-        ni.header.type                  = _DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME
-        ni.header.size                  = sizeof(_TARGET_DEVICE_NAME)
-        ni.header.adapterId.LowPart     = p.targetInfo.adapterId.LowPart
-        ni.header.adapterId.HighPart    = p.targetInfo.adapterId.HighPart
-        ni.header.id                    = p.targetInfo.id
-        r2 = user32.DisplayConfigGetDeviceInfo(byref(ni))
-        fname = ni.monitorFriendlyDeviceName if r2 == _ERROR_SUCCESS else ''
-        dpath = ni.monitorDevicePath         if r2 == _ERROR_SUCCESS else ''
-        log.info(f'Ekran {i}: isim={fname!r}')
-        if (TARGET_MODEL.lower() in fname.lower()
-                or TARGET_MODEL.lower() in dpath.lower()):
-            samsung_idx = i
-            log.info(f'  → Hedef ({TARGET_MODEL}) eşleşti, yol indeksi: {i}')
-            break
+        p = paths[i]
+        if not (p.targetInfo.adapterId.LowPart == adapter_id[0]
+                and p.targetInfo.adapterId.HighPart == adapter_id[1]
+                and p.targetInfo.id == target_id):
+            new_list.append(p)
 
-    if samsung_idx == -1:
-        log.warning(f'{TARGET_MODEL} isimle eslesme bulunamadi — SetDisplayConfig atlandi.')
-        return False
-
-    # Samsung olmadan yeni yol dizisi oluştur
-    new_paths_list = [paths[i] for i in range(n) if i != samsung_idx]
-    new_count      = len(new_paths_list)
-
-    if new_count == 0:
-        # Samsung tek aktif ekran — SetDisplayConfig boş yol listesini reddeder (hata 87).
-        # Bu durum genellikle sanal monitör o an inactive olduğunda yaşanır (ör. gece testi).
-        # 09:11'de PC açılırken sanal monitör aktifse bu dal çalışmaz; o zaman new_count≥1 olur.
+    if not new_list:
         log.warning(
             'Samsung tek aktif ekran — SetDisplayConfig uygulanamaz. '
-            'Sanal monitörün o an aktif olduğundan emin olun. '
-            'DDC/CI ile devam ediliyor.'
+            'Sanal monitörün o an aktif olduğundan emin olun.'
         )
         return False
-    else:
-        new_paths = (_PATH_INFO * new_count)(*new_paths_list)
-        flags = (_SDC_USE_SUPPLIED_DISPLAY_CONFIG | _SDC_APPLY |
-                 _SDC_ALLOW_CHANGES | _SDC_SAVE_TO_DATABASE)
-        ret = user32.SetDisplayConfig(
-            new_count, new_paths,
-            num_modes.value, modes,
-            flags,
-        )
+
+    new_paths = (_PATH_INFO * len(new_list))(*new_list)
+    flags = (_SDC_USE_SUPPLIED_DISPLAY_CONFIG | _SDC_APPLY |
+             _SDC_ALLOW_CHANGES | _SDC_SAVE_TO_DATABASE)
+    ret = user32.SetDisplayConfig(len(new_list), new_paths, nm, modes, flags)
     if ret == _ERROR_SUCCESS:
-        log.info('SetDisplayConfig ✓ — Samsung aktif listeden çıkarıldı (AnyDesk uyandıramaz).')
+        log.info('SetDisplayConfig disable ✓ — AnyDesk artık uyandıramaz.')
         return True
-    else:
-        log.warning(f'SetDisplayConfig başarısız: {ret}')
-        return False
+    log.warning(f'SetDisplayConfig disable başarısız: {ret}')
+    return False
 
 
 def _win_restore_displays() -> bool:
-    """
-    SetDisplayConfig SDC_TOPOLOGY_EXTEND ile tüm ekranları yeniden aktif et.
-    Veritabanındaki ayarları kullanır; Samsung dahil tüm monitörler extend modunda açılır.
-    """
+    """SDC_TOPOLOGY_EXTEND ile tüm ekranları yeniden aktif et."""
     user32 = ctypes.windll.user32
-    ret = user32.SetDisplayConfig(
-        0, None, 0, None,
-        _SDC_APPLY | _SDC_TOPOLOGY_EXTEND,
-    )
+    ret = user32.SetDisplayConfig(0, None, 0, None, _SDC_APPLY | _SDC_TOPOLOGY_EXTEND)
     if ret == _ERROR_SUCCESS:
-        log.info('SetDisplayConfig restore ✓ — tüm ekranlar extend modunda geri açıldı.')
+        log.info('SetDisplayConfig restore ✓ — tüm ekranlar extend modunda açıldı.')
         return True
-    else:
-        log.warning(f'SetDisplayConfig restore başarısız: {ret}')
-        return False
+    log.warning(f'SetDisplayConfig restore başarısız: {ret}')
+    return False
 
 
 # ══════════════════════════════════════════════════════════════════════
-#  BÖLÜM 3 — DDC/CI (İKİNCİL yöntem — ekrana güç kapatma sinyali)
+#  BÖLÜM 3 — DDC/CI (ikincil yöntem)
 # ══════════════════════════════════════════════════════════════════════
 
 def _ddc_turn_off() -> bool:
-    """
-    monitorcontrol ile fiziksel ekrana DDC/CI güç kapatma komutu gönder.
-    Sanal monitörler DDC/CI desteklemez; sadece donanım ekranlar etkilenir.
-    SetDisplayConfig başarılı olduktan sonra çağrılır (ekstra güvence).
-    """
+    """DDC/CI ile fiziksel ekrana güç kapatma sinyali gönder (ikincil/ek)."""
     from monitorcontrol import get_monitors, PowerMode
-
-    modes_to_try = [
-        ('off_soft',  PowerMode.off_soft),
-        ('off_hard',  PowerMode.off_hard),
-        ('standby',   PowerMode.standby),
-        ('suspend',   PowerMode.suspend),
-    ]
-
     monitors = list(get_monitors())
     log.info(f'DDC/CI monitör sayısı: {len(monitors)}')
     if not monitors:
-        log.info('DDC/CI monitör bulunamadı (sanal monitörde normal).')
         return False
-
     for i, monitor in enumerate(monitors):
         try:
             with monitor:
@@ -302,116 +288,217 @@ def _ddc_turn_off() -> bool:
                     model = caps.get('model', '') if isinstance(caps, dict) else ''
                 except Exception:
                     model = ''
-                desc = getattr(monitor.vcp, 'description', '') or ''
-                log.info(f'DDC monitör {i}: model={model!r}, desc={desc!r}')
-
                 t = TARGET_MODEL.lower()
-                if not (t in model.lower() or t in desc.lower() or not model.strip()):
-                    log.info(f'DDC monitör {i}: hedef değil, atlandı.')
+                if model and t not in model.lower():
                     continue
-
-                # DDC hattını ısıt
                 try:
                     monitor.get_luminance()
                 except Exception:
                     pass
                 time.sleep(0.1)
-
-                for name, mode in modes_to_try:
+                for name, mode in [('off_soft', PowerMode.off_soft),
+                                   ('off_hard', PowerMode.off_hard),
+                                   ('standby',  PowerMode.standby)]:
                     try:
                         monitor.set_power_mode(mode)
-                        log.info(f'DDC/CI ✓ — güç modu: {name}')
+                        log.info(f'DDC/CI ✓ — {name}')
                         return True
                     except Exception as e:
                         log.debug(f'DDC/CI {name}: {e}')
         except Exception as e:
-            log.warning(f'DDC monitör {i} hatası: {e}')
-
-    log.info('DDC/CI ile güç modu ayarlanamadı.')
+            log.warning(f'DDC monitör {i}: {e}')
+    log.info('DDC/CI güç modu ayarlanamadı.')
     return False
 
 
 # ══════════════════════════════════════════════════════════════════════
-#  BÖLÜM 4 — Task Scheduler + masaüstü kısayolu kurulumu
+#  BÖLÜM 4 — Watcher (arka plan — HPD otomatik algılama)
+# ══════════════════════════════════════════════════════════════════════
+#
+#  Akış:
+#    1. monitor_off.pyw Samsung'u disable eder + DISABLED_FLAG dosyası oluşturur.
+#    2. Samsung "No Signal" gösterir, ~30-60 sn sonra fiziksel olarak kapanır.
+#       _samsung_is_physically_on() → False  →  seen_off = True
+#    3. Kullanıcı eve gelir, güç tuşuna basar.
+#       Samsung açılır, HPD sinyali GPU'ya ulaşır.
+#       _samsung_is_physically_on() → True  +  seen_off = True  →  RESTORE!
+#    4. _win_restore_displays() çağrılır, Samsung masaüstünü gösterir.
+#       DISABLED_FLAG silinir, watcher bekleme moduna döner.
+# ──────────────────────────────────────────────────────────────────────
+
+def watch_loop() -> None:
+    """
+    Samsung güç tuşunu izle; basıldığında otomatik restore et.
+    Windows login'de otomatik başlatılır (Registry autostart, --setup ile eklenir).
+    """
+    log.info('Monitor watcher baslatildi.')
+    seen_off = False          # Samsung'un fiziksel olarak kapandığını gördük mü?
+    last_flag_mtime = 0.0
+
+    while True:
+        try:
+            if not DISABLED_FLAG.exists():
+                # Samsung kasıtlı kapatılmamış — bekle
+                seen_off = False
+                last_flag_mtime = 0.0
+                time.sleep(POLL_INTERVAL_SEC)
+                continue
+
+            # Flag var: Samsung kasıtlı kapatıldı
+            flag_mtime = DISABLED_FLAG.stat().st_mtime
+            if flag_mtime != last_flag_mtime:
+                seen_off = False   # Yeni bir disable işlemi — sıfırla
+                last_flag_mtime = flag_mtime
+
+            elapsed = time.time() - flag_mtime
+
+            on = _samsung_is_physically_on()
+
+            if not on:
+                # Samsung fiziksel olarak kapandı — artık güç tuşuna basılmasını bekle
+                if not seen_off:
+                    log.info('Samsung fiziksel olarak kapandi; guc tusu bekleniyor...')
+                seen_off = True
+            else:
+                # Samsung fiziksel olarak ACIK
+                if seen_off or elapsed >= WAIT_AFTER_DISABLE_SEC:
+                    # Kullanıcı güç tuşuna bastı (veya yeterli süre geçti) → restore
+                    log.info(
+                        f'Samsung guc tusuna basildi algilandi '
+                        f'(seen_off={seen_off}, elapsed={elapsed:.0f}s) — restore...'
+                    )
+                    if _win_restore_displays():
+                        DISABLED_FLAG.unlink(missing_ok=True)
+                        seen_off = False
+                        log.info('Restore tamamlandi. Watcher bekleme moduna dondu.')
+                        time.sleep(30)   # Restore sonrası kısa bekleme
+                # else: Samsung henüz kapanmadı (No Signal aşaması), bekle
+
+        except Exception as e:
+            log.debug(f'Watch loop hatasi: {e}')
+
+        time.sleep(POLL_INTERVAL_SEC)
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  BÖLÜM 5 — Kurulum (Task Scheduler + Registry + kısayol)
 # ══════════════════════════════════════════════════════════════════════
 
-def _create_task(name: str, time_str: str, extra_args: str = '') -> bool:
+def _create_schtask(name: str, time_str: str, extra_args: str = '') -> bool:
     python = str(Path(sys.executable).parent / 'pythonw.exe')
     script = str(SCRIPT_DIR / 'monitor_off.pyw')
     tr_arg = f' {extra_args}' if extra_args else ''
-
-    subprocess.run(
-        f'schtasks /Delete /TN "{name}" /F',
-        shell=True, capture_output=True,
-    )
+    subprocess.run(f'schtasks /Delete /TN "{name}" /F',
+                   shell=True, capture_output=True)
     cmd = (
         f'schtasks /Create /TN "{name}" '
         f'/TR "\\"{python}\\" \\"{script}\\"{tr_arg}" '
-        f'/SC WEEKLY /D MON,TUE,WED,THU,FRI '
-        f'/ST {time_str} /F'
+        f'/SC WEEKLY /D MON,TUE,WED,THU,FRI /ST {time_str} /F'
     )
     r = subprocess.run(cmd, shell=True, capture_output=True,
                        text=True, encoding='utf-8', errors='replace')
     ok = r.returncode == 0
-    status = 'OK' if ok else 'HATA'
-    print(f'  [{status}] Gorev: "{name}" @ {time_str} (Pzt-Cum){tr_arg}')
+    print(f'  [{"OK" if ok else "HATA"}] Gorev: "{name}" @ {time_str} (Pzt-Cum){tr_arg}')
     if not ok:
-        print(f'       Hata: {(r.stdout + r.stderr).strip()}')
+        print(f'       {(r.stdout + r.stderr).strip()}')
     return ok
 
 
-def _create_desktop_shortcut():
-    """Masaüstünde 'Monitörü Geri Aç' kısayolu oluştur (VBScript ile)."""
+def _setup_watcher_autostart() -> bool:
+    """Watcher'ı Windows login'de otomatik başlat (Registry HKCU\\Run)."""
+    import winreg
     python = str(Path(sys.executable).parent / 'pythonw.exe')
     script = str(SCRIPT_DIR / 'monitor_off.pyw')
-    desktop = Path.home() / 'Desktop'
-    lnk_path = desktop / 'Monitor Geri Ac.lnk'
+    cmd    = f'"{python}" "{script}" --watch'
+    try:
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r'Software\Microsoft\Windows\CurrentVersion\Run',
+            0, winreg.KEY_SET_VALUE,
+        )
+        winreg.SetValueEx(key, 'MonitorWatch', 0, winreg.REG_SZ, cmd)
+        winreg.CloseKey(key)
+        print('  [OK] Watcher Registry autostart eklendi (her login\'de baslar)')
+        return True
+    except Exception as e:
+        print(f'  [HATA] Registry: {e}')
+        return False
 
+
+def _start_watcher_now() -> None:
+    """Watcher'ı şimdi arka planda başlat (henüz çalışmıyorsa)."""
+    python = str(Path(sys.executable).parent / 'pythonw.exe')
+    script = str(SCRIPT_DIR / 'monitor_off.pyw')
+    subprocess.Popen([python, script, '--watch'],
+                     creationflags=0x00000008,   # DETACHED_PROCESS
+                     close_fds=True)
+
+
+def _create_desktop_shortcut() -> bool:
+    """Masaüstünde 'Monitor Geri Ac' kısayolu oluştur (yedek el kısayolu)."""
+    python   = str(Path(sys.executable).parent / 'pythonw.exe')
+    script   = str(SCRIPT_DIR / 'monitor_off.pyw')
+    lnk_path = Path.home() / 'Desktop' / 'Monitor Geri Ac.lnk'
     lines = [
         'Set oShell = CreateObject("WScript.Shell")',
         'Set oLink  = oShell.CreateShortcut("' + str(lnk_path) + '")',
         'oLink.TargetPath       = "' + python + '"',
         'oLink.Arguments        = chr(34) & "' + script + '" & chr(34) & " --restore"',
         'oLink.WorkingDirectory = "' + str(SCRIPT_DIR) + '"',
-        'oLink.Description      = "Samsung LS49AG95 monitoru geri ac (extend modu)"',
+        'oLink.Description      = "Samsung LS49AG95 monitoru geri ac"',
         'oLink.Save',
     ]
-    vbs = '\n'.join(lines)
-
     vbs_file = SCRIPT_DIR / '_mk_shortcut.vbs'
-    vbs_file.write_text(vbs, encoding='utf-8')
-    r = subprocess.run(['cscript', '//nologo', str(vbs_file)],
-                       capture_output=True, text=True, encoding='utf-8', errors='replace')
+    vbs_file.write_text('\n'.join(lines), encoding='utf-8')
+    subprocess.run(['cscript', '//nologo', str(vbs_file)],
+                   capture_output=True, text=True, encoding='utf-8', errors='replace')
     vbs_file.unlink(missing_ok=True)
-
     ok = lnk_path.exists()
-    print(f'  [{"OK" if ok else "HATA"}] Masaustu kisayolu: {lnk_path}')
+    print(f'  [{"OK" if ok else "HATA"}] Masaustu kisayolu (yedek): {lnk_path}')
     return ok
 
 
-def setup_task():
-    print('Task Scheduler görevleri oluşturuluyor…')
-    _create_task(TASK_NAME_OFF,     TASK_TIME_OFF)
-    _create_task(TASK_NAME_RESTORE, TASK_TIME_RESTORE, '--restore')
+def setup():
+    """Task Scheduler + Registry watcher autostart + masaüstü kısayolu."""
+    print('Task Scheduler gorevi olusturuluyor...')
+    _create_schtask(TASK_NAME_OFF, TASK_TIME_OFF)
+
+    # 16:55 restore görevi kaldırıldı — watcher otomatik hallediyor.
+    # Eski görev varsa temizle.
+    subprocess.run('schtasks /Delete /TN "MatriksIQ_Monitor_Ac" /F',
+                   shell=True, capture_output=True)
+    print('  [OK] Eski 16:55 restore gorevi kaldirildi (watcher gereksiz kildi).')
+
     print()
-    print('Masaüstü kısayolu oluşturuluyor…')
+    print('Watcher Registry autostart ekleniyor...')
+    _setup_watcher_autostart()
+
+    print()
+    print('Masaustu kisayolu olusturuluyor (yedek)...')
     _create_desktop_shortcut()
+
+    print()
+    print('Watcher simdi baslatiliyor...')
+    _start_watcher_now()
+    print('  [OK] Watcher arka planda calisiyor.')
+
     print()
     print('Kurulum tamamlandi.')
     print()
-    print(f'  {TASK_TIME_OFF}   -> Samsung devre disi (AnyDesk uyandıramaz)')
-    print(f'  {TASK_TIME_RESTORE}   -> Samsung otomatik geri acilir (extend)')
-    print( '  Eve erken gelirseniz: "Monitoru Geri Ac" kisayoluna tiklayin')
-    print( '                    ya da Win+P -> Genislet yapın')
+    print('  Calisma akisi:')
+    print(f'  {TASK_TIME_OFF}  -> Samsung devre disi (AnyDesk uyandıramaz)')
+    print( '  Gun ici  -> Watcher arka planda calisir')
+    print( '  Eve gel  -> Guc tusuna bas, ~8sn icinde ekran acilir')
+    print( '  (Yedek)  -> Masaustu "Monitor Geri Ac" kisayolu')
 
 
 # ══════════════════════════════════════════════════════════════════════
-#  BÖLÜM 5 — Ana akışlar
+#  BÖLÜM 6 — Ana akışlar
 # ══════════════════════════════════════════════════════════════════════
 
-def run(skip_check=False):
+def run(skip_check: bool = False) -> None:
     log.info('══════════════════════════════════════════')
-    log.info('  MONİTÖR KAPATMA BAŞLIYOR')
+    log.info('  MONITOR KAPATMA BASLIYOR')
     log.info('══════════════════════════════════════════')
 
     if not skip_check and check_skip_today():
@@ -420,37 +507,40 @@ def run(skip_check=False):
     if skip_check:
         log.info('--test modu: sistem gecikmesi atlandı.')
     else:
-        log.info(f'Sistem hazırlık gecikmesi: {STARTUP_DELAY_SEC}s…')
+        log.info(f'Sistem hazırlık gecikmesi: {STARTUP_DELAY_SEC}s...')
         time.sleep(STARTUP_DELAY_SEC)
 
-    # 1) SetDisplayConfig — AnyDesk'i körleştir
+    # 1) SetDisplayConfig — birincil
     sdc_ok = _win_disable_samsung()
-    if not sdc_ok:
-        log.warning('SetDisplayConfig başarısız; DDC/CI tek yöntem olarak devam ediyor.')
 
-    # 2) DDC/CI — ekrana güç kapatma sinyali (ek güvence)
+    # 2) Flag oluştur — watcher bunu izleyerek güç tuşunu algılar
+    if sdc_ok:
+        DISABLED_FLAG.touch()
+        log.info('DISABLED_FLAG olusturuldu — watcher izlemeye basladi.')
+
+    # 3) DDC/CI — ikincil (fiziksel güç kapatma sinyali)
     ddc_ok = _ddc_turn_off()
 
     if sdc_ok:
-        log.info('Sonuç: SetDisplayConfig ✓ (AnyDesk uyandıramaz) + DDC/CI '
-                 + ('✓' if ddc_ok else 'denemedi/başarısız'))
+        log.info('Sonuc: SetDisplayConfig OK + DDC/CI ' + ('OK' if ddc_ok else 'basarisiz'))
     elif ddc_ok:
-        log.warning('Sonuç: Yalnızca DDC/CI ✓ — AnyDesk bağlanınca monitör yeniden '
-                    'uyanabilir (SetDisplayConfig çalışmadı).')
+        log.warning('Sonuc: Yalniz DDC/CI OK — AnyDesk baglantisinda monitor uyanabilir.')
     else:
-        log.error('Sonuç: Her iki yöntem de başarısız.')
+        log.error('Sonuc: Her iki yontem de basarisiz.')
 
-    log.info('Tamamlandı.')
+    log.info('Tamamlandi.')
 
 
-def restore():
+def restore() -> None:
     log.info('══════════════════════════════════════════')
-    log.info('  MONİTÖR GERİ AÇMA BAŞLIYOR')
+    log.info('  MONITOR GERI ACMA BASLIYOR')
     log.info('══════════════════════════════════════════')
     ok = _win_restore_displays()
-    if not ok:
+    if ok:
+        DISABLED_FLAG.unlink(missing_ok=True)
+    else:
         log.error('Monitör geri açılamadı.')
-    log.info('Tamamlandı.')
+    log.info('Tamamlandi.')
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -458,17 +548,21 @@ def restore():
 # ══════════════════════════════════════════════════════════════════════
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Samsung LS49AG95 monitör kontrolü')
+    parser = argparse.ArgumentParser(description='Samsung LS49AG95 monitor kontrolu')
     parser.add_argument('--setup',   action='store_true',
-                        help='Task Scheduler görevleri + masaüstü kısayolu oluştur')
+                        help='Task Scheduler + Registry watcher + kisayol kur')
+    parser.add_argument('--watch',   action='store_true',
+                        help='Arka plan watcher — HPD izle, guc tusunda restore et')
     parser.add_argument('--restore', action='store_true',
-                        help='Samsung monitörü extend modunda geri aç')
+                        help='Samsung monitoru extend modunda geri ac')
     parser.add_argument('--test',    action='store_true',
-                        help='Tatil/hafta sonu kontrolünü atla, direkt kapat')
+                        help='Tatil/hafta sonu kontrolunu atla, direkt kapat')
     args = parser.parse_args()
 
     if args.setup:
-        setup_task()
+        setup()
+    elif args.watch:
+        watch_loop()
     elif args.restore:
         restore()
     else:
