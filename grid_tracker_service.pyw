@@ -1960,11 +1960,23 @@ def run_once(dry_run=False):
     # Hisse takip: günlük sembol karını birikimli olarak kaydet
     track_sym = settings.get('trackSymbol', '').upper().strip()
     track_last = settings.get('trackLastDate', '')
-    if track_sym and excel_date > track_last:
+    if track_sym and excel_date >= track_last:
         sym_net = profit.get('bySymbol', {}).get(track_sym, {}).get('netProfit', 0)
-        old_accum = settings.get('trackAccum', 0) or 0
-        settings['trackAccum'] = round(old_accum + sym_net, 4)
+        if excel_date > track_last:
+            # Yeni gün: bugünkü kârı üstüne ekle, base'i kaydet
+            base_accum = settings.get('trackAccum', 0) or 0
+            settings['trackAccumBase'] = round(base_accum, 4)
+        else:
+            # Aynı gün yeniden hesaplama: base'den yeniden hesapla (eski katkıyı ezip yenisini yaz)
+            base_accum = settings.get('trackAccumBase', None)
+            if base_accum is None:
+                # Eski kayıt yok: mevcut accumdan tersine hesapla
+                old_sym_net = settings.get('trackLastSymNet', 0) or 0
+                base_accum = round((settings.get('trackAccum', 0) or 0) - old_sym_net, 4)
+                settings['trackAccumBase'] = base_accum
+        settings['trackAccum'] = round(base_accum + sym_net, 4)
         settings['trackLastDate'] = excel_date
+        settings['trackLastSymNet'] = round(sym_net, 4)
         log.info(f'Hisse takip: {track_sym} +{sym_net:+.2f} → birikim: {settings["trackAccum"]:+.2f} ₺')
 
     # Aylık kar: ayın son BIST günündeyse otomatik hesapla ve kaydet
