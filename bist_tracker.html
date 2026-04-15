@@ -6796,13 +6796,24 @@ function setSymMode(mode,el){
   updateTradesCard();
 }
 function renderSymTable(){
-  const syms=D?D.todayProfit?D.todayProfit.bySymbol||{}:{}:{};
-  let keys=Object.keys(syms).sort();
+  // Nakit akış kârı: allTrades üzerinden sembol başına hesapla
+  // netProfit = (avgSell - avgBuy) × matchedQty - toplam komisyon
+  const trades=D?(D.allTrades||[]):[];
+  const cf={};
+  trades.forEach(t=>{
+    const sym=t.symbol; if(!sym) return;
+    if(!cf[sym]) cf[sym]={buyQty:0,buyAmt:0,sellQty:0,sellAmt:0,comm:0,buyCount:0,sellCount:0};
+    const e=cf[sym];
+    const qty=Number(t.qty)||0, amt=Number(t.execAmount)||0, cm=Number(t.commission)||0;
+    if(t.type==='Alış'){e.buyQty+=qty;e.buyAmt+=amt;e.buyCount++;}
+    else{e.sellQty+=qty;e.sellAmt+=amt;e.sellCount++;}
+    e.comm+=cm;
+  });
+  let keys=Object.keys(cf).sort();
   const isBot=S.symMode==='bot';
   const botList=(S.settings.botSymbols||[]).map(s=>s.toUpperCase());
   if(isBot && botList.length) keys=keys.filter(k=>botList.includes(k.toUpperCase()));
-  // İşlem yapılmamış hisseleri gizle (alış ve satış yoksa gösterme)
-  keys=keys.filter(k=>(syms[k].buyCount||0)>0||(syms[k].sellCount||0)>0);
+  keys=keys.filter(k=>(cf[k].buyCount||0)>0||(cf[k].sellCount||0)>0);
   const total=keys.length;
   $('h-sym-count').textContent=`${total} hisse`;
   const tb=$('h-sym-tbl');
@@ -6811,15 +6822,23 @@ function renderSymTable(){
     tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">—</div><div class="empty-text">${msg}</div></div></td></tr>`; return;
   }
   tb.innerHTML=keys.map(k=>{
-    const s=syms[k];
-    const nc=s.netProfit>0?'td-pos':s.netProfit<0?'td-neg':'';
+    const e=cf[k];
+    const avgBuy=e.buyQty>0?e.buyAmt/e.buyQty:0;
+    const avgSell=e.sellQty>0?e.sellAmt/e.sellQty:0;
+    const matchedQty=Math.min(e.buyQty,e.sellQty);
+    // Satış varsa kâr hesapla; yoksa "—"
+    let netProfit=null;
+    if(e.sellQty>0 && e.buyQty>0){
+      netProfit=(avgSell-avgBuy)*matchedQty-e.comm;
+    }
+    const nc=netProfit!==null?(netProfit>0?'td-pos':netProfit<0?'td-neg':''):'';
     return `<tr>
       <td class="td-sym">${k}</td>
-      <td class="td-dim">${s.buyCount}</td>
-      <td class="td-sell">${s.sellCount}</td>
-      <td class="col-ort">${fx(s.avgBuy)}</td>
-      <td class="col-ort">${fx(s.avgSell)}</td>
-      <td class="${nc}">${fxs(s.netProfit)} ₺</td>
+      <td class="td-dim">${e.buyCount}</td>
+      <td class="td-sell">${e.sellCount}</td>
+      <td class="col-ort">${avgBuy>0?fx(avgBuy):'—'}</td>
+      <td class="col-ort">${avgSell>0?fx(avgSell):'—'}</td>
+      <td class="${nc}">${netProfit!==null?fxs(netProfit)+' ₺':'—'}</td>
     </tr>`;
   }).join('');
 }
