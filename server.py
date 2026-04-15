@@ -21,16 +21,25 @@ for _pkg in ['openpyxl', 'pywebpush']:
 
 from openpyxl import load_workbook
 from http.server import HTTPServer, SimpleHTTPRequestHandler
-import urllib.request, json, socket, threading, time, os
+import urllib.request, json, socket, threading, time, os, logging
 
 FIREBASE_URL = 'https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app'
 PORT = 5050
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ATR_FILE = os.path.join(BASE_DIR, 'ATR_Sonuc.xlsx')
-DD_FILE  = os.path.join(BASE_DIR, 'Destek_Direc_Seviyeleri.xlsx')
+ATR_FILE   = os.path.join(BASE_DIR, 'ATR_Sonuc.xlsx')
+DD_FILE    = os.path.join(BASE_DIR, 'Destek_Direc_Seviyeleri.xlsx')
 VAPID_FILE = os.path.join(BASE_DIR, 'vapid_keys.json')
+LOG_FILE   = os.path.join(BASE_DIR, 'server.log')
 
 VAPID_CLAIMS = {'sub': 'mailto:admin@gridtracker.local'}
+
+# ── Logging ─────────────────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[logging.FileHandler(LOG_FILE, encoding='utf-8')]
+)
+slog = logging.getLogger('server')
 
 # Bellekte tutulan veri
 _stocks = {}
@@ -74,7 +83,7 @@ def read_excel():
                 }
             wb.close()
         except Exception as e:
-            print(f'[ATR] okuma hatası: {e}')
+            slog.warning(f'[ATR] okuma hatası: {e}')
 
     # Destek_Direc_Seviyeleri.xlsx
     if os.path.exists(DD_FILE):
@@ -100,7 +109,7 @@ def read_excel():
                 }
             wb.close()
         except Exception as e:
-            print(f'[DD] okuma hatası: {e}')
+            slog.warning(f'[DD] okuma hatası: {e}')
 
     # Birleştir
     syms = set(atr) | set(dd)
@@ -133,7 +142,7 @@ def firebase_put(path, data):
             headers={'Content-Type': 'application/json'})
         urllib.request.urlopen(req, timeout=10)
     except Exception as e:
-        print(f'[Firebase] hata: {e}')
+        slog.warning(f'[Firebase] hata: {e}')
 
 def get_server_ip():
     try:
@@ -166,7 +175,7 @@ def _bg_loop():
             firebase_put('gridtracker/stocks', stocks)
             firebase_put('gridtracker/stocks_ts', ts)
         except Exception as e:
-            print(f'[BG] hata: {e}')
+            slog.warning(f'[BG] hata: {e}')
         time.sleep(60)
 
 def _push_queue_loop():
@@ -175,7 +184,7 @@ def _push_queue_loop():
         try:
             _check_push_queue()
         except Exception as e:
-            print(f'[PushQueue] hata: {e}')
+            slog.warning(f'[PushQueue] hata: {e}')
         time.sleep(10)
 
 # ---------------------------------------------------------------------------
@@ -187,18 +196,18 @@ def _load_vapid():
         with open(VAPID_FILE, encoding='utf-8') as f:
             return json.load(f)
     except Exception as e:
-        print(f'[Push] VAPID yüklenemedi: {e}')
+        slog.warning(f'[Push] VAPID yüklenemedi: {e}')
         return None
 
 def send_push_to_all(title, body, tag='gridtracker'):
     keys = _load_vapid()
     if not keys:
-        print('[Push] VAPID anahtarı yok, bildirim atlandı.')
+        slog.warning('[Push] VAPID anahtarı yok, bildirim atlandı.')
         return
     try:
         from pywebpush import webpush, WebPushException
     except ImportError:
-        print('[Push] pywebpush yüklü değil.')
+        slog.warning('[Push] pywebpush yüklü değil.')
         return
     try:
         req = urllib.request.Request(
@@ -206,10 +215,10 @@ def send_push_to_all(title, body, tag='gridtracker'):
         resp = urllib.request.urlopen(req, timeout=10)
         subs = json.loads(resp.read().decode())
     except Exception as e:
-        print(f'[Push] Aboneler alınamadı: {e}')
+        slog.warning(f'[Push] Aboneler alınamadı: {e}')
         return
     if not subs or not isinstance(subs, dict):
-        print('[Push] Kayıtlı abone yok.')
+        slog.warning('[Push] Kayıtlı abone yok — telefon uygulamayı kapatmış olabilir, yeniden abone ol.')
         return
     payload = json.dumps({'title': title, 'body': body, 'tag': tag})
     sent = 0
@@ -224,23 +233,24 @@ def send_push_to_all(title, body, tag='gridtracker'):
                 vapid_claims=VAPID_CLAIMS
             )
             sent += 1
+            slog.info(f'[Push] Gönderildi: {sub_key[:12]}…')
         except WebPushException as e:
             status = getattr(e.response, 'status_code', None) if e.response else None
             if status in (404, 410):
-                # Geçersiz abone — sil
+                # Geçersiz / süresi dolmuş abone — sil
                 try:
                     del_req = urllib.request.Request(
                         f'{FIREBASE_URL}/gridtracker/pushSubscriptions/{sub_key}.json',
                         method='DELETE')
                     urllib.request.urlopen(del_req, timeout=5)
-                    print(f'[Push] Geçersiz abone silindi: {sub_key}')
+                    slog.warning(f'[Push] Süresi dolmuş abone silindi (HTTP {status}): {sub_key[:12]}…')
                 except Exception:
                     pass
             else:
-                print(f'[Push] WebPush hatası [{sub_key}]: {e}')
+                slog.warning(f'[Push] WebPush hatası [{sub_key[:12]}…]: {e}')
         except Exception as e:
-            print(f'[Push] Beklenmeyen hata [{sub_key}]: {e}')
-    print(f'[Push] Bildirim gönderildi: {sent} abone — {title}')
+            slog.warning(f'[Push] Beklenmeyen hata [{sub_key[:12]}…]: {e}')
+    slog.info(f'[Push] Tamamlandı: {sent}/{len(subs)} abone başarılı — {title}')
 
 def _check_push_queue():
     """Firebase pushQueue'daki bildirimleri gönder ve sil."""
@@ -263,7 +273,7 @@ def _check_push_queue():
                 method='DELETE')
             urllib.request.urlopen(del_req, timeout=5)
     except Exception as e:
-        print(f'[PushQueue] hata: {e}')
+        slog.warning(f'[PushQueue] hata: {e}')
 
 # ---------------------------------------------------------------------------
 # HTTP Handler
@@ -366,7 +376,7 @@ if __name__ == '__main__':
     with _lock:
         _stocks.update(stocks)
         _stocks_ts = int(time.time())
-    print(f'[GridTracker] {len(_stocks)} hisse yüklendi.')
+    slog.info(f'[GridTracker] {len(_stocks)} hisse yüklendi.')
     # Firebase'e yaz (IP + ilk veri)
     ip = get_server_ip()
     threading.Thread(target=firebase_put, daemon=True,
@@ -378,7 +388,7 @@ if __name__ == '__main__':
     # Push queue kontrol döngüsü (10s)
     threading.Thread(target=_push_queue_loop, daemon=True).start()
     server = HTTPServer(('0.0.0.0', PORT), Handler)
-    print(f'[GridTracker] http://localhost:{PORT}/bist_tracker.html')
+    slog.info(f'[GridTracker] http://localhost:{PORT}/bist_tracker.html')
     try:
         server.serve_forever()
     except KeyboardInterrupt:
