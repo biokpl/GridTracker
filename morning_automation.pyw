@@ -248,49 +248,116 @@ def _locate_template(template_name, confidence=0.75, region=None):
         return None
 
 
+def _find_tamam_anywhere():
+    """
+    Ekranda görünür tüm üst düzey pencerelerde 'Tamam' çocuk butonu arar.
+    Bulursa (hwnd, merkez_x, merkez_y) döner; bulamazsa (None, None, None).
+    """
+    import win32gui
+    result = {'hwnd': None, 'cx': None, 'cy': None}
+
+    def _check(hwnd, _):
+        if not win32gui.IsWindowVisible(hwnd):
+            return True
+        child = _find_child_button(hwnd, 'Tamam')
+        if child and win32gui.IsWindowVisible(child):
+            rect = win32gui.GetWindowRect(child)
+            result['hwnd'] = child
+            result['cx']   = (rect[0] + rect[2]) // 2
+            result['cy']   = (rect[1] + rect[3]) // 2
+            return False
+        return True
+
+    try:
+        win32gui.EnumWindows(_check, None)
+    except Exception:
+        pass
+    return result['hwnd'], result['cx'], result['cy']
+
+
+def _tamam_still_open():
+    """Ekranda görünür 'Tamam' butonu olan bir pencere hala açık mı?"""
+    hwnd, _, _ = _find_tamam_anywhere()
+    return hwnd is not None
+
+
 def handle_dialogs():
     """
-    click(2725, 903) sonrası çıkan MatriksIQ dialog'larını yönetir:
-      - Uyarı  → 'Eski Versiyon İle Devam Et' (template ile) — birden fazla olabilir
-      - Bilgi  → 'Tamam' — önce template (dar bölge), sonra mouse+offset yedek yöntemi
-
-    Bilgi penceresi MatriksIQ tarafından mouse imlecinin yanına açılır.
-    Analiz sonucu: Tamam butonu ≈ son_uyari_tiklama + (-12, +43) piksel uzağında.
+    MatriksIQ dialog döngüsü:
+      Aşama 1 — Uyarı 'Eski Versiyon İle Devam Et': 0 veya daha fazla çıkabilir.
+                Template ile bulunur, her biri tıklanır.
+      Aşama 2 — Bilgi 'Tamam': HER ZAMAN çıkar (uyari_sayisi=0 olsa da).
+                Birincil: win32gui ile 'Tamam' butonu bulunup tıklanır.
+                Yedek  : son_uyari_pos+offset, ardından mouse+100.
+                Doğrulama: tıklama sonrası dialog kapandı mı kontrol edilir.
+                Max 3 deneme.
     """
     if DRY_RUN:
         log.info('[DRY] Dialog döngüsü: Uyarı×N → Bilgi → Tamam')
         return
 
     log.info('Dialog döngüsü başladı...')
-    uyari_sayisi = 0
-    son_uyari_pos = None   # Son Uyarı tıklaması — Bilgi offset hesabı için
 
-    for attempt in range(30):
-        # ── Uyarı: template ile bul ve tıkla ──────────────────
+    # ── Aşama 1: Uyarı döngüsü ────────────────────────────────────────────
+    uyari_sayisi = 0
+    son_uyari_pos = None
+    for _ in range(10):    # güvenlik sınırı: en fazla 10 uyarı
         center = _locate_template('uyari_eski_btn.png', confidence=0.75)
+        if not center:
+            time.sleep(2)  # Pencere gecikmeli açılmış olabilir — bir kez daha dene
+            center = _locate_template('uyari_eski_btn.png', confidence=0.75)
         if center:
             pyautogui.click(center)
-            log.info(f'Uyarı #{attempt+1}: "Eski Versiyon İle Devam Et" tıklandı @ {center}')
             son_uyari_pos = center
             uyari_sayisi += 1
-            time.sleep(5)
-            continue
+            log.info(f'Uyarı #{uyari_sayisi}: "Eski Versiyon İle Devam Et" tıklandı @ {center}')
+            time.sleep(5)  # Sonraki uyarı/Bilgi penceresi açılsın
+        else:
+            log.info(f'Uyarı penceresi kalmadı ({uyari_sayisi} adet işlendi).')
+            break
 
-        # ── Bilgi: Tamam butonunu tıkla ───────────────────────
-        # Kural: Bilgi penceresi son Uyarı tıklamasının hemen altında açılır.
-        # Tamam X = mouse X (değişmez), Tamam Y = mouse Y + 100
-        if uyari_sayisi > 0:
-            mx, my = pyautogui.position()
-            tamam_x = mx
-            tamam_y = my + 100
-            pyautogui.click(tamam_x, tamam_y)
-            log.info(f'Bilgi: "Tamam" tıklandı @ ({tamam_x},{tamam_y})  [mouse=({mx},{my})+100]')
-            time.sleep(1.0)
+    # ── Aşama 2: Bilgi → Tamam ────────────────────────────────────────────
+    # Bilgi penceresi her zaman çıkar; son uyarıdan sonra 2s bekle
+    log.info('Bilgi penceresi bekleniyor (2s)...')
+    time.sleep(2)
+
+    for deneme in range(3):
+        if deneme > 0:
+            log.info(f'Tamam yeniden deneniyor ({deneme+1}/3)...')
+            time.sleep(2)
+
+        # Yöntem 1: win32gui — en güvenilir
+        hwnd, cx, cy = _find_tamam_anywhere()
+        if hwnd:
+            pyautogui.click(cx, cy)
+            log.info(f'Bilgi/Tamam (win32gui) tıklandı @ ({cx},{cy})')
+            time.sleep(1.5)
+            if not _tamam_still_open():
+                log.info('Bilgi dialog başarıyla kapatıldı (win32gui).')
+                return
+            log.warning('win32gui tıklaması sonrası dialog hala açık, yedek yönteme geçiliyor...')
+
+        # Yöntem 2: son uyarı konumu + offset
+        if son_uyari_pos:
+            tx = int(son_uyari_pos.x) - 12
+            ty = int(son_uyari_pos.y) + 43
+            pyautogui.click(tx, ty)
+            log.info(f'Bilgi/Tamam (uyarı offset) tıklandı @ ({tx},{ty})')
+            time.sleep(1.5)
+            if not _tamam_still_open():
+                log.info('Bilgi dialog kapatıldı (uyarı offset).')
+                return
+
+        # Yöntem 3: mevcut mouse konumu + 100 (eski yedek)
+        mx, my = pyautogui.position()
+        pyautogui.click(mx, my + 100)
+        log.info(f'Bilgi/Tamam (mouse+100) tıklandı @ ({mx},{my+100})')
+        time.sleep(1.5)
+        if not _tamam_still_open():
+            log.info('Bilgi dialog kapatıldı (mouse+100).')
             return
 
-        time.sleep(0.5)
-
-    log.warning('Dialog döngüsü max iterasyona ulaştı')
+    log.warning('Tamam butonu 3 denemede tıklanamadı — handle_dialogs sona erdi.')
 
 
 def bring_to_front(title):
@@ -749,8 +816,20 @@ def run():
     # Bilgi (en son)           → 'Tamam'
     handle_dialogs()
 
+    # Dialog kapandı mı doğrula — hala açıksa uyarı bildirimi gönder
+    if not DRY_RUN and _tamam_still_open():
+        log.warning('Bilgi dialog handle_dialogs sonrası hala açık! Bildirim gönderiliyor.')
+        _send_notify('⚠️ Sabah Otomasyonu - Dialog Sorunu',
+                     'Bilgi penceresi kapatılamadı. Explorer başlatılamıyor olabilir.',
+                     'morning-dialog-warn')
+        time.sleep(2)
+
     # ── Adım 13: Son tıklama ─────────────────────────────────
     click(2026, 878)
+
+    # MatriksIQ'nun dialog kapatma sonrası hazır olması için bekleme
+    log.info('Explorer başlatılmadan önce 5s bekleniyor...')
+    time.sleep(5)
 
     # ── Adım 14: Explorer otomasyonu ─────────────────────────
     explorer_ok = True
