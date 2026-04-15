@@ -1562,7 +1562,7 @@ async function fbWrite(path,data){
 // ════════════════════════════════════════════════════════
                 // GRID_DATA_START
         window.__GRID_DATA__ = {
-  "lastUpdated": "2026-04-15 23:05:23",
+  "lastUpdated": "2026-04-15 23:37:28",
   "today": "2026-04-15",
   "todayOverall": 1439085.65,
   "todayProfit": {
@@ -5550,7 +5550,7 @@ async function fbWrite(path,data){
           ]
         }
       },
-      "updatedAt": "2026-04-15 23:05:23"
+      "updatedAt": "2026-04-15 23:37:28"
     }
   },
   "overallHistory": [
@@ -6286,10 +6286,12 @@ async function fbWrite(path,data){
     "gridInterval": 0,
     "lotTolerance": 0,
     "monthlyTarget": 45000,
-    "trackAccum": 224.1898,
+    "trackAccum": 236.5465,
     "trackLastDate": "2026-04-15",
     "trackSymbol": "MIATK",
-    "trackTarget": 1000
+    "trackTarget": 1000,
+    "trackAccumBase": 224.1898,
+    "trackLastSymNet": 12.3567
   },
   "birikimTx": [
     {
@@ -7099,8 +7101,9 @@ function resetTrackAccum(){
 // ════════════════════════════════════════════════════════
 function renderGridCalcPage(){
   const gc=S.settings.gridCalc||{};
-  // Hisse kodu her zaman yükle (dirty flag'den bağımsız)
-  const s=$('gc-sym');if(s&&!s.value)s.value=gc.symbol||'EREGL';
+  // Hisse kodu: kullanıcı düzenlemiyorsa (dirty değilse) daima kayıtlı sembolle eşitle
+  const s=$('gc-sym');
+  if(s && !window._gcDirty) s.value=gc.symbol||'';
 
   // ATR tablosunu HER ZAMAN geri yükle — hiçbir koşula bağlı değil
   const atrRowSrc=window._gcAtrRow||gc.atrRow||(()=>{try{const v=localStorage.getItem('gt_atrRow');return v?JSON.parse(v):null;}catch(e){return null;}})();
