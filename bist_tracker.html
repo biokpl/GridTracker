@@ -6796,9 +6796,10 @@ function setSymMode(mode,el){
   updateTradesCard();
 }
 function renderSymTable(){
-  // Nakit akış kârı: allTrades üzerinden sembol başına hesapla
+  // Nakit akış kârı: allTrades üzerinden BUGÜNKÜ işlemleri sembol başına hesapla
   // netProfit = (avgSell - avgBuy) × matchedQty - toplam komisyon
-  const trades=D?(D.allTrades||[]):[];
+  const today=D?D.today:'';
+  const trades=D?(D.allTrades||[]).filter(t=>!today||t.date===today):[];
   const cf={};
   trades.forEach(t=>{
     const sym=t.symbol; if(!sym) return;
