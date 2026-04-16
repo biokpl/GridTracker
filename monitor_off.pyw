@@ -248,46 +248,92 @@ def _save_display_config() -> bool:
 
 def _win_disable_samsung() -> bool:
     """
-    Samsung'u Windows aktif ekran listesinden çıkar.
-    Önce tam config kaydedilir (restore'da pozisyon korunur).
-    SDC_SAVE_TO_DATABASE KULLANILMAZ — database bozulmasın.
+    Samsung'u Windows aktif ekran listesinden cikar.
+    Once tam config kaydedilir (restore'da pozisyon korunur).
+
+    Temel kurallar:
+    - SDC_SAVE_TO_DATABASE KULLANILMAZ (database bozulur, error 87 verir)
+    - Samsung kaldirılinca VDD, birincil konuma (0,0) tasinir
+      (Windows kurali: her zaman bir ekran (0,0)'da olmali)
+    - VDD cozunurlugu 1920x1080 yapilir (AnyDesk icin yeterli)
     """
+    import struct
     user32 = ctypes.windll.user32
     result = _find_samsung_in_paths(_QDC_ONLY_ACTIVE_PATHS)
 
     if result is None:
-        log.warning(f'{TARGET_MODEL} aktif yollarda bulunamadı — SetDisplayConfig atlandı.')
+        log.warning(f'{TARGET_MODEL} aktif yollarda bulunamadi — SetDisplayConfig atlandi.')
         return False
 
     adapter_id, target_id, _, n, paths, nm, modes = result
     log.info(f'Aktif ekran yolu: {n} adet — Samsung bulundu.')
 
-    # Restore'da pozisyon korunsun diye disable ÖNCESİ kaydet
+    # Restore'da pozisyon korunsun diye disable ONCESI kaydet
     _save_display_config()
 
-    # Samsung olmadan yeni yol dizisi
-    new_list = []
+    # Samsung'un mode indexlerini bul
+    samsung_mode_idx = set()
+    for i in range(n):
+        p = paths[i]
+        if (p.targetInfo.adapterId.LowPart == adapter_id[0]
+                and p.targetInfo.adapterId.HighPart == adapter_id[1]
+                and p.targetInfo.id == target_id):
+            samsung_mode_idx.add(p.sourceInfo.modeInfoIdx)
+            samsung_mode_idx.add(p.targetInfo.modeInfoIdx)
+
+    # Samsung olmayan path'leri filtrele
+    new_path_list = []
     for i in range(n):
         p = paths[i]
         if not (p.targetInfo.adapterId.LowPart == adapter_id[0]
                 and p.targetInfo.adapterId.HighPart == adapter_id[1]
                 and p.targetInfo.id == target_id):
-            new_list.append(p)
+            cp = _PATH_INFO()
+            ctypes.memmove(byref(cp), byref(p), sizeof(_PATH_INFO))
+            new_path_list.append(cp)
 
-    if not new_list:
+    if not new_path_list:
         log.warning(
-            'Samsung tek aktif ekran — SetDisplayConfig uygulanamaz. '
-            'Sanal monitörün o an aktif olduğundan emin olun.'
+            'Samsung tek aktif ekran — devre disi birakilamaz. '
+            'Sanal monitorun (VDD) aktif oldugu dogrulansin.'
         )
         return False
 
-    new_paths = (_PATH_INFO * len(new_list))(*new_list)
-    # SDC_USE_SUPPLIED_DISPLAY_CONFIG + tam modes array: çalışan yöntem.
-    # Samsung'a ait mode girişleri artık hiçbir path'e referans verilmiyor;
-    # SDC_ALLOW_CHANGES ile Windows bunları yok sayar.
-    # Orijinal config disable ÖNCE kaydedildiğinden restore tam pozisyonla yapılır.
-    flags = (_SDC_USE_SUPPLIED_DISPLAY_CONFIG | _SDC_APPLY | _SDC_ALLOW_CHANGES)
-    ret = user32.SetDisplayConfig(len(new_list), new_paths, nm, modes, flags)
+    # Samsung'a ait olmayan modlari yeni diziye al; eski->yeni index haritasi
+    idx_map = {}
+    new_mode_list = []
+    for old_idx in range(nm):
+        if old_idx not in samsung_mode_idx:
+            idx_map[old_idx] = len(new_mode_list)
+            m = _MODE_INFO()
+            ctypes.memmove(byref(m), byref(modes[old_idx]), sizeof(_MODE_INFO))
+            new_mode_list.append(m)
+
+    # VDD path'lerinin modeInfoIdx'lerini yeniden mapla
+    for p in new_path_list:
+        p.sourceInfo.modeInfoIdx = idx_map[p.sourceInfo.modeInfoIdx]
+        p.targetInfo.modeInfoIdx = idx_map[p.targetInfo.modeInfoIdx]
+
+    # VDD kaynak modunu (SOURCE, infoType=1) pozisyon (0,0) ve 1920x1080 yap
+    # Windows kurali: birincil ekran her zaman (0,0)'da olmali
+    for m in new_mode_list:
+        if m.infoType == 1:   # DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE
+            raw = bytes(m.modeData)
+            _, _, pf, _, _ = struct.unpack_from('<IIIii', raw, 0)
+            new_raw = struct.pack('<IIIii', 1920, 1080, pf, 0, 0) + raw[20:]
+            for j, b in enumerate(new_raw):
+                m.modeData[j] = b
+            log.info('VDD kaynak modu: 1920x1080 pos=(0,0) ayarlandi.')
+
+    new_paths_arr = (_PATH_INFO * len(new_path_list))(*new_path_list)
+    new_modes_arr = (_MODE_INFO * len(new_mode_list))(*new_mode_list)
+
+    flags = _SDC_USE_SUPPLIED_DISPLAY_CONFIG | _SDC_APPLY | _SDC_ALLOW_CHANGES
+    ret = user32.SetDisplayConfig(
+        len(new_path_list), new_paths_arr,
+        len(new_mode_list), new_modes_arr,
+        flags
+    )
     if ret == _ERROR_SUCCESS:
         log.info('SetDisplayConfig disable OK — AnyDesk artik uyandıramaz.')
         return True
