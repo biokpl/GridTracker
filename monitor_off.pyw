@@ -750,9 +750,9 @@ if __name__ == '__main__':
     parser.add_argument('--watch',   action='store_true',
                         help='Arka plan watcher — HPD izle, guc tusunda restore et')
     parser.add_argument('--restore', action='store_true',
-                        help='Samsung monitoru extend modunda geri ac')
+                        help='Samsung monitoru geri ac')
     parser.add_argument('--test',    action='store_true',
-                        help='Tatil/hafta sonu kontrolunu atla, direkt kapat')
+                        help='Kapat ve 10 saniye sonra otomatik geri ac (guvenli test)')
     args = parser.parse_args()
 
     if args.setup:
@@ -761,5 +761,14 @@ if __name__ == '__main__':
         watch_loop()
     elif args.restore:
         restore()
+    elif args.test:
+        # Guvenli test: kapat, 10sn bekle, otomatik geri ac
+        log.info('=== GUVENLI TEST MODU: 10sn sonra otomatik restore ===')
+        run(skip_check=True)
+        if DISABLED_FLAG.exists():
+            log.info('Test: 10sn bekleniyor...')
+            time.sleep(10)
+            restore()
+            log.info('Test tamamlandi — ekran geri acildi.')
     else:
-        run(skip_check=args.test)
+        run(skip_check=False)
