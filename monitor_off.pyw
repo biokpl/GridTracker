@@ -314,16 +314,17 @@ def _win_disable_samsung() -> bool:
         p.sourceInfo.modeInfoIdx = idx_map[p.sourceInfo.modeInfoIdx]
         p.targetInfo.modeInfoIdx = idx_map[p.targetInfo.modeInfoIdx]
 
-    # VDD kaynak modunu (SOURCE, infoType=1) pozisyon (0,0) ve 1920x1080 yap
+    # VDD kaynak modunu (SOURCE, infoType=1) pozisyon (0,0) yap
+    # Cozunurluk degistirilmiyor — Samsung ile ayni (5120x1440) kalsin
     # Windows kurali: birincil ekran her zaman (0,0)'da olmali
     for m in new_mode_list:
         if m.infoType == 1:   # DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE
             raw = bytes(m.modeData)
-            _, _, pf, _, _ = struct.unpack_from('<IIIii', raw, 0)
-            new_raw = struct.pack('<IIIii', 1920, 1080, pf, 0, 0) + raw[20:]
+            w, h, pf, px, py = struct.unpack_from('<IIIii', raw, 0)
+            new_raw = struct.pack('<IIIii', w, h, pf, 0, 0) + raw[20:]
             for j, b in enumerate(new_raw):
                 m.modeData[j] = b
-            log.info('VDD kaynak modu: 1920x1080 pos=(0,0) ayarlandi.')
+            log.info(f'VDD kaynak modu: {w}x{h} pos=(0,0) ayarlandi.')
 
     new_paths_arr = (_PATH_INFO * len(new_path_list))(*new_path_list)
     new_modes_arr = (_MODE_INFO * len(new_mode_list))(*new_mode_list)
@@ -341,52 +342,10 @@ def _win_disable_samsung() -> bool:
     return False
 
 
-def _set_vdd_resolution_1080p() -> None:
-    """
-    VDD (sanal monitör) çözünürlüğünü 1920x1080 yap.
-    Restore sonrası çağrılır — duvar kağıdı uzamasını önler.
-    """
-    import struct
-    user32 = ctypes.windll.user32
-    np_v, nm_v = wt.UINT(0), wt.UINT(0)
-    if user32.GetDisplayConfigBufferSizes(_QDC_ONLY_ACTIVE_PATHS, byref(np_v), byref(nm_v)) != _ERROR_SUCCESS:
-        return
-    paths = (_PATH_INFO * np_v.value)()
-    modes = (_MODE_INFO * nm_v.value)()
-    if user32.QueryDisplayConfig(
-        _QDC_ONLY_ACTIVE_PATHS, byref(np_v), paths, byref(nm_v), modes, None
-    ) != _ERROR_SUCCESS:
-        return
-
-    changed = False
-    for i in range(nm_v.value):
-        m = modes[i]
-        if m.infoType != 1:   # SOURCE mode
-            continue
-        raw = bytes(m.modeData)
-        w, h, pf, px, py = struct.unpack_from('<IIIII', raw, 0)
-        # Samsung degil (px!=0 veya w!=5120) ve cok yuksek cozunurluk = VDD
-        if w == 5120 and h == 1440 and px != 0:
-            new_raw = struct.pack('<IIIII', 1920, 1080, pf, px, py) + raw[20:]
-            for j, b in enumerate(new_raw):
-                m.modeData[j] = b
-            changed = True
-            log.info(f'VDD mode[{i}]: {w}x{h}->(1920x1080) pos=({px},{py})')
-
-    if changed:
-        flags = _SDC_USE_SUPPLIED_DISPLAY_CONFIG | _SDC_APPLY | _SDC_ALLOW_CHANGES
-        ret = user32.SetDisplayConfig(np_v.value, paths, nm_v.value, modes, flags)
-        if ret == _ERROR_SUCCESS:
-            log.info('VDD 1920x1080 ayarlandi.')
-        else:
-            log.warning(f'VDD cozunurluk degisimi basarisiz: {ret}')
-
-
 def _win_restore_displays() -> bool:
     """
     Kaydedilen tam config ile restore et (orijinal pozisyon korunur).
     Kayıt yoksa SDC_TOPOLOGY_EXTEND fallback.
-    Restore sonrası VDD otomatik 1920x1080 yapılır (duvar kağıdı uzamasın).
     """
     import pickle
     user32 = ctypes.windll.user32
@@ -403,7 +362,6 @@ def _win_restore_displays() -> bool:
             if ret == _ERROR_SUCCESS:
                 log.info('Kaydedilen display config restore edildi — pozisyon korundu.')
                 SAVED_CONFIG_FILE.unlink(missing_ok=True)
-                _set_vdd_resolution_1080p()
                 return True
             log.warning(f'Kaydedilen config restore basarisiz ({ret}), fallback deneniyor.')
         except Exception as e:
@@ -414,7 +372,6 @@ def _win_restore_displays() -> bool:
     if ret == _ERROR_SUCCESS:
         log.info('SetDisplayConfig extend restore OK (fallback).')
         SAVED_CONFIG_FILE.unlink(missing_ok=True)
-        _set_vdd_resolution_1080p()
         return True
     log.warning(f'SetDisplayConfig restore basarisiz: {ret}')
     return False
@@ -440,7 +397,7 @@ def _fix_offscreen_windows() -> None:
             rect = wt.RECT()
             user32.GetWindowRect(hwnd, byref(rect))
             off_mon  = (user32.MonitorFromRect(byref(rect), MONITOR_DEFAULTTONULL) == 0)
-            off_vdd  = (rect.left >= 5000)   # VDD'de kalan (Samsung 5120px genisliginde)
+            off_vdd  = (rect.left >= 10240)  # Toplam genislik asiminda (Samsung+VDD=10240)
             if off_mon or off_vdd:
                 w = max(rect.right  - rect.left, 1)
                 h = max(rect.bottom - rect.top,  1)
