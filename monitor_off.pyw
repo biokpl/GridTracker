@@ -52,6 +52,10 @@ STARTUP_DELAY_SEC = 20               # Boot sonrası sürücülerin yüklenmesi 
 TASK_NAME_OFF     = 'MatriksIQ_Monitor_Kapat'
 TASK_TIME_OFF     = '09:11'
 
+# Disable öncesi tam display config buraya kaydedilir;
+# restore sırasında orijinal pozisyon/çözünürlük korunur.
+SAVED_CONFIG_FILE = SCRIPT_DIR / '.samsung_config.pkl'
+
 # Watcher ayarları
 DISABLED_FLAG          = SCRIPT_DIR / '.samsung_disabled'
 POLL_INTERVAL_SEC      = 8           # Her N saniyede bir QDC_ALL_PATHS kontrol
@@ -219,8 +223,35 @@ def _samsung_is_physically_on() -> bool:
     return result[2]  # targetAvailable
 
 
+def _save_display_config() -> bool:
+    """
+    Mevcut aktif display config'i (paths + modes) dosyaya kaydet.
+    Disable öncesi çağrılır; restore'da tam pozisyon/çözünürlük geri yüklenir.
+    """
+    import pickle
+    user32 = ctypes.windll.user32
+    np_v, nm_v = wt.UINT(0), wt.UINT(0)
+    if user32.GetDisplayConfigBufferSizes(_QDC_ONLY_ACTIVE_PATHS, byref(np_v), byref(nm_v)) != _ERROR_SUCCESS:
+        return False
+    paths = (_PATH_INFO * np_v.value)()
+    modes = (_MODE_INFO * nm_v.value)()
+    if user32.QueryDisplayConfig(
+        _QDC_ONLY_ACTIVE_PATHS, byref(np_v), paths, byref(nm_v), modes, None
+    ) != _ERROR_SUCCESS:
+        return False
+    data = {'np': np_v.value, 'nm': nm_v.value,
+            'paths': bytes(paths), 'modes': bytes(modes)}
+    SAVED_CONFIG_FILE.write_bytes(pickle.dumps(data))
+    log.info(f'Display config kaydedildi: {np_v.value} yol, {nm_v.value} mod.')
+    return True
+
+
 def _win_disable_samsung() -> bool:
-    """Samsung'u Windows aktif ekran listesinden çıkar."""
+    """
+    Samsung'u Windows aktif ekran listesinden çıkar.
+    Önce tam config kaydedilir (restore'da pozisyon korunur).
+    SDC_SAVE_TO_DATABASE KULLANILMAZ — database bozulmasın.
+    """
     user32 = ctypes.windll.user32
     result = _find_samsung_in_paths(_QDC_ONLY_ACTIVE_PATHS)
 
@@ -230,6 +261,9 @@ def _win_disable_samsung() -> bool:
 
     adapter_id, target_id, _, n, paths, nm, modes = result
     log.info(f'Aktif ekran yolu: {n} adet — Samsung bulundu.')
+
+    # Restore'da pozisyon korunsun diye disable ÖNCESİ kaydet
+    _save_display_config()
 
     # Samsung olmadan yeni yol dizisi
     new_list = []
@@ -248,25 +282,87 @@ def _win_disable_samsung() -> bool:
         return False
 
     new_paths = (_PATH_INFO * len(new_list))(*new_list)
-    flags = (_SDC_USE_SUPPLIED_DISPLAY_CONFIG | _SDC_APPLY |
-             _SDC_ALLOW_CHANGES | _SDC_SAVE_TO_DATABASE)
+    # SDC_USE_SUPPLIED_DISPLAY_CONFIG + tam modes array: çalışan yöntem.
+    # Samsung'a ait mode girişleri artık hiçbir path'e referans verilmiyor;
+    # SDC_ALLOW_CHANGES ile Windows bunları yok sayar.
+    # Orijinal config disable ÖNCE kaydedildiğinden restore tam pozisyonla yapılır.
+    flags = (_SDC_USE_SUPPLIED_DISPLAY_CONFIG | _SDC_APPLY | _SDC_ALLOW_CHANGES)
     ret = user32.SetDisplayConfig(len(new_list), new_paths, nm, modes, flags)
     if ret == _ERROR_SUCCESS:
-        log.info('SetDisplayConfig disable ✓ — AnyDesk artık uyandıramaz.')
+        log.info('SetDisplayConfig disable OK — AnyDesk artik uyandıramaz.')
         return True
-    log.warning(f'SetDisplayConfig disable başarısız: {ret}')
+    log.warning(f'SetDisplayConfig disable basarisiz: {ret}')
     return False
 
 
 def _win_restore_displays() -> bool:
-    """SDC_TOPOLOGY_EXTEND ile tüm ekranları yeniden aktif et."""
+    """
+    Kaydedilen tam config ile restore et (orijinal pozisyon korunur).
+    Kayıt yoksa SDC_TOPOLOGY_EXTEND fallback.
+    """
+    import pickle
     user32 = ctypes.windll.user32
+
+    if SAVED_CONFIG_FILE.exists():
+        try:
+            data  = pickle.loads(SAVED_CONFIG_FILE.read_bytes())
+            np_v  = data['np']
+            nm_v  = data['nm']
+            paths = (_PATH_INFO * np_v).from_buffer_copy(data['paths'])
+            modes = (_MODE_INFO * nm_v).from_buffer_copy(data['modes'])
+            flags = (_SDC_USE_SUPPLIED_DISPLAY_CONFIG | _SDC_APPLY | _SDC_ALLOW_CHANGES)
+            ret = user32.SetDisplayConfig(np_v, paths, nm_v, modes, flags)
+            if ret == _ERROR_SUCCESS:
+                log.info('Kaydedilen display config restore edildi — pozisyon korundu.')
+                SAVED_CONFIG_FILE.unlink(missing_ok=True)
+                return True
+            log.warning(f'Kaydedilen config restore basarisiz ({ret}), fallback deneniyor.')
+        except Exception as e:
+            log.error(f'Config yükleme hatası: {e}')
+
+    # Fallback: SDC_TOPOLOGY_EXTEND (SAVE_TO_DATABASE olmadan — o flag error 87 verir)
     ret = user32.SetDisplayConfig(0, None, 0, None, _SDC_APPLY | _SDC_TOPOLOGY_EXTEND)
     if ret == _ERROR_SUCCESS:
-        log.info('SetDisplayConfig restore ✓ — tüm ekranlar extend modunda açıldı.')
+        log.info('SetDisplayConfig extend restore ✓ (fallback).')
+        SAVED_CONFIG_FILE.unlink(missing_ok=True)
         return True
     log.warning(f'SetDisplayConfig restore başarısız: {ret}')
     return False
+
+
+def _fix_offscreen_windows() -> None:
+    """
+    Restore sonrası görünmez alanda kalan pencereleri birincil monitöre taşı.
+    Pencere boyutları korunur, sadece pozisyon (20, 20) yapılır.
+    """
+    user32 = ctypes.windll.user32
+    MONITOR_DEFAULTTONULL = 0x00000000
+    SWP_NOSIZE            = 0x0001
+    SWP_NOZORDER          = 0x0004
+    SWP_NOACTIVATE        = 0x0010
+    moved = 0
+
+    def _cb(hwnd, _):
+        nonlocal moved
+        try:
+            if not user32.IsWindowVisible(hwnd):
+                return True
+            rect = wt.RECT()
+            user32.GetWindowRect(hwnd, byref(rect))
+            if user32.MonitorFromRect(byref(rect), MONITOR_DEFAULTTONULL) == 0:
+                user32.SetWindowPos(
+                    hwnd, 0, 20, 20, 0, 0,
+                    SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE,
+                )
+                moved += 1
+        except Exception:
+            pass
+        return True
+
+    EnumProc = ctypes.WINFUNCTYPE(ctypes.c_bool, wt.HWND, wt.LPARAM)
+    user32.EnumWindows(EnumProc(_cb), 0)
+    if moved:
+        log.info(f'{moved} pencere birincil monitore tasindi.')
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -370,6 +466,8 @@ def watch_loop() -> None:
                     if _win_restore_displays():
                         DISABLED_FLAG.unlink(missing_ok=True)
                         seen_off = False
+                        time.sleep(1)              # Sürücünün ekranı tanıması için
+                        _fix_offscreen_windows()   # Kaymış pencereleri düzelt
                         log.info('Restore tamamlandi. Watcher bekleme moduna dondu.')
                         time.sleep(30)   # Restore sonrası kısa bekleme
                 # else: Samsung henüz kapanmadı (No Signal aşaması), bekle
@@ -538,6 +636,8 @@ def restore() -> None:
     ok = _win_restore_displays()
     if ok:
         DISABLED_FLAG.unlink(missing_ok=True)
+        time.sleep(1)                   # Sürücünün ekranı tanıması için kısa bekle
+        _fix_offscreen_windows()        # Görünmez alanda kalan pencereleri taşı
     else:
         log.error('Monitör geri açılamadı.')
     log.info('Tamamlandi.')
