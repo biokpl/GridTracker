@@ -1658,12 +1658,22 @@ def calc_profit(trades, carried_over=None):
         today_buys  = [t for t in sym_trades if t['type'] == 'Alış']
         today_sells = [t for t in sym_trades if t['type'] == 'Satış']
 
-        # Alış havuzu: önceki günden devredenler + bugünkü alışlar
+        # Alış havuzu: önceki günden devredenlerle başla
+        # ÖNEMLI: bugünkü alışlar zamansal sıraya göre kuyruğa eklenir —
+        # gelecekteki bir alış, daha önceki bir satışa eşleştirilemez.
         carried   = [dict(t, carryover=True)  for t in carried_over.get(sym, [])]
-        buy_queue = carried + list(today_buys)
+        buy_queue = list(carried)   # sadece carry-in ile başla
 
         pairs = []
-        for sell in today_sells:
+        # Tüm olayları (alış + satış) zamansal sırayla işle
+        for event in sym_trades:
+            if event['type'] == 'Alış':
+                # Alış gerçekleşti → kuyruğa ekle
+                buy_queue.append(dict(event))
+                continue
+
+            # Satış olayı: eşleştirme yap
+            sell           = event
             sell_remaining = sell['execQty']
             sell_price     = sell['execPrice']
             sell_cpl       = sell['commission'] / sell['execQty']  # komisyon / lot

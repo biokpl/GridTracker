@@ -64,6 +64,11 @@ pyautogui.PAUSE    = 0.05
 # (sol_x, ust_y, genislik, yukseklik)
 PANEL_REGION = (370, 62, 1088, 588)
 
+# Badge (satir ikonu + isim yazisi) YALNIZCA panelin sol bolgesinde aranir.
+# Sagdaki Calistir/Gecmis butonlari ile karismasin diye daraltilmis bolge.
+# (sol_x, ust_y, genislik, yukseklik) — yalnizca sol ~380 px
+BADGE_REGION = (370, 62, 380, 588)
+
 # Calistir butonunun template dosyasi (tum satirlarda ayni gorunum)
 # Template match ile her satirda tam merkez bulunur — offset hesabina gerek kalmaz
 CALISTIR_TMPL = 'tmpl_calistir_btn.png'
@@ -196,6 +201,43 @@ def find_template(template_file, confidence=0.80, region=None):
         return None
 
 
+def _find_badge(template_file, confidence=0.80):
+    """
+    Badge template'ini BADGE_REGION (panelin sol yarisi) icinde arar.
+    Yalnizca sol tarafta bulunan ikonu/isim yazilarini eslestirir;
+    sag taraftaki Calistir/Gecmis buton alanlarindan yanlis eslesmeyi onler.
+    Bulursa (x, y) merkez dondurur, bulamazsa None.
+    """
+    p = SCRIPT_DIR / template_file
+    if not p.exists():
+        log.warning(f'Template dosyasi yok: {template_file}')
+        return None
+
+    # BADGE_REGION'in sag siniri (mutlak x koordinati)
+    badge_x_max = BADGE_REGION[0] + BADGE_REGION[2]  # 370 + 380 = 750
+
+    try:
+        import cv2  # noqa
+        center = pyautogui.locateCenterOnScreen(
+            str(p), confidence=confidence, region=BADGE_REGION
+        )
+        if center:
+            # Ek guvenlik: x BADGE_REGION disina tasmamali
+            if center.x > badge_x_max:
+                log.warning(
+                    f'Badge x={center.x} BADGE_REGION ({badge_x_max}) disinda — '
+                    f'yanlis esleme, atiliyor.'
+                )
+                return None
+            log.info(f'Badge bulundu: {template_file} -> ({center.x}, {center.y})')
+        else:
+            log.warning(f'Badge bulunamadi (BADGE_REGION): {template_file}')
+        return center
+    except Exception as e:
+        log.debug(f'_find_badge ({template_file}): {e}')
+        return None
+
+
 # ════════════════════════════════════════════════════════════
 #  ADIM 0 — Acik kalan explorer sonuc pencerelerini kapat
 # ════════════════════════════════════════════════════════════
@@ -239,19 +281,12 @@ def step1_open_panel():
     time.sleep(0.3)
     save_screenshot('oncesi')
 
-    # Panel zaten acik mi? (ilk explorer'in badge'ini ara)
-    tmpl = SCRIPT_DIR / EXPLORERS[0]['tmpl']
+    # Panel zaten acik mi? (ilk explorer'in badge'ini BADGE_REGION'da ara)
     already_open = False
-    if tmpl.exists():
-        try:
-            import cv2  # noqa
-            found = pyautogui.locateCenterOnScreen(str(tmpl), confidence=0.75,
-                                                   region=PANEL_REGION)
-            if found:
-                log.info(f'Panel zaten acik (badge bulundu: {found.x},{found.y}) — tiklanmadan geciliyor.')
-                already_open = True
-        except Exception:
-            pass
+    found = _find_badge(EXPLORERS[0]['tmpl'], confidence=0.75)
+    if found:
+        log.info(f'Panel zaten acik (badge bulundu: {found.x},{found.y}) — tiklanmadan geciliyor.')
+        already_open = True
 
     if not already_open:
         click(872, 42, wait=1.5)
@@ -270,11 +305,12 @@ def step2_run_explorer(explorer):
     template_file = explorer['tmpl']
     log.info(f'Adim 2: {name} araniyor...')
 
-    # Badge'i bul — satirin yaklasik y konumunu ogrenmek icin
-    badge = find_template(template_file, confidence=0.80)
+    # Badge'i bul — BADGE_REGION (panelin sol yarisi) icinde ara
+    # Sagdaki buton alanlariyla karismasin diye daraltilmis bolge kullanilir
+    badge = _find_badge(template_file, confidence=0.80)
     if not badge:
         log.info('Dusuk confidence ile tekrar deneniyor...')
-        badge = find_template(template_file, confidence=0.65)
+        badge = _find_badge(template_file, confidence=0.65)
 
     if not badge:
         log.error(f'{name} satirinin template\'i bulunamadi: {template_file}')
