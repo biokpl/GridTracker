@@ -147,9 +147,36 @@ def bring_to_front(title):
 #  ANA OTOMASYON
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+def _ensure_server():
+    """Server çalışmıyorsa başlatır, hazır olana kadar bekler (maks 15s)."""
+    import urllib.request as _ur
+    try:
+        _ur.urlopen('http://127.0.0.1:5050/api/health', timeout=2)
+        return True  # zaten çalışıyor
+    except Exception:
+        pass
+    # Başlat
+    pythonw = str(Path(sys.executable).parent / 'pythonw.exe')
+    server  = str(SCRIPT_DIR / 'server.py')
+    subprocess.Popen([pythonw, server], cwd=str(SCRIPT_DIR),
+                     creationflags=0x00000008)  # DETACHED_PROCESS
+    log.info('[Push] Server başlatıldı, hazır olması bekleniyor...')
+    for _ in range(15):
+        time.sleep(1)
+        try:
+            _ur.urlopen('http://127.0.0.1:5050/api/health', timeout=1)
+            log.info('[Push] Server hazır.')
+            return True
+        except Exception:
+            pass
+    log.warning('[Push] Server 15s içinde başlamadı.')
+    return False
+
+
 def _send_notify(title, body, tag='gridtracker'):
     """automation_server /api/notify endpoint'ine POST atar."""
     import urllib.request as _ur, json as _json
+    _ensure_server()
     try:
         payload = _json.dumps({'title': title, 'body': body, 'tag': tag}).encode()
         req = _ur.Request('http://127.0.0.1:5050/api/notify',
