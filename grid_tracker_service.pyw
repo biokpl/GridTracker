@@ -1634,6 +1634,20 @@ def read_file2(path):
 # ──────────────────────────────────────────────────────────
 #  KAR HESAPLAMA
 # ──────────────────────────────────────────────────────────
+def derive_carryover_from_history(all_trades_history, before_date):
+    """
+    allTrades geçmişindeki before_date öncesi tüm işlemleri FIFO ile işleyerek
+    o tarihe ait gerçek açık pozisyonları türetir.
+    Stored openPositions'a güvenmek yerine doğrudan geçmişten hesaplar,
+    böylece önceki günlerdeki hatalı carryover zincirlenmesi önlenir.
+    """
+    hist = [t for t in all_trades_history if t.get('date', '') < before_date]
+    if not hist:
+        return {}
+    result = calc_profit(hist, carried_over={})
+    return result.get('openPositions', {})
+
+
 def calc_profit(trades, carried_over=None):
     """
     Fiyat bazlı eşleştirme (Grid Bot mantığı).
@@ -1910,28 +1924,21 @@ def run_once(dry_run=False):
 
     today_trades = [t for t in trades if t['date'] == excel_date]
 
-    # Önceki günden devreden eşleşmemiş alışlar (FIFO kuyruğuna önce eklenir)
-    # Aynı gün yeniden çalıştırılırsa carryIn kaydından orijinal carry-over okunur
-    op_data    = existing.get('openPositions', {})
-    op_date    = op_data.get('date', '')
-    carry_in_saved = existing.get('carryIn', {})
-
-    if op_date and op_date < excel_date:
-        # Normal durum: önceki günün açık pozisyonlarını yükle
-        prev_open = op_data.get('positions', {})
-    elif carry_in_saved.get('date') == excel_date:
-        # Aynı gün yeniden çalışma: ilk çalışmadaki carry-in korunmuş
-        prev_open = carry_in_saved.get('positions', {})
-        log.info('Ayni gun yeniden calistirma: carryIn kaydından devreden pozisyonlar yuklendi')
-    else:
-        prev_open = {}
+    # Önceki günden devreden eşleşmemiş alışlar:
+    # allTrades geçmişinden FIFO çalıştırarak türet — stored openPositions'a güvenme.
+    # Bu sayede önceki günlerdeki hatalı carryover zincirlenmesi önlenir.
+    all_trades_so_far = [t for t in existing.get('allTrades', [])
+                         if t.get('date', '') != excel_date]
+    prev_open = derive_carryover_from_history(all_trades_so_far, excel_date)
 
     if prev_open:
         carried_syms = ', '.join(
             f"{sym}({sum(p['execQty'] for p in pos)} lot)"
             for sym, pos in prev_open.items()
         )
-        log.info(f'Devreden acik pozisyonlar: {carried_syms}')
+        log.info(f'Devreden acik pozisyonlar (gecmisten turetildi): {carried_syms}')
+    else:
+        log.info('Devreden acik pozisyon yok')
 
     profit = calc_profit(today_trades, carried_over=prev_open)
 
@@ -2010,15 +2017,11 @@ def run_once(dry_run=False):
         'overallHistory': oh,
         'monthlyKar':     monthly_kar,
         # Açık pozisyon: hangi günden üretildiğini de saklıyoruz
+        # (artık sadece referans — carryover her zaman allTrades'den türetiliyor)
         'openPositions':  {
             'date':      excel_date,
             'positions': profit.get('openPositions', {}),
         },
-        # Carry-in: bu güne taşınan pozisyonlar (aynı gün yeniden çalışmada korunur)
-        'carryIn': (
-            carry_in_saved if carry_in_saved.get('date') == excel_date
-            else {'date': excel_date, 'positions': prev_open}
-        ),
         'settings':       settings,
         # Sermaye hareketleri — kullanıcı tarafından girilir, asla sıfırlanmaz
         'birikimTx':      existing.get('birikimTx', []),
