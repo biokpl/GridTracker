@@ -4,8 +4,14 @@ morning_config.ini
 data.json
 
 # Geçici dosyalar
-*.png
+# PNG/JPG - ama PWA iconları ve otomasyon şablonları hariç
 *.jpg
+tmpl_*.png
+ATR_SONUC*.png
+Destek_Direc*.png
+infoyatirim_template.png
+eski_*.png
+*_btn.png
 __pycache__/
 *.pyc
 .env
