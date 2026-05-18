@@ -3197,7 +3197,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
     if(!D) return;
     const ds=D.settings||{};
     if(ds.costs) S.settings.costs=ds.costs;
-    S.settings.botSymbols=Array.isArray(ds.botSymbols)?ds.botSymbols:[];
+    if(ds.botSymbols!==undefined) S.settings.botSymbols=Array.isArray(ds.botSymbols)?ds.botSymbols:[];
     S.settings.monthlyTarget=ds.monthlyTarget||0;
     if(ds.trackSymbol!=null) S.settings.trackSymbol=ds.trackSymbol;
     if(ds.trackTarget!=null) S.settings.trackTarget=ds.trackTarget;
