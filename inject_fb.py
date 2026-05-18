@@ -23,7 +23,7 @@ except Exception as e:
 html = HTML_FILE.read_text(encoding='utf-8')
 
 # Payload JSON
-payload_str = json.dumps(fb, ensure_ascii=False, indent=2)
+payload_str = json.dumps(fb, ensure_ascii=True, indent=2)
 
 new_block = (
     "                // GRID_DATA_START\n"
@@ -33,7 +33,7 @@ new_block = (
 
 new_html = re.sub(
     r'// GRID_DATA_START.*?// GRID_DATA_END',
-    new_block, html, flags=re.DOTALL
+    lambda _: new_block, html, flags=re.DOTALL
 )
 
 if new_html == html:
