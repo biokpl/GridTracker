@@ -38,7 +38,7 @@ from flask import Flask, request, jsonify, Response
 SCRIPT_DIR  = Path(__file__).parent
 CONFIG_FILE = SCRIPT_DIR / 'morning_config.ini'
 TASK_NAME   = 'MatriksIQ_Sabah_Otomasyonu'
-PORT        = 5051
+PORT        = 5050
 
 app = Flask(__name__)
 

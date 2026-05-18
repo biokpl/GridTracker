@@ -1241,7 +1241,7 @@ function renderCostSummary(){
 // ════════════════════════════════════════════════════════
 //  SABAH OTOMASYONU AYARLARI
 // ════════════════════════════════════════════════════════
-const AUTO_API = 'http://localhost:5051';
+const AUTO_API = 'http://localhost:5050';
 const IS_LOCAL = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
 async function loadAutoSettings(){
@@ -1371,7 +1371,6 @@ document.addEventListener('DOMContentLoaded',async()=>{
 SCRIPT_DIR = Path(__file__).parent
 FILE1      = SCRIPT_DIR / '1.xlsx'
 FILE2      = SCRIPT_DIR / '2.xlsx'
-ATR_FILE   = SCRIPT_DIR / 'ATR_Sonuc.xlsx'
 HTML_FILE  = SCRIPT_DIR / 'bist_tracker.html'
 DATA_JSON  = SCRIPT_DIR / 'data.json'
 LOG_FILE   = SCRIPT_DIR / 'grid_tracker.log'
@@ -1631,22 +1630,6 @@ def read_file2(path):
         if ss(row[0]).upper() == 'OAC':
             return sf(row[2])
     log.warning("T2 Overall bulunamadı"); return 0.0
-
-def read_atr_prices(path):
-    """ATR_Sonuc.xlsx'den anlık hisse fiyatlarını okur."""
-    if not path.exists():
-        log.warning(f"ATR dosyası yok: {path}"); return {}
-    wb = openpyxl.load_workbook(path, data_only=True)
-    ws = wb.active
-    prices = {}
-    for row in ws.iter_rows(values_only=True):
-        if not row[0] or row[0] == 'Sembol': continue
-        sym = ss(row[0]).upper()
-        price = sf(row[3])
-        if sym and price:
-            prices[sym] = price
-    log.info(f"ATR: {len(prices)} hisse fiyatı okundu")
-    return prices
 
 # ──────────────────────────────────────────────────────────
 #  KAR HESAPLAMA
@@ -1928,7 +1911,6 @@ def run_once(dry_run=False):
     existing = load_existing()
     trades   = read_file1(FILE1)
     overall  = read_file2(FILE2)
-    stocks   = read_atr_prices(ATR_FILE)
 
     if not trades and not overall:
         log.error("Her iki dosya da okunamadi."); return False
@@ -2025,28 +2007,6 @@ def run_once(dry_run=False):
             monthly_kar.sort(key=lambda x: x['month'])
             log.info(f'Aylık kar kaydedildi: {month_key} → {mk_profit:+,} ₺')
 
-    # ── LCD REALNET: totalNet + unrealized P&L ────────────────────────────────
-    # Açık pozisyonların anlık fiyat bazlı kar/zarar hesabı (Python tarafında)
-    unrealized = 0.0
-    open_pos_count = 0
-    open_positions_data = profit.get('openPositions', {})
-    bot_symbols = settings.get('botSymbols', [])
-    for sym, pos_list in open_positions_data.items():
-        if bot_symbols and sym.upper() not in [s.upper() for s in bot_symbols]:
-            continue
-        cur_price = stocks.get(sym, 0)
-        if not cur_price:
-            continue
-        for pos in pos_list:
-            exec_qty = pos.get('execQty', 0)
-            exec_price = pos.get('execPrice', 0)
-            comm_rate = (pos.get('commission', 0) / pos.get('execAmount', 1)) if pos.get('execAmount', 0) > 0 else 0.0001
-            sell_comm = cur_price * exec_qty * comm_rate
-            unrealized += (cur_price - exec_price) * exec_qty - sell_comm
-            open_pos_count += 1
-    real_net = profit.get('totalNet', 0) + unrealized
-    log.info(f"LCD realNet: {real_net:+.2f} (unrealized={unrealized:+.2f}, openPos={open_pos_count})")
-
     payload = {
         'lastUpdated':    datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'today':          excel_date,
@@ -2065,10 +2025,6 @@ def run_once(dry_run=False):
         'settings':       settings,
         # Sermaye hareketleri — kullanıcı tarafından girilir, asla sıfırlanmaz
         'birikimTx':      existing.get('birikimTx', []),
-        # LCD için eklenen alanlar
-        'stocks':         stocks,
-        'realNet':        real_net,
-        'openPosCount':   open_pos_count,
     }
 
     inject_into_html(payload)
