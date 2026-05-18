@@ -546,13 +546,9 @@ select.field-input option{background:var(--surface2);}
 .mk-card thead th{position:sticky;top:0;background:var(--surface);z-index:1;font-size:10px;}
 .mk-card td{font-size:12px;}
 /* ── Collapsible group headers ── */
-.grp-hdr td{background:rgba(255,255,255,.03);border-top:1px solid rgba(255,255,255,.07);padding:7px 10px!important;cursor:pointer;user-select:none;}
-.grp-hdr:hover td{background:rgba(255,255,255,.06);}
-.grp-row{display:flex;align-items:center;gap:8px;}
-.grp-arrow{font-size:8px;color:var(--text3);min-width:10px;display:inline-block;}
-.grp-label{font-weight:700;font-size:11px;letter-spacing:.5px;}
-.grp-sub{color:var(--text3);font-size:10px;margin-left:4px;}
-.grp-total{margin-left:auto;font-weight:600;font-size:11px;font-family:var(--mono);}
+.grp-hdr td{background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.04);padding:7px 10px!important;cursor:pointer;user-select:none;}
+.grp-hdr:hover td{background:rgba(255,255,255,.07);}
+.grp-arrow{font-size:7px;color:var(--text3);margin-right:6px;display:inline-block;vertical-align:middle;}
 .month-nav{display:flex;align-items:center;gap:4px;margin-bottom:16px;}
 .month-btn{
   background:var(--surface2);border:1px solid var(--border);border-radius:7px;
@@ -22564,19 +22560,18 @@ function renderMonthlyKar(){
     const isPos=yearTotal>=0;
     const cnt=byYear[y].length;
     let html=`<tr class="grp-hdr" onclick="toggleMkYear('${y}')">
-      <td colspan="3"><div class="grp-row">
-        <span class="grp-arrow">${collapsed?'▶':'▼'}</span>
-        <span class="grp-label" style="color:#a78bfa">${y}</span>
-        <span class="grp-sub">${cnt} ay</span>
-        <span class="grp-total ${isPos?'td-pos':'td-neg'}">${isPos?'+':''}${fxi(yearTotal)} ₺</span>
-      </div></td>
+      <td class="mk-td-yr" style="font-weight:700;font-size:12px;text-align:center">
+        <span class="grp-arrow">${collapsed?'▶':'▼'}</span>${y}
+      </td>
+      <td style="color:var(--text3);font-size:10px;text-align:center">${cnt} ay</td>
+      <td class="${isPos?'td-pos':'td-neg'}" style="font-weight:700;font-size:12px;text-align:center">${isPos?'+':''}${fxi(yearTotal)} ₺</td>
     </tr>`;
     if(!collapsed){
       html+=byYear[y].map(d=>{
         const[yr,mo]=d.month.split('-');
         const dp=d.profit>=0;
         return `<tr>
-          <td class="mk-td-yr" style="opacity:.35">${yr}</td>
+          <td class="mk-td-yr" style="opacity:.4;font-size:10px">${yr}</td>
           <td class="mk-td-mo">${MN[parseInt(mo)-1]}</td>
           <td class="${dp?'td-pos':'td-neg'}">${dp?'+':''}${fxi(d.profit)} ₺</td>
         </tr>`;
@@ -23382,12 +23377,21 @@ function renderOverall(){
     const isCurrentMonth=mk===curMonth;
     const collapsed=!isCurrentMonth && S._ovCollapsed[mk]!==false;
     const cnt=byMonth[mk].length;
+    // Ay başlığı için: son portföy değeri ve aylık değişim
+    const lastEntry=byMonth[mk][0]; // en yeni (desc sıralı)
+    const oldestEntry=byMonth[mk][byMonth[mk].length-1]; // en eski
+    const prevEntry=oh[oh.indexOf(oldestEntry)+1]; // önceki ayın son girdisi
+    const moDiff=prevEntry?lastEntry.amount-prevEntry.amount:null;
+    const moDc=moDiff!==null?(moDiff>=0?'td-pos':'td-neg'):'';
+    const moDiffTxt=moDiff!==null?(moDiff>=0?'+':'')+fxi(moDiff)+' ₺':'—';
     html+=`<tr class="grp-hdr" onclick="toggleOvMonth('${mk}')">
-      <td colspan="5"><div class="grp-row">
-        <span class="grp-arrow">${collapsed?'▶':'▼'}</span>
-        <span class="grp-label" style="color:#93c5fd">${mLabel}</span>
-        <span class="grp-sub">${cnt} kayıt</span>
-      </div></td>
+      <td style="color:#93c5fd;font-weight:700;font-size:11px;text-align:left">
+        <span class="grp-arrow">${collapsed?'▶':'▼'}</span>${mLabel}
+      </td>
+      <td style="color:#c4cfe0;font-weight:600;font-family:var(--mono);text-align:center">${fxi(lastEntry.amount)}₺</td>
+      <td class="${moDc}" style="font-weight:700;text-align:center">${moDiffTxt}</td>
+      <td style="color:var(--text3);font-size:10px;text-align:center">${cnt} kayıt</td>
+      <td></td>
     </tr>`;
     if(!collapsed){
       byMonth[mk].forEach(h=>{
