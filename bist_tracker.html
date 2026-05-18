@@ -23408,8 +23408,7 @@ function renderOverall(){
       <td style="text-align:left"><span class="grp-chevron" style="color:#60a5fa">${collapsed?'▸':'▾'}</span><span class="grp-mo-lbl">${mLabel}</span></td>
       <td><span class="grp-pf-val">${fxi(lastEntry.amount)} ₺</span></td>
       <td>${moDiff!==null?`<span class="grp-mo-diff ${moDiffClass}">${moDiff>=0?'+':''}${fxi(moDiff)} ₺</span>`:`<span style="color:var(--text3)">—</span>`}</td>
-      <td><span class="grp-cnt-badge">${cnt} kayıt</span></td>
-      <td></td>
+      <td colspan="2"><span class="grp-cnt-badge">${cnt} kayıt</span></td>
     </tr>`;
     if(!collapsed){
       byMonth[mk].forEach(h=>{
