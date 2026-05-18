@@ -113,7 +113,7 @@ EXPLORERS = [
     },
     {
         'tmpl':     'tmpl_destek_direnc.png',
-        'name':     'Destek_Direnc_Seviyeleri',
+        'name':     'Destek_Direc_Seviyeleri',
         'filename': 'Destek_Direc_Seviyeleri.xlsx',
         # Oneri kapandiktan sonra: 1s bekle, click(1395,1244), 1s bekle, click(1446,75)
         'after_export': [
@@ -365,7 +365,41 @@ def _find_calistir_for_row(badge_y):
 # ════════════════════════════════════════════════════════════
 
 def step3_click_bitir(name):
-    log.info(f'Adim 3: {name} Parametreler -> Bitir ({BITIR_X}, {BITIR_Y})...')
+    # Parametreler panelini bekle ve Bitir butonunu bul
+    panel_tmpl = f'{name} Explorer Parametreleri.png'
+    panel_path = SCRIPT_DIR / panel_tmpl
+    bitir_path = SCRIPT_DIR / 'Bitir.png'
+
+    log.info(f'Adim 3: {name} Parametreler paneli ve Bitir butonu bekleniyor...')
+
+    # Panel açılana kadar bekle (max 30s)
+    deadline = time.time() + 30
+    while time.time() < deadline:
+        try:
+            panel_pos = pyautogui.locateCenterOnScreen(str(panel_path), confidence=0.75)
+            if panel_pos:
+                log.info(f'Parametreler paneli bulundu: {panel_pos}')
+                break
+        except Exception:
+            pass
+        time.sleep(0.5)
+    else:
+        log.warning(f'Parametreler paneli bulunamadi: {panel_tmpl}')
+
+    # Bitir butonunu bul ve tikla
+    try:
+        bitir_pos = pyautogui.locateCenterOnScreen(str(bitir_path), confidence=0.75)
+        if bitir_pos:
+            log.info(f'Bitir butonu bulundu: {bitir_pos}')
+            click(bitir_pos.x, bitir_pos.y, wait=0)
+            log.info('Bitir tiklandi. Sonuclar penceresi bekleniyor...')
+            save_screenshot(f'{name}_bitir_tiklandi')
+            return
+    except Exception as e:
+        log.warning(f'Bitir buttonu bulunamadi: {e}')
+
+    # Fallback: eski yontem
+    log.warning('Bitir bulunamadi, eski koordinatlar kullaniliyor.')
     click(BITIR_X, BITIR_Y, wait=0)
     log.info('Bitir tiklandi. Sonuclar penceresi bekleniyor...')
     save_screenshot(f'{name}_bitir_tiklandi')
@@ -424,6 +458,9 @@ def step5_export(explorer):
     name     = explorer['name']
     filename = explorer['filename']
     log.info(f'Adim 5: {name} export basliyor (dosya: {filename})...')
+
+    # Sonuclar penceresi yeni acildi, tam yuklenmesi icin bekle
+    time.sleep(1.5)
 
     # 1. Export butonu 1
     click(EXPORT_BTN1_X, EXPORT_BTN1_Y, wait=1)
