@@ -23163,12 +23163,16 @@ function gcShowPrice(sym,price,ts){
 
 // BİST fiyat kademesi (tick size) — fiyata göre minimum adım
 function getBistTickSize(price){
-  // Resmi BİST fiyat adımı tablosu (06.11.2023 tarihinden itibaren geçerli)
+  // Resmi BİST fiyat adımı tablosu (yeni düzenleme)
   if(!price||price<=0) return 0.01;
-  if(price<1)   return 0.01;
-  if(price<10)  return 0.05;
-  if(price<100) return 0.10;
-  return 0.25;
+  if(price<20)   return 0.01;
+  if(price<50)   return 0.02;
+  if(price<100)  return 0.05;
+  if(price<250)  return 0.10;
+  if(price<500)  return 0.25;
+  if(price<1000) return 0.50;
+  if(price<2500) return 1.00;
+  return 2.50;
 }
 function roundToTick(value,tick){
   return Math.round(value/tick)*tick;
