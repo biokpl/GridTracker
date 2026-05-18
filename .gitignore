@@ -2,6 +2,17 @@
 morning_config.ini
 *.log
 data.json
+vapid_keys.json
+
+# İşlem ve piyasa verileri - her gün değişir, kod değil
+*.xlsx
+data.json.backup_*
+
+# Debug çıktıları
+fb_check.txt
+fb_debug.txt
+fb_debug2.txt
+fb_debug3.txt
 
 # Geçici dosyalar
 # PNG/JPG - ama PWA iconları ve otomasyon şablonları hariç
