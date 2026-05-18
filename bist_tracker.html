@@ -547,26 +547,27 @@ select.field-input option{background:var(--surface2);}
 .mk-card td{font-size:12px;}
 /* ── Collapsible group headers ── */
 .mk-yr-hdr td{
-  background:linear-gradient(90deg,rgba(167,139,250,.14) 0%,rgba(167,139,250,.05) 60%,transparent 100%);
-  border-top:1px solid rgba(167,139,250,.28);border-bottom:1px solid rgba(167,139,250,.12);
-  padding:9px 12px!important;cursor:pointer;user-select:none;}
-.mk-yr-hdr:hover td{background:linear-gradient(90deg,rgba(167,139,250,.22) 0%,rgba(167,139,250,.09) 60%,transparent 100%);}
+  background:linear-gradient(90deg,rgba(167,139,250,.13) 0%,rgba(167,139,250,.05) 55%,transparent 100%);
+  border-top:1px solid rgba(167,139,250,.25);border-bottom:1px solid rgba(167,139,250,.10);
+  padding:5px 8px!important;cursor:pointer;user-select:none;text-align:center;}
+.mk-yr-hdr td+td{border-left:1px solid rgba(167,139,250,.15);}
+.mk-yr-hdr:hover td{background:linear-gradient(90deg,rgba(167,139,250,.20) 0%,rgba(167,139,250,.08) 55%,transparent 100%);}
 .ov-mo-hdr td{
-  background:linear-gradient(90deg,rgba(96,165,250,.12) 0%,rgba(96,165,250,.04) 60%,transparent 100%);
-  border-top:1px solid rgba(96,165,250,.25);border-bottom:1px solid rgba(96,165,250,.10);
-  padding:9px 12px!important;cursor:pointer;user-select:none;}
-.ov-mo-hdr:hover td{background:linear-gradient(90deg,rgba(96,165,250,.20) 0%,rgba(96,165,250,.08) 60%,transparent 100%);}
-/* İç düzen */
-.grp-inner{display:flex;align-items:center;gap:10px;}
-.grp-chevron{font-size:9px;width:14px;text-align:center;flex-shrink:0;transition:transform .15s;}
-.grp-yr-lbl{font-size:13px;font-weight:800;color:#c4b5fd;letter-spacing:.8px;font-family:var(--mono);}
-.grp-mo-lbl{font-size:12px;font-weight:700;color:#7dd3fc;letter-spacing:.3px;}
-.grp-cnt-badge{font-size:9px;color:var(--text3);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:2px 8px;flex-shrink:0;}
-.grp-yr-sum{margin-left:auto;font-size:12px;font-weight:700;font-family:var(--mono);padding:3px 11px;border-radius:6px;flex-shrink:0;}
-.grp-yr-sum.pos{background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.22);}
-.grp-yr-sum.neg{background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.20);}
-.grp-pf-val{font-size:11px;font-weight:600;color:#fbbf24;font-family:var(--mono);flex-shrink:0;}
-.grp-mo-diff{font-size:11px;font-weight:700;font-family:var(--mono);padding:2px 9px;border-radius:5px;flex-shrink:0;}
+  background:linear-gradient(90deg,rgba(96,165,250,.11) 0%,rgba(96,165,250,.04) 55%,transparent 100%);
+  border-top:1px solid rgba(96,165,250,.22);border-bottom:1px solid rgba(96,165,250,.08);
+  padding:5px 8px!important;cursor:pointer;user-select:none;text-align:center;}
+.ov-mo-hdr td+td{border-left:1px solid rgba(96,165,250,.13);}
+.ov-mo-hdr:hover td{background:linear-gradient(90deg,rgba(96,165,250,.18) 0%,rgba(96,165,250,.07) 55%,transparent 100%);}
+/* İç elemanlar */
+.grp-chevron{font-size:8px;margin-right:5px;display:inline-block;vertical-align:middle;}
+.grp-yr-lbl{font-size:12px;font-weight:800;color:#c4b5fd;letter-spacing:.8px;font-family:var(--mono);vertical-align:middle;}
+.grp-mo-lbl{font-size:11px;font-weight:700;color:#7dd3fc;letter-spacing:.2px;vertical-align:middle;}
+.grp-cnt-badge{font-size:9px;color:var(--text3);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:1px 7px;display:inline-block;}
+.grp-yr-sum{font-size:11px;font-weight:700;font-family:var(--mono);padding:2px 9px;border-radius:5px;display:inline-block;}
+.grp-yr-sum.pos{background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.20);}
+.grp-yr-sum.neg{background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.18);}
+.grp-pf-val{font-size:11px;font-weight:600;color:#fbbf24;font-family:var(--mono);}
+.grp-mo-diff{font-size:11px;font-weight:700;font-family:var(--mono);padding:2px 8px;border-radius:5px;display:inline-block;}
 .grp-mo-diff.pos{background:rgba(74,222,128,.12);color:#4ade80;border:1px solid rgba(74,222,128,.20);}
 .grp-mo-diff.neg{background:rgba(248,113,113,.12);color:#f87171;border:1px solid rgba(248,113,113,.18);}
 .month-nav{display:flex;align-items:center;gap:4px;margin-bottom:16px;}
@@ -22580,14 +22581,9 @@ function renderMonthlyKar(){
     const isPos=yearTotal>=0;
     const cnt=byYear[y].length;
     let html=`<tr class="mk-yr-hdr" onclick="toggleMkYear('${y}')">
-      <td colspan="3">
-        <div class="grp-inner">
-          <span class="grp-chevron" style="color:#a78bfa">${collapsed?'▸':'▾'}</span>
-          <span class="grp-yr-lbl">${y}</span>
-          <span class="grp-cnt-badge">${cnt} ay</span>
-          <span class="grp-yr-sum ${isPos?'pos':'neg'}">${isPos?'+':''}${fxi(yearTotal)} ₺</span>
-        </div>
-      </td>
+      <td><span class="grp-chevron" style="color:#a78bfa">${collapsed?'▸':'▾'}</span><span class="grp-yr-lbl">${y}</span></td>
+      <td><span class="grp-cnt-badge">${cnt} ay</span></td>
+      <td><span class="grp-yr-sum ${isPos?'pos':'neg'}">${isPos?'+':''}${fxi(yearTotal)} ₺</span></td>
     </tr>`;
     if(!collapsed){
       html+=byYear[y].map(d=>{
@@ -23409,15 +23405,11 @@ function renderOverall(){
     const moDiffTxt=moDiff!==null?(moDiff>=0?'+':'')+fxi(moDiff)+' ₺':'—';
     const moDiffClass=moDiff!==null?(moDiff>=0?'pos':'neg'):'';
     html+=`<tr class="ov-mo-hdr" onclick="toggleOvMonth('${mk}')">
-      <td colspan="5">
-        <div class="grp-inner">
-          <span class="grp-chevron" style="color:#60a5fa">${collapsed?'▸':'▾'}</span>
-          <span class="grp-mo-lbl">${mLabel}</span>
-          <span class="grp-cnt-badge">${cnt} kayıt</span>
-          <span class="grp-pf-val">${fxi(lastEntry.amount)} ₺</span>
-          ${moDiff!==null?`<span class="grp-mo-diff ${moDiffClass}">${moDiff>=0?'+':''}${fxi(moDiff)} ₺</span>`:''}
-        </div>
-      </td>
+      <td style="text-align:left"><span class="grp-chevron" style="color:#60a5fa">${collapsed?'▸':'▾'}</span><span class="grp-mo-lbl">${mLabel}</span></td>
+      <td><span class="grp-pf-val">${fxi(lastEntry.amount)} ₺</span></td>
+      <td>${moDiff!==null?`<span class="grp-mo-diff ${moDiffClass}">${moDiff>=0?'+':''}${fxi(moDiff)} ₺</span>`:`<span style="color:var(--text3)">—</span>`}</td>
+      <td><span class="grp-cnt-badge">${cnt} kayıt</span></td>
+      <td></td>
     </tr>`;
     if(!collapsed){
       byMonth[mk].forEach(h=>{
