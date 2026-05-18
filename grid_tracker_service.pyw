@@ -3260,6 +3260,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
 <script>
 // ── Push Bildirimleri ─────────────────────────────────
 const VAPID_PUBLIC_KEY='BD5u-XkJ90U0fFjGHsCRUgGu-CfMD-a0DO_3_YwPQruhJLiFJwI5eI-Q4Z9BzCF_z_AfzBUAohx6d3Kwzqp7-DA';
+const FIREBASE_URL='https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app';
 
 function _urlB64ToUint8(b64){
   const p='='.repeat((4-b64.length%4)%4);
