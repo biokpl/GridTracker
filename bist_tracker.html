@@ -23164,11 +23164,12 @@ function gcShowPrice(sym,price,ts){
 // BİST fiyat kademesi (tick size) — fiyata göre minimum adım
 function getBistTickSize(price){
   if(!price||price<=0) return 0.01;
-  if(price<2)   return 0.01;
-  if(price<10)  return 0.02;
-  if(price<50)  return 0.02;
-  if(price<100) return 0.05;
-  return 0.10;
+  if(price<2)    return 0.01;
+  if(price<50)   return 0.02;
+  if(price<100)  return 0.05;
+  if(price<500)  return 0.10;
+  if(price<1000) return 0.25;
+  return 0.50;
 }
 function roundToTick(value,tick){
   return Math.round(value/tick)*tick;
@@ -23229,7 +23230,9 @@ function calcGridBot(){
     const lots=Math.floor(capital/capPerLot);
     if(lots<1) continue;
     const gross=lots*d;
-    const comm=lots*refPrice*2*commFrac;
+    // Alış komisyonu: lot × alışFiyatı × rate
+    // Satış komisyonu: lot × (alışFiyatı + d) × rate  (satış fiyatı bir adım yukarı)
+    const comm=lots*commFrac*(refPrice+(refPrice+d));
     const net=gross-comm;
     if(net<=0) continue;
     const daily=(atr/d)*net;
@@ -23269,7 +23272,9 @@ function calcGridBotFixed(fixedD){
   const lots=Math.floor(capital/capPerLot);
   if(lots<1){toast('Bu aralık için sermaye yetersiz','err');return;}
   const gross=lots*d;
-  const comm=lots*refPrice*2*commFrac;
+  // Alış komisyonu: lot × alışFiyatı × rate
+  // Satış komisyonu: lot × (alışFiyatı + d) × rate
+  const comm=lots*commFrac*(refPrice+(refPrice+d));
   const net=gross-comm;
   if(net<=0){toast('Komisyon karı siliyor — aralık çok dar','err');return;}
   const daily=(atr/d)*net;
