@@ -420,8 +420,9 @@ class Handler(SimpleHTTPRequestHandler):
                     if m:
                         try:
                             json_str = m.group(1)
-                            # JavaScript temizleme
-                            json_str = re.sub(r'//.*', '', json_str)
+                            # JavaScript temizleme — sadece satır başı yorumları sil
+                            # (r'//.*' URL içindeki https:// gibi değerleri bozar)
+                            json_str = re.sub(r'^\s*//.*$', '', json_str, flags=re.MULTILINE)
                             json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
                             try:
                                 gd = json.loads(json_str)
