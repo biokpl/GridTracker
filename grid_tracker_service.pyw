@@ -3138,7 +3138,8 @@ function clearAll(){
 // ════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded',async()=>{
   load();
-  if(loadCache()){ syncSettings(); renderAll(false); }
+  loadCache();
+  if(D){ syncSettings(); renderAll(false); }
   // Son açık sekmeyi geri yükle
   try{
     const lastPage=sessionStorage.getItem('gt_lastPage');
