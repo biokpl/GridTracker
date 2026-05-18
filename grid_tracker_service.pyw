@@ -3253,7 +3253,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   }
   startFirebaseStream();
 
-  // ════ AUTO_DATA_INJECT ════ GT_TMPL_2dd2ff00c0e5
+  // ════ AUTO_DATA_INJECT ════
 });
 </script>
 <script>
