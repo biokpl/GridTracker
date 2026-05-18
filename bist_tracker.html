@@ -546,9 +546,15 @@ select.field-input option{background:var(--surface2);}
 .mk-card thead th{position:sticky;top:0;background:var(--surface);z-index:1;font-size:10px;}
 .mk-card td{font-size:12px;}
 /* ── Collapsible group headers ── */
-.grp-hdr td{background:rgba(255,255,255,.04);border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.04);padding:7px 10px!important;cursor:pointer;user-select:none;}
-.grp-hdr:hover td{background:rgba(255,255,255,.07);}
-.grp-arrow{font-size:7px;color:var(--text3);margin-right:6px;display:inline-block;vertical-align:middle;}
+.grp-arrow{font-size:7px;margin-right:6px;display:inline-block;vertical-align:middle;opacity:.7;}
+/* Aylık sekmesi — yıl başlıkları (mor vurgu) */
+.mk-yr-hdr td{background:rgba(167,139,250,.10);border-top:2px solid rgba(167,139,250,.30);border-bottom:1px solid rgba(167,139,250,.15);padding:8px 10px!important;cursor:pointer;user-select:none;}
+.mk-yr-hdr td:first-child{border-left:3px solid rgba(167,139,250,.55);}
+.mk-yr-hdr:hover td{background:rgba(167,139,250,.16);}
+/* Overall sekmesi — ay başlıkları (mavi vurgu) */
+.ov-mo-hdr td{background:rgba(96,165,250,.09);border-top:2px solid rgba(96,165,250,.28);border-bottom:1px solid rgba(96,165,250,.14);padding:8px 10px!important;cursor:pointer;user-select:none;}
+.ov-mo-hdr td:first-child{border-left:3px solid rgba(96,165,250,.50);}
+.ov-mo-hdr:hover td{background:rgba(96,165,250,.15);}
 .month-nav{display:flex;align-items:center;gap:4px;margin-bottom:16px;}
 .month-btn{
   background:var(--surface2);border:1px solid var(--border);border-radius:7px;
@@ -22559,9 +22565,9 @@ function renderMonthlyKar(){
     const yearTotal=byYear[y].reduce((s,d)=>s+d.profit,0);
     const isPos=yearTotal>=0;
     const cnt=byYear[y].length;
-    let html=`<tr class="grp-hdr" onclick="toggleMkYear('${y}')">
+    let html=`<tr class="mk-yr-hdr" onclick="toggleMkYear('${y}')">
       <td class="mk-td-yr" style="font-weight:700;font-size:12px;text-align:center">
-        <span class="grp-arrow">${collapsed?'▶':'▼'}</span>${y}
+        <span class="grp-arrow" style="color:#a78bfa">${collapsed?'▶':'▼'}</span>${y}
       </td>
       <td style="color:var(--text3);font-size:10px;text-align:center">${cnt} ay</td>
       <td class="${isPos?'td-pos':'td-neg'}" style="font-weight:700;font-size:12px;text-align:center">${isPos?'+':''}${fxi(yearTotal)} ₺</td>
@@ -23384,9 +23390,9 @@ function renderOverall(){
     const moDiff=prevEntry?lastEntry.amount-prevEntry.amount:null;
     const moDc=moDiff!==null?(moDiff>=0?'td-pos':'td-neg'):'';
     const moDiffTxt=moDiff!==null?(moDiff>=0?'+':'')+fxi(moDiff)+' ₺':'—';
-    html+=`<tr class="grp-hdr" onclick="toggleOvMonth('${mk}')">
-      <td style="color:#93c5fd;font-weight:700;font-size:11px;text-align:left">
-        <span class="grp-arrow">${collapsed?'▶':'▼'}</span>${mLabel}
+    html+=`<tr class="ov-mo-hdr" onclick="toggleOvMonth('${mk}')">
+      <td style="color:#60a5fa;font-weight:700;font-size:11px;text-align:left">
+        <span class="grp-arrow" style="color:#60a5fa">${collapsed?'▶':'▼'}</span>${mLabel}
       </td>
       <td style="color:#c4cfe0;font-weight:600;font-family:var(--mono);text-align:center">${fxi(lastEntry.amount)}₺</td>
       <td class="${moDc}" style="font-weight:700;text-align:center">${moDiffTxt}</td>
