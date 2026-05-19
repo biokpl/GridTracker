@@ -22292,6 +22292,10 @@ async function fbWrite(path,data){
 };
         // GRID_DATA_END
 
+                                                                // GRID_REC_START
+        window.__GRID_REC__ = {"symbol":"TOASO","price":293.25,"atr":11.48,"support":272.35,"resistance":309.23,"grid_interval":1.75,"lots":218,"buy_grids":11,"sell_grids":9,"total_grids":20,"pct_up":5.45,"pct_down":7.13,"daily_profit":2419.0,"capital_used":1255489.0,"grid_score":8.41,"rsi":47.1,"signals":"Osc=7x(aktif), Hold=77%(iyi), Vol=3.9%(ideal), Trend=notr(MA50-ustunde,mom=1.7%), Tetik=6.6/gun(iyi), Hacim=1001M(cok-likit!), RSI=47(ideal), Pos=57%(orta-ideal)","final_score":6.686,"updated_at":"2026-05-19 20:11","capital":1400000,"market_status":"Piyasa=DUSUS(!)"};
+                                // GRID_REC_END
+
 // ════════════════════════════════════════════════════════
 //  STATE
 // ════════════════════════════════════════════════════════
@@ -22878,6 +22882,14 @@ let _gcRecData = null;
 
 async function gcRecFetch() {
   const card = $('gc-rec-card');
+  // Önce HTML'e gömülü veriyi dene (GitHub Pages uyumu)
+  if (window.__GRID_REC__) {
+    _gcRecData = window.__GRID_REC__;
+    gcRecRender(_gcRecData);
+    if (card) card.style.display = '';
+    return;
+  }
+  // Gömülü veri yoksa lokal API'yi dene
   try {
     const r = await fetch('/api/grid-analysis');
     if (!r.ok) { if (card) card.style.display = 'none'; return; }
