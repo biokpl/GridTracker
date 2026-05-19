@@ -23674,7 +23674,7 @@ function renderGridResults(b,support,resistance,atr,capital,commFrac,currentPric
   const rows=[];
   for(let i=b.N;i>=0;i--){
     const price=support+i*b.d;
-    const isSell=price>=splitRef;
+    const isSell=i>=buyCount; // buyCount (fiyat-referanslı, bar ile tutarlı)
     const pctDiff=hasCurrent?((price-currentPrice)/currentPrice*100):null;
     const pctStr=pctDiff!==null?(pctDiff>=0?'+':'')+pctDiff.toFixed(1)+'%':'—';
     const pctColor=pctDiff===null?'#71717a':pctDiff>=0?'#f87171':'#86efac';
