@@ -23116,8 +23116,8 @@ async function gcLoadAtrExcel(){
   btn.disabled=true; btn.textContent='Yükleniyor…';
   try{
     const d=await gcLoadStockData(sym);
-    if(!d||d.atr_gunluk==null){toast('ATR verisi bulunamadı','err');return;}
-    $('gc-atr').value=(d.atr_gunluk).toFixed(4);
+    if(!d||d.atr_ort==null){toast('ATR verisi bulunamadı','err');return;}
+    $('gc-atr').value=(d.atr_ort).toFixed(4);
     window._gcDirty=true;
     window._gcAtrRow=d;
     try{localStorage.setItem('gt_atrRow',JSON.stringify(d));localStorage.setItem('gt_atrKey',window._gcAtrKey||'');}catch(e){}
