@@ -251,6 +251,57 @@ def run(mode='normal'):
     else:
         log.warning(f'grid_tracker_service.py bulunamadı: {grid_script}')
 
+    # ── Adım 4: Grid analizi güncelle ──────────────────────────
+    log.info('Grid analizi hesaplanıyor...')
+    analysis_script = SCRIPT_DIR / 'grid_analysis_auto.py'
+    analysis_ok = False
+    if analysis_script.exists():
+        result = subprocess.run(
+            [sys.executable, str(analysis_script), '--force'],
+            capture_output=True, text=True, encoding='utf-8', errors='replace',
+            cwd=str(SCRIPT_DIR)
+        )
+        if result.returncode == 0:
+            log.info('grid_analysis_auto.py tamamlandı ✓')
+            analysis_ok = True
+        else:
+            log.warning(f'grid_analysis_auto.py hatası: {result.stderr[:300]}')
+    else:
+        log.warning(f'grid_analysis_auto.py bulunamadı: {analysis_script}')
+
+    # ── Adım 5: GitHub Pages güncelle (analiz başarılıysa) ──────
+    if analysis_ok:
+        log.info('GitHub Pages güncelleniyor...')
+        try:
+            subprocess.run(
+                ['git', 'add', 'bist_tracker.html', 'grid_analysis_result.json'],
+                cwd=str(SCRIPT_DIR), capture_output=True
+            )
+            commit = subprocess.run(
+                ['git', 'commit', '-m',
+                 f'auto: grid analizi guncellendi {datetime.now().strftime("%Y-%m-%d %H:%M")}'],
+                cwd=str(SCRIPT_DIR), capture_output=True, text=True,
+                encoding='utf-8', errors='replace'
+            )
+            if commit.returncode == 0:
+                push = subprocess.run(
+                    ['git', 'push', 'origin', 'master'],
+                    cwd=str(SCRIPT_DIR), capture_output=True, text=True,
+                    encoding='utf-8', errors='replace'
+                )
+                if push.returncode == 0:
+                    log.info('GitHub Pages güncellendi ✓')
+                else:
+                    log.warning(f'Git push hatası: {push.stderr[:200]}')
+            else:
+                stdout = commit.stdout + commit.stderr
+                if 'nothing to commit' in stdout:
+                    log.info('Git: değişiklik yok, push atlandı.')
+                else:
+                    log.warning(f'Git commit hatası: {stdout[:200]}')
+        except Exception as e:
+            log.warning(f'Git işlemi hatası: {e}')
+
     log.info('══════════════════════════════════════════')
     log.info('  AKSAM OTOMASYONU TAMAMLANDI')
     log.info('══════════════════════════════════════════')
