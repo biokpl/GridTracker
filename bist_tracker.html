@@ -221,6 +221,53 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .gc-spin{display:inline-block;width:10px;height:10px;border:2px solid rgba(249,115,22,.3);border-top-color:#f97316;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:4px;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
+/* ── GRİD ANALİZ ÖNERİ KARTI ── */
+.gc-rec-wrap{background:linear-gradient(145deg,rgba(6,182,212,.05) 0%,rgba(8,145,178,.02) 60%,transparent 100%);border:1px solid rgba(6,182,212,.22);border-radius:var(--r);padding:14px;position:relative;overflow:hidden;}
+.gc-rec-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 5%,rgba(6,182,212,.4) 30%,rgba(34,211,238,.85) 50%,rgba(6,182,212,.4) 70%,transparent 95%);filter:drop-shadow(0 0 5px rgba(6,182,212,.5));}
+.gc-rec-wrap::after{content:'';position:absolute;top:-20px;left:50%;transform:translateX(-50%);width:280px;height:55px;background:radial-gradient(ellipse,rgba(6,182,212,.1) 0%,transparent 70%);pointer-events:none;}
+.gc-rec-header{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
+.gc-rec-title{font-size:10px;font-weight:800;letter-spacing:2px;color:#67e8f9;text-transform:uppercase;flex:1;}
+.gc-rec-badge{font-size:9px;font-weight:700;letter-spacing:.7px;padding:3px 7px;border-radius:5px;text-transform:uppercase;}
+.gc-rec-badge.dusus{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.22);}
+.gc-rec-badge.notr{background:rgba(251,191,36,.1);color:#fcd34d;border:1px solid rgba(251,191,36,.22);}
+.gc-rec-badge.yukari{background:rgba(34,197,94,.1);color:#86efac;border:1px solid rgba(34,197,94,.22);}
+.gc-rec-badge.yukselis{background:rgba(34,197,94,.16);color:#4ade80;border:1px solid rgba(34,197,94,.32);}
+.gc-rec-top{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.gc-rec-sym-wrap{flex-shrink:0;text-align:center;min-width:80px;}
+.gc-rec-sym{font-family:var(--mono);font-size:22px;font-weight:800;color:#22d3ee;letter-spacing:.5px;line-height:1;}
+.gc-rec-price{font-family:var(--mono);font-size:12px;color:#67e8f9;margin-top:3px;opacity:.8;}
+.gc-rec-scores{display:flex;gap:5px;flex:1;justify-content:flex-end;}
+.gc-rec-score-item{text-align:center;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:7px 8px;min-width:54px;}
+.gc-rec-score-val{font-family:var(--mono);font-size:17px;font-weight:700;color:#a5f3fc;line-height:1;}
+.gc-rec-final-val{color:#34d399!important;}
+.gc-rec-rsi-val{color:#c4b5fd!important;}
+.gc-rec-score-lbl{font-size:8px;color:#4e6080;letter-spacing:.4px;margin-top:3px;text-transform:uppercase;}
+.gc-rec-range-row{display:flex;align-items:center;gap:7px;margin-bottom:10px;}
+.gc-rec-range-lbl{font-family:var(--mono);font-size:10px;color:#f87171;font-weight:600;flex-shrink:0;white-space:nowrap;}
+.gc-rec-res-lbl{color:#4ade80!important;}
+.gc-rec-range-bar{flex:1;}
+.gc-rec-range-track{height:6px;background:linear-gradient(90deg,rgba(248,113,113,.3),rgba(251,191,36,.18),rgba(74,222,128,.3));border-radius:3px;position:relative;margin-bottom:4px;}
+.gc-rec-price-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:11px;height:11px;background:#22d3ee;border-radius:50%;box-shadow:0 0 7px 2px rgba(34,211,238,.65);border:1.5px solid rgba(255,255,255,.8);}
+.gc-rec-range-labels{display:flex;justify-content:space-between;}
+.gc-rec-range-labels span{font-size:8px;color:#4e6080;}
+.gc-rec-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px;}
+.gc-rec-stat{background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);border-radius:7px;padding:7px 4px;text-align:center;}
+.gc-rec-stat-val{font-family:var(--mono);font-size:12px;font-weight:700;color:#e2e8f0;line-height:1.2;}
+.gc-rec-daily-val{color:#fbbf24!important;}
+.gc-rec-stat-lbl{font-size:8px;color:#4e6080;margin-top:3px;letter-spacing:.3px;}
+.gc-rec-signals{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;}
+.gc-rec-tag{font-size:9px;padding:2px 7px;border-radius:4px;background:rgba(99,179,237,.08);color:#7dd3fc;border:1px solid rgba(99,179,237,.18);}
+.gc-rec-tag.pos{background:rgba(34,197,94,.08);color:#86efac;border-color:rgba(34,197,94,.2);}
+.gc-rec-tag.warn{background:rgba(251,191,36,.08);color:#fcd34d;border-color:rgba(251,191,36,.2);}
+.gc-rec-tag.neg{background:rgba(239,68,68,.08);color:#fca5a5;border-color:rgba(239,68,68,.2);}
+.gc-rec-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.gc-rec-time{font-size:9px;color:#4e6080;font-family:var(--mono);}
+.gc-rec-apply-btn{font-size:10px;font-weight:600;padding:6px 12px;border-radius:7px;background:linear-gradient(135deg,rgba(6,182,212,.16),rgba(14,165,233,.1));border:1px solid rgba(6,182,212,.38);color:#67e8f9;cursor:pointer;white-space:nowrap;transition:all .15s;font-family:var(--sans);}
+.gc-rec-apply-btn:hover{background:linear-gradient(135deg,rgba(6,182,212,.28),rgba(14,165,233,.2));border-color:rgba(6,182,212,.65);}
+@keyframes gc-rec-blink{0%,100%{opacity:.5;}50%{opacity:1;}}
+.gc-rec-loading{text-align:center;padding:16px;font-size:10px;color:#4e6080;letter-spacing:.8px;}
+.gc-rec-loading span{animation:gc-rec-blink 1.4s ease-in-out infinite;}
+
 /* ── SCROLL AREA ── */
 .content{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(59,130,246,.25) transparent;}
 .content::-webkit-scrollbar{width:4px;}
@@ -1438,6 +1485,76 @@ select.field-input option{background:var(--surface2);}
         <button class="gc-btn-reset" onclick="gcReset()"><span>✕ SIFIRLA</span></button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ── EN İYİ GRİD ADAYI Öneri Kartı ── -->
+  <div id="gc-rec-card" style="margin-bottom:10px;display:none">
+    <div class="gc-rec-wrap">
+      <!-- Başlık satırı -->
+      <div class="gc-rec-header">
+        <span style="font-size:15px;line-height:1">🤖</span>
+        <div class="gc-rec-title">En İyi Grid Adayı</div>
+        <div id="gc-rec-market" class="gc-rec-badge notr">— PİYASA</div>
+      </div>
+      <!-- Sembol + Skorlar -->
+      <div class="gc-rec-top">
+        <div class="gc-rec-sym-wrap">
+          <div id="gc-rec-sym" class="gc-rec-sym">—</div>
+          <div id="gc-rec-price" class="gc-rec-price">—</div>
+        </div>
+        <div class="gc-rec-scores">
+          <div class="gc-rec-score-item">
+            <div id="gc-rec-grid-score" class="gc-rec-score-val">—</div>
+            <div class="gc-rec-score-lbl">Grid Skor</div>
+          </div>
+          <div class="gc-rec-score-item">
+            <div id="gc-rec-final" class="gc-rec-score-val gc-rec-final-val">—</div>
+            <div class="gc-rec-score-lbl">Final</div>
+          </div>
+          <div class="gc-rec-score-item">
+            <div id="gc-rec-rsi" class="gc-rec-score-val gc-rec-rsi-val">—</div>
+            <div class="gc-rec-score-lbl">RSI</div>
+          </div>
+        </div>
+      </div>
+      <!-- Destek / Direnç range bar -->
+      <div class="gc-rec-range-row">
+        <div id="gc-rec-sup-lbl" class="gc-rec-range-lbl">—</div>
+        <div class="gc-rec-range-bar">
+          <div class="gc-rec-range-track">
+            <div id="gc-rec-price-dot" class="gc-rec-price-dot" style="left:50%"></div>
+          </div>
+          <div class="gc-rec-range-labels"><span>Destek</span><span>Direnç</span></div>
+        </div>
+        <div id="gc-rec-res-lbl" class="gc-rec-range-lbl gc-rec-res-lbl">—</div>
+      </div>
+      <!-- İstatistikler -->
+      <div class="gc-rec-stats">
+        <div class="gc-rec-stat">
+          <div id="gc-rec-trend" class="gc-rec-stat-val">—</div>
+          <div class="gc-rec-stat-lbl">Trend</div>
+        </div>
+        <div class="gc-rec-stat">
+          <div id="gc-rec-interval" class="gc-rec-stat-val">—</div>
+          <div class="gc-rec-stat-lbl">Grid Aralık</div>
+        </div>
+        <div class="gc-rec-stat">
+          <div id="gc-rec-lots" class="gc-rec-stat-val">—</div>
+          <div class="gc-rec-stat-lbl">Lot / Grid</div>
+        </div>
+        <div class="gc-rec-stat">
+          <div id="gc-rec-daily" class="gc-rec-stat-val gc-rec-daily-val">—</div>
+          <div class="gc-rec-stat-lbl">Günlük Kar</div>
+        </div>
+      </div>
+      <!-- Sinyal etiketleri -->
+      <div id="gc-rec-signals" class="gc-rec-signals"></div>
+      <!-- Alt satır: zaman + uygula butonu -->
+      <div class="gc-rec-footer">
+        <div id="gc-rec-time" class="gc-rec-time">↻ —</div>
+        <button class="gc-rec-apply-btn" onclick="gcRecApply()">Bu Hisseyi Uygula →</button>
+      </div>
     </div>
   </div>
 
@@ -22755,9 +22872,127 @@ function resetTrackAccum(){
   toast('Sıfırlandı','ok');
 }
 // ════════════════════════════════════════════════════════
+//  GRİD ANALİZ ÖNERİSİ
+// ════════════════════════════════════════════════════════
+let _gcRecData = null;
+
+async function gcRecFetch() {
+  const card = $('gc-rec-card');
+  try {
+    const r = await fetch('/api/grid-analysis');
+    if (!r.ok) { if (card) card.style.display = 'none'; return; }
+    _gcRecData = await r.json();
+    gcRecRender(_gcRecData);
+    if (card) card.style.display = '';
+  } catch(e) {
+    if (card) card.style.display = 'none';
+  }
+}
+
+function gcRecRender(d) {
+  if (!d) return;
+  const sym = (d.symbol||'').replace('.IS','');
+  const price = d.price || 0;
+  const support = d.support || 0;
+  const resistance = d.resistance || 0;
+  const st = (id,v) => { const e=$(id); if(e) e.textContent=v; };
+
+  st('gc-rec-sym', sym);
+  st('gc-rec-price', fx(price) + ' ₺');
+  st('gc-rec-grid-score', (d.grid_score||0).toFixed(1));
+  st('gc-rec-final', (d.final_score||0).toFixed(2));
+  st('gc-rec-rsi', Math.round(d.rsi||0));
+  st('gc-rec-sup-lbl', fx(support));
+  st('gc-rec-res-lbl', fx(resistance));
+  st('gc-rec-interval', fx(d.grid_interval||0) + ' ₺');
+  st('gc-rec-lots', d.lots||0);
+  st('gc-rec-daily', fxi(d.daily_profit||0) + ' ₺');
+
+  // Fiyatın range içindeki pozisyonunu göster
+  const dot = $('gc-rec-price-dot');
+  if (dot && resistance > support) {
+    const pct = Math.max(2, Math.min(98, (price - support) / (resistance - support) * 100));
+    dot.style.left = pct + '%';
+  }
+
+  // signals: JSON'da string olarak kaydediliyor, split ederek dizi yap
+  const signals = typeof d.signals === 'string'
+    ? d.signals.split(', ').filter(Boolean)
+    : (Array.isArray(d.signals) ? d.signals : []);
+
+  // Trend sinyali — signals içinden bul (format: "Trend=xxx")
+  const trendSig = signals.find(s => /^Trend=/i.test(s));
+  const trendEl = $('gc-rec-trend');
+  if (trendEl) {
+    const raw = trendSig ? trendSig.replace(/^Trend=/i,'').trim() : '—';
+    // kısa gösterim
+    let short = raw.replace('MA50-ustunde','↑MA50').replace('MA50-altinda','↓MA50')
+                   .replace('mom=','m=').replace('IDEAL','IDEAL').substring(0,13);
+    trendEl.textContent = short || '—';
+    const cl = raw.toLowerCase();
+    trendEl.style.color = (cl.includes('ideal')) ? '#4ade80'
+      : (cl.includes('yukselis')||cl.includes('hizli')) ? '#86efac'
+      : (cl.includes('yukari')) ? '#a3e635'
+      : (cl.includes('asagi-ceza')||cl.includes('asagi')) ? '#f87171'
+      : (cl.includes('hafif-asagi')) ? '#fb923c'
+      : '#fcd34d';
+  }
+
+  // Piyasa durumu badge
+  const badge = $('gc-rec-market');
+  if (badge) {
+    const ms = (d.market_status||'').toLowerCase();
+    let txt='— PİYASA', cls='notr';
+    if (ms.includes('dusus')||ms.includes('düşüş')) { txt='↓ DÜŞÜŞ'; cls='dusus'; }
+    else if (ms.includes('yukselis')||ms.includes('yükseliş')) { txt='↑ YÜKSELİŞ'; cls='yukselis'; }
+    else if (ms.includes('yukari')||ms.includes('yukarı')) { txt='↑ YUKARI'; cls='yukari'; }
+    else if (ms.includes('notr')||ms.includes('nötr')) { txt='→ NÖTR'; cls='notr'; }
+    badge.textContent = txt;
+    badge.className = 'gc-rec-badge ' + cls;
+  }
+
+  // Sinyal etiketleri (Trend hariç, max 6)
+  const sigEl = $('gc-rec-signals');
+  if (sigEl) {
+    const filtered = signals.filter(s => !/^Trend=/i.test(s)).slice(0,6);
+    sigEl.innerHTML = filtered.map(s => {
+      const sl = s.toLowerCase();
+      const cls = (sl.includes('ideal')||sl.includes('aktif')||sl.includes('yukari')||sl.includes('iyi')) ? 'pos'
+        : (sl.includes('kotu')||sl.includes('asagi-ceza')||sl.includes('dikkat')||sl.includes('ceza')) ? 'neg'
+        : (sl.includes('hafif')||sl.includes('orta')||sl.includes('az')||sl.includes('notr')) ? 'warn' : '';
+      return '<span class="gc-rec-tag '+cls+'">'+s+'</span>';
+    }).join('');
+  }
+
+  // Güncelleme zamanı
+  const timeEl = $('gc-rec-time');
+  if (timeEl && d.updated_at) {
+    try {
+      const t = new Date(d.updated_at);
+      if (!isNaN(t.getTime())) timeEl.textContent = '↻ ' + t.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+    } catch(e) { timeEl.textContent = '↻ —'; }
+  }
+}
+
+function gcRecApply() {
+  if (!_gcRecData) { toast('Henüz öneri verisi yok','err'); return; }
+  const d = _gcRecData;
+  const sym = (d.symbol||'').replace('.IS','');
+  const s=$('gc-sym'), p=$('gc-price'), sup=$('gc-sup'), res=$('gc-res'), at=$('gc-atr');
+  if (s) { s.value = sym; window._gcDirty = true; }
+  if (p) p.value = (d.price||0).toFixed(2);
+  if (sup) sup.value = (d.support||0).toFixed(2);
+  if (res) res.value = (d.resistance||0).toFixed(2);
+  if (at && d.atr) at.value = (d.atr||0).toFixed(4);
+  toast('🤖 ' + sym + ' grid ayarları uygulandı', 'ok');
+}
+
 //  GRID HESAPLAYICI
 // ════════════════════════════════════════════════════════
 function renderGridCalcPage(){
+  // Öneri kartını yükle (henüz yüklenmediyse)
+  if (!_gcRecData) gcRecFetch();
+
   const gc=S.settings.gridCalc||{};
   // Hisse kodu: kullanıcı düzenlemiyorsa (dirty değilse) daima kayıtlı sembolle eşitle
   const s=$('gc-sym');
