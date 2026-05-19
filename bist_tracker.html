@@ -1480,7 +1480,7 @@ select.field-input option{background:var(--surface2);}
       <div id="gc-sr-alts" style="display:none;margin-bottom:5px;flex-direction:row;gap:4px"></div>
 
       <div style="display:flex;gap:6px;margin-top:10px">
-        <button class="btn btn-ghost" style="flex:1.3;font-size:9px!important;padding:8px 4px;display:flex;align-items:center;justify-content:center;text-align:center;border-color:rgba(99,179,237,.3);color:#7dd3fc;line-height:1.4" onclick="gcAtrRange()">Grid Aralığı Öner</button>
+        <button class="btn btn-ghost" style="flex:1.3;font-size:9px!important;padding:8px 4px;display:flex;align-items:center;justify-content:center;text-align:center;border-color:rgba(99,179,237,.3);color:#7dd3fc;line-height:1.4" onclick="gcAtrRange()">ATR Aralık Öner</button>
         <button class="btn btn-ghost" style="flex:2;font-size:11px;padding:8px;display:flex;align-items:center;justify-content:center;border-color:rgba(249,115,22,.4);color:#fdba74;font-weight:600" onclick="calcGridBot()">Hesapla</button>
         <button class="gc-btn-reset" onclick="gcReset()"><span>✕ SIFIRLA</span></button>
       </div>
@@ -22292,8 +22292,8 @@ async function fbWrite(path,data){
 };
         // GRID_DATA_END
 
-                                                                                                                                                                                                // GRID_REC_START
-        window.__GRID_REC__ = {"symbol":"TOASO","price":293.25,"atr":11.48,"support":272.35,"resistance":309.23,"grid_interval":1.75,"lots":218,"buy_grids":11,"sell_grids":9,"total_grids":20,"pct_up":5.45,"pct_down":7.13,"daily_profit":2419.0,"capital_used":1255489.0,"grid_score":8.41,"rsi":47.1,"signals":"Osc=7x(aktif), Hold=77%(iyi), Vol=3.9%(ideal), Trend=notr(MA50-ustunde,mom=1.7%), Tetik=6.6/gun(iyi), Hacim=1001M(cok-likit!), RSI=47(ideal), Pos=57%(orta-ideal)","final_score":6.686,"updated_at":"2026-05-19 21:55","capital":1400000,"market_status":"Piyasa=DUSUS(!)"};
+                                                                                                                                                                                                                                // GRID_REC_START
+        window.__GRID_REC__ = {"symbol":"TOASO","price":293.25,"atr":11.48,"support":272.35,"resistance":309.23,"grid_interval":1.75,"lots":218,"buy_grids":11,"sell_grids":9,"total_grids":20,"pct_up":5.45,"pct_down":7.13,"daily_profit":2419.0,"capital_used":1255489.0,"grid_score":8.41,"rsi":47.1,"signals":"Osc=7x(aktif), Hold=77%(iyi), Vol=3.9%(ideal), Trend=notr(MA50-ustunde,mom=1.7%), Tetik=6.6/gun(iyi), Hacim=1001M(cok-likit!), RSI=47(ideal), Pos=57%(orta-ideal)","final_score":6.686,"updated_at":"2026-05-19 22:11","capital":1400000,"market_status":"Piyasa=DUSUS(!)"};
                                 // GRID_REC_END
 
 // ════════════════════════════════════════════════════════
@@ -23270,7 +23270,11 @@ function gcOptimalGrid(d, capital){
     if(minN>maxN) continue;
     for(let N=minN;N<=maxN;N++){
       const dg=rng/N;
-      const lots=Math.floor(capital/(N*sup));
+      const _buyG=Math.max(1,Math.floor((price-sup)/dg));  // fiyat altı: al emirleri
+      const _selG=Math.max(1,Math.floor((res-price)/dg));  // fiyat üstü: sat emirleri
+      const _avgBuy=price-(_buyG/2)*dg;                    // ortalama alış fiyatı
+      const capPerLot=_buyG*_avgBuy+_selG*price;
+      const lots=Math.floor(capital*0.9/capPerLot);
       if(lots<1) continue;
       const avg_buy=sup+(N-1)*dg/2;
       const net=lots*dg - lots*avg_buy*2*comm;
@@ -23320,10 +23324,10 @@ async function gcFetchPrice(){
     if(!d||d.price==null) throw new Error('fiyat yok');
     // Fiyat
     $('gc-price').value=d.price;
-    // ATR — günlük ATR öncelikli
-    if(d.atr_gunluk!=null||d.atr_ort!=null){
-      if(d.atr_gunluk!=null) $('gc-atr').value=d.atr_gunluk.toFixed(4);
-      else $('gc-atr').value=d.atr_ort.toFixed(4);
+    // ATR — bileşik ortalama öncelikli (analiz ile tutarlı)
+    if(d.atr_ort!=null||d.atr_gunluk!=null){
+      if(d.atr_ort!=null) $('gc-atr').value=d.atr_ort.toFixed(4);
+      else $('gc-atr').value=d.atr_gunluk.toFixed(4);
       window._gcAtrRow=d;
       try{localStorage.setItem('gt_atrRow',JSON.stringify(d));}catch(e){}
       gcShowAtrBreakdown(d);
@@ -23516,10 +23520,10 @@ function calcGridBot(){
     const dRaw=range/N;
     const dTick=Math.max(tick,Math.ceil(dRaw/tick)*tick);
     const d=dTick;
-    // Üstte kaç sat gridi var → kurulumda bu kadar lot currentPrice'tan alınır
-    const sellLevels=Math.max(1,Math.round((resistance-refPrice)/d));
-    // Altta kaç al gridi var → fiyat düşerse kademeli alım yapılır
-    const buyLevels=Math.max(1,Math.round((refPrice-support)/d));
+    // Üstte kaç sat gridi var — fiyatın üstündeki tam grid sayısı (floor = mevcut fiyatı geçmeyen)
+    const sellLevels=Math.max(1,Math.floor((resistance-refPrice)/d));
+    // Altta kaç al gridi var — fiyatın altındaki tam grid sayısı (floor = fiyatı geçmeyen)
+    const buyLevels=Math.max(1,Math.floor((refPrice-support)/d));
     // Toplam worst-case sermaye:
     //   İlk kurulum  : sellLevels × lots × refPrice
     //   Aşağı kademeli: buyLevels × lots × (refPrice + support) / 2
@@ -23563,8 +23567,8 @@ function calcGridBotFixed(fixedD){
   const midPrice=(support+resistance)/2;
   const refPrice=(currentPrice>support&&currentPrice<resistance)?currentPrice:midPrice;
   const N=Math.max(1,Math.round(range/d));
-  const sellLevels=Math.max(1,Math.round((resistance-refPrice)/d));
-  const buyLevels=Math.max(1,Math.round((refPrice-support)/d));
+  const sellLevels=Math.max(1,Math.floor((resistance-refPrice)/d));
+  const buyLevels=Math.max(1,Math.floor((refPrice-support)/d));
   const avgDownPrice=(refPrice+support)/2;
   const capPerLot=sellLevels*refPrice+buyLevels*avgDownPrice;
   const effectiveCapital=capital*0.90; // %10 güvenlik tamponu
