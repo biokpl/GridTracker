@@ -22292,8 +22292,8 @@ async function fbWrite(path,data){
 };
         // GRID_DATA_END
 
-                                                                                                                                // GRID_REC_START
-        window.__GRID_REC__ = {"symbol":"TOASO","price":293.25,"atr":11.48,"support":272.35,"resistance":309.23,"grid_interval":1.75,"lots":218,"buy_grids":11,"sell_grids":9,"total_grids":20,"pct_up":5.45,"pct_down":7.13,"daily_profit":2419.0,"capital_used":1255489.0,"grid_score":8.41,"rsi":47.1,"signals":"Osc=7x(aktif), Hold=77%(iyi), Vol=3.9%(ideal), Trend=notr(MA50-ustunde,mom=1.7%), Tetik=6.6/gun(iyi), Hacim=1001M(cok-likit!), RSI=47(ideal), Pos=57%(orta-ideal)","final_score":6.686,"updated_at":"2026-05-19 21:10","capital":1400000,"market_status":"Piyasa=DUSUS(!)"};
+                                                                                                                                                                // GRID_REC_START
+        window.__GRID_REC__ = {"symbol":"TOASO","price":293.25,"atr":11.48,"support":272.35,"resistance":309.23,"grid_interval":1.75,"lots":218,"buy_grids":11,"sell_grids":9,"total_grids":20,"pct_up":5.45,"pct_down":7.13,"daily_profit":2419.0,"capital_used":1255489.0,"grid_score":8.41,"rsi":47.1,"signals":"Osc=7x(aktif), Hold=77%(iyi), Vol=3.9%(ideal), Trend=notr(MA50-ustunde,mom=1.7%), Tetik=6.6/gun(iyi), Hacim=1001M(cok-likit!), RSI=47(ideal), Pos=57%(orta-ideal)","final_score":6.686,"updated_at":"2026-05-19 21:44","capital":1400000,"market_status":"Piyasa=DUSUS(!)"};
                                 // GRID_REC_END
 
 // ════════════════════════════════════════════════════════
@@ -22994,7 +22994,7 @@ function gcRecApply() {
   const d = _gcRecData;
   const sym = (d.symbol||'').replace('.IS','');
 
-  // Tüm alanları doldur
+  // Tüm input alanlarını doldur
   const s=$('gc-sym'), p=$('gc-price'), cap=$('gc-cap'),
         sup=$('gc-sup'), res=$('gc-res'), at=$('gc-atr');
   if (s)   { s.value = sym; window._gcDirty = true; }
@@ -23002,19 +23002,47 @@ function gcRecApply() {
   if (sup) sup.value = (d.support||0).toFixed(2);
   if (res) res.value = (d.resistance||0).toFixed(2);
   if (at && d.atr) at.value = (d.atr||0).toFixed(4);
-  // Sermayeyi sadece boşsa doldur (kullanıcı farklı bir değer girmişse dokunma)
+  // Sermayeyi sadece boşsa doldur
   if (cap && (!cap.value || cap.value==='0')) {
     const capVal = d.capital || 0;
     if (capVal > 0) cap.value = capVal.toLocaleString('tr-TR');
   }
 
-  // Analizin hesapladığı tam grid aralığıyla hesapla (sonuçlar birebir eşleşir)
-  const interval = d.grid_interval || 0;
-  if (interval > 0) {
-    setTimeout(() => calcGridBotFixed(interval), 50);
-  }
+  // Analizin kesin değerleriyle doğrudan render et — calculator formülü bypass
+  setTimeout(() => gcRecDirectRender(d), 50);
+  toast('🤖 ' + sym + ' uygulandı', 'ok');
+}
 
-  toast('🤖 ' + sym + ' uygulandı — hesaplanıyor…', 'ok');
+function gcRecDirectRender(d) {
+  const interval  = d.grid_interval || 0;
+  const atr       = d.atr || 0;
+  const capital   = parseInt(($('gc-cap').value||'').replace(/[^\d]/g,'')) || d.capital || 0;
+  const commFrac  = (S.settings.commissionRate||1)/10000;
+  const daily     = d.daily_profit || 0;
+  // net per trigger: daily = (atr/interval) × net  →  net = daily × interval / atr
+  const net       = (atr > 0 && interval > 0) ? (daily * interval / atr) : 0;
+
+  const result = {
+    N:          (d.total_grids || 20) - 1,  // renderGridResults N+1 gösteriyor
+    d:          interval,
+    lots:       d.lots       || 0,
+    net:        net,
+    daily:      daily,
+    used:       d.capital_used || 0,
+    util:       capital > 0 ? (d.capital_used||0) / capital * 100 : 0,
+    sellLevels: d.sell_grids || 0,
+    buyLevels:  d.buy_grids  || 0,
+  };
+
+  renderGridResults(
+    result,
+    d.support     || 0,
+    d.resistance  || 0,
+    atr,
+    capital,
+    commFrac,
+    d.price       || 0
+  );
 }
 
 //  GRID HESAPLAYICI
