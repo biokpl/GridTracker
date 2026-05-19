@@ -22292,8 +22292,8 @@ async function fbWrite(path,data){
 };
         // GRID_DATA_END
 
-                                                                // GRID_REC_START
-        window.__GRID_REC__ = {"symbol":"TOASO","price":293.25,"atr":11.48,"support":272.35,"resistance":309.23,"grid_interval":1.75,"lots":218,"buy_grids":11,"sell_grids":9,"total_grids":20,"pct_up":5.45,"pct_down":7.13,"daily_profit":2419.0,"capital_used":1255489.0,"grid_score":8.41,"rsi":47.1,"signals":"Osc=7x(aktif), Hold=77%(iyi), Vol=3.9%(ideal), Trend=notr(MA50-ustunde,mom=1.7%), Tetik=6.6/gun(iyi), Hacim=1001M(cok-likit!), RSI=47(ideal), Pos=57%(orta-ideal)","final_score":6.686,"updated_at":"2026-05-19 20:11","capital":1400000,"market_status":"Piyasa=DUSUS(!)"};
+                                                                                                // GRID_REC_START
+        window.__GRID_REC__ = {"symbol":"TOASO","price":293.25,"atr":11.48,"support":272.35,"resistance":309.23,"grid_interval":1.75,"lots":218,"buy_grids":11,"sell_grids":9,"total_grids":20,"pct_up":5.45,"pct_down":7.13,"daily_profit":2419.0,"capital_used":1255489.0,"grid_score":8.41,"rsi":47.1,"signals":"Osc=7x(aktif), Hold=77%(iyi), Vol=3.9%(ideal), Trend=notr(MA50-ustunde,mom=1.7%), Tetik=6.6/gun(iyi), Hacim=1001M(cok-likit!), RSI=47(ideal), Pos=57%(orta-ideal)","final_score":6.686,"updated_at":"2026-05-19 20:58","capital":1400000,"market_status":"Piyasa=DUSUS(!)"};
                                 // GRID_REC_END
 
 // ════════════════════════════════════════════════════════
@@ -22936,18 +22936,21 @@ function gcRecRender(d) {
   const trendSig = signals.find(s => /^Trend=/i.test(s));
   const trendEl = $('gc-rec-trend');
   if (trendEl) {
-    const raw = trendSig ? trendSig.replace(/^Trend=/i,'').trim() : '—';
-    // kısa gösterim
-    let short = raw.replace('MA50-ustunde','↑MA50').replace('MA50-altinda','↓MA50')
-                   .replace('mom=','m=').replace('IDEAL','IDEAL').substring(0,13);
-    trendEl.textContent = short || '—';
-    const cl = raw.toLowerCase();
-    trendEl.style.color = (cl.includes('ideal')) ? '#4ade80'
-      : (cl.includes('yukselis')||cl.includes('hizli')) ? '#86efac'
-      : (cl.includes('yukari')) ? '#a3e635'
-      : (cl.includes('asagi-ceza')||cl.includes('asagi')) ? '#f87171'
-      : (cl.includes('hafif-asagi')) ? '#fb923c'
-      : '#fcd34d';
+    const raw = trendSig ? trendSig.replace(/^Trend=/i,'').trim().toLowerCase() : '';
+    const trendMap = [
+      { key:'ideal',          label:'İdeal ✓',       color:'#4ade80' },
+      { key:'hizli-yukselis', label:'Hızlı Yükseliş',color:'#86efac' },
+      { key:'yukari-yatay',   label:'Yukarı Yatay',  color:'#a3e635' },
+      { key:'notr',           label:'Nötr',           color:'#fcd34d' },
+      { key:'toparlanma',     label:'Toparlanma',     color:'#fb923c' },
+      { key:'hafif-asagi',    label:'Hafif Aşağı',    color:'#fb923c' },
+      { key:'asagi-ceza',     label:'Aşağı ⚠',       color:'#f87171' },
+      { key:'asagi',          label:'Aşağı',          color:'#f87171' },
+      { key:'veri-yetersiz',  label:'Veri Yok',       color:'#6b7a92' },
+    ];
+    const found = trendMap.find(t => raw.startsWith(t.key));
+    trendEl.textContent = found ? found.label : (raw ? raw.substring(0,12) : '—');
+    trendEl.style.color  = found ? found.color : '#fcd34d';
   }
 
   // Piyasa durumu badge
