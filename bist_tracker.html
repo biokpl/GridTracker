@@ -23636,15 +23636,17 @@ function renderGridResults(b,support,resistance,atr,capital,commFrac,currentPric
   const tick=getBistTickSize(currentPrice>0?currentPrice:(support+resistance)/2);
   const levels=[];
   for(let i=b.N;i>=0;i--) levels.push(roundToTick(support+i*b.d,tick));
-  const buyLevels=levels.filter(p=>p<splitRef);
-  const sellLevels=levels.filter(p=>p>=splitRef);
-  const total=levels.length;
-  const buyPct=Math.round(buyLevels.length/total*100);
+  // Sayaç için calcGridBot/gcRecDirectRender'dan gelen değerleri kullan (fiyat referanslı, doğru)
+  // renderGridResults'ın kendi filtresi tick yuvarlamasından dolayı hatalı sayabilir
+  const buyCount  = (b.buyLevels  != null) ? b.buyLevels  : levels.filter(p=>p<splitRef).length;
+  const sellCount = (b.sellLevels != null) ? b.sellLevels : levels.filter(p=>p>splitRef).length;
+  const total=buyCount+sellCount;
+  const buyPct=Math.round(buyCount/total*100);
   const sellPct=100-buyPct;
   $('gc-buy-pct').textContent='%'+buyPct;
-  $('gc-buy-cnt').textContent=buyLevels.length+' AL';
+  $('gc-buy-cnt').textContent=buyCount+' AL';
   $('gc-sell-pct').textContent='%'+sellPct;
-  $('gc-sell-cnt').textContent=sellLevels.length+' SAT';
+  $('gc-sell-cnt').textContent=sellCount+' SAT';
   const barBuy=$('gc-bar-buy');
   const barSell=$('gc-bar-sell');
   if(barBuy) barBuy.style.width=buyPct+'%';
