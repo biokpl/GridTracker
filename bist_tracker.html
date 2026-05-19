@@ -225,6 +225,10 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .gc-rec-wrap{background:linear-gradient(145deg,rgba(6,182,212,.05) 0%,rgba(8,145,178,.02) 60%,transparent 100%);border:1px solid rgba(6,182,212,.22);border-radius:var(--r);padding:14px;position:relative;overflow:hidden;}
 .gc-rec-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 5%,rgba(6,182,212,.4) 30%,rgba(34,211,238,.85) 50%,rgba(6,182,212,.4) 70%,transparent 95%);filter:drop-shadow(0 0 5px rgba(6,182,212,.5));}
 .gc-rec-wrap::after{content:'';position:absolute;top:-20px;left:50%;transform:translateX(-50%);width:280px;height:55px;background:radial-gradient(ellipse,rgba(6,182,212,.1) 0%,transparent 70%);pointer-events:none;}
+.gc-section-sep{display:flex;align-items:center;gap:10px;margin:8px 0 12px;}
+.gc-sep-line-l{flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(6,182,212,.5) 80%);}
+.gc-sep-line-r{flex:1;height:1px;background:linear-gradient(270deg,transparent,rgba(249,115,22,.5) 80%);}
+.gc-sep-node{width:30px;height:30px;border-radius:50%;background:rgba(15,23,42,.95);border:1px solid rgba(100,116,139,.35);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;box-shadow:0 0 10px rgba(6,182,212,.25),0 0 10px rgba(249,115,22,.15),inset 0 0 6px rgba(0,0,0,.4);}
 .gc-rec-header{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
 .gc-rec-title{font-size:10px;font-weight:800;letter-spacing:2px;color:#67e8f9;text-transform:uppercase;flex:1;}
 .gc-rec-badge{font-size:9px;font-weight:700;letter-spacing:.7px;padding:3px 7px;border-radius:5px;text-transform:uppercase;}
@@ -1560,6 +1564,13 @@ select.field-input option{background:var(--surface2);}
 
   <!-- Sonuçlar -->
   <div id="gc-results" class="gc-results">
+
+    <!-- Ayırıcı: Öneri kartı ↔ Hesaplama sonucu -->
+    <div class="gc-section-sep">
+      <div class="gc-sep-line-l"></div>
+      <div class="gc-sep-node">📈</div>
+      <div class="gc-sep-line-r"></div>
+    </div>
 
     <!-- Hero: Günlük Kar -->
     <div class="gc-kpi-hero">
