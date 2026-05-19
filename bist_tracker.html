@@ -22292,8 +22292,8 @@ async function fbWrite(path,data){
 };
         // GRID_DATA_END
 
-                                                                                                                                                                // GRID_REC_START
-        window.__GRID_REC__ = {"symbol":"TOASO","price":293.25,"atr":11.48,"support":272.35,"resistance":309.23,"grid_interval":1.75,"lots":218,"buy_grids":11,"sell_grids":9,"total_grids":20,"pct_up":5.45,"pct_down":7.13,"daily_profit":2419.0,"capital_used":1255489.0,"grid_score":8.41,"rsi":47.1,"signals":"Osc=7x(aktif), Hold=77%(iyi), Vol=3.9%(ideal), Trend=notr(MA50-ustunde,mom=1.7%), Tetik=6.6/gun(iyi), Hacim=1001M(cok-likit!), RSI=47(ideal), Pos=57%(orta-ideal)","final_score":6.686,"updated_at":"2026-05-19 21:44","capital":1400000,"market_status":"Piyasa=DUSUS(!)"};
+                                                                                                                                                                                                // GRID_REC_START
+        window.__GRID_REC__ = {"symbol":"TOASO","price":293.25,"atr":11.48,"support":272.35,"resistance":309.23,"grid_interval":1.75,"lots":218,"buy_grids":11,"sell_grids":9,"total_grids":20,"pct_up":5.45,"pct_down":7.13,"daily_profit":2419.0,"capital_used":1255489.0,"grid_score":8.41,"rsi":47.1,"signals":"Osc=7x(aktif), Hold=77%(iyi), Vol=3.9%(ideal), Trend=notr(MA50-ustunde,mom=1.7%), Tetik=6.6/gun(iyi), Hacim=1001M(cok-likit!), RSI=47(ideal), Pos=57%(orta-ideal)","final_score":6.686,"updated_at":"2026-05-19 21:55","capital":1400000,"market_status":"Piyasa=DUSUS(!)"};
                                 // GRID_REC_END
 
 // ════════════════════════════════════════════════════════
@@ -23265,7 +23265,7 @@ function gcOptimalGrid(d, capital){
     const {sup,res}=c; if(!sup||!res||res<=sup) continue;
     const rng=res-sup;
     const mid=(sup+res)/2;
-    const minN=Math.max(2,Math.ceil(rng/(atr*0.3)));
+    const minN=Math.max(2,Math.ceil(rng/(atr*0.15)));
     const maxN=Math.min(100,Math.floor(rng/(mid*0.005)));
     if(minN>maxN) continue;
     for(let N=minN;N<=maxN;N++){
@@ -23499,8 +23499,8 @@ function calcGridBot(){
   const minSpacing=Math.max(tick,midPrice*0.005);
 
   const maxN=Math.min(200,Math.floor(range/minSpacing));
-  // minN: grid aralığı ATR'nin en fazla %30'u kadar olmalı; kısa periyot ATR seçilmişse kısıt kalkıyor
-  const minNfromATR=Math.ceil(range/(atr*0.3));
+  // minN: grid aralığı ATR'nin en fazla %15'i kadar olmalı (analiz ile tutarlı)
+  const minNfromATR=Math.ceil(range/(atr*0.15));
   const minN=(minNfromATR<=maxN)?Math.max(2,minNfromATR):2;
 
   if(maxN<2){toast('Destek-Direnç aralığı çok dar','err');return;}
