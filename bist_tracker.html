@@ -22981,20 +22981,32 @@ function makeTrackPayment(){
   const tx={id:Date.now().toString(),date:today,amount:-amt,note:"Annem'e Ödeme Yapıldı",trackPayment:true};
   if(!D.birikimTx) D.birikimTx=[];
   D.birikimTx.push(tx);
-  renderSermaye();
-  renderHTrack();
   fbWrite('gridtracker/birikimTx',D.birikimTx)
-    .then(()=>toast("Ödeme kaydedildi: "+fxi(amt)+" ₺",'ok'))
+    .then(()=>toast("Ödeme kaydedildi ve takip sıfırlandı: "+fxi(amt)+" ₺",'ok'))
     .catch(()=>toast('Kaydedildi (Firebase hatası)','warn'));
+  renderSermaye();
+  resetTrackAccum();  // Ödeme yapılınca bar otomatik sıfırlanır
 }
 function resetTrackAccum(){
+  const today=D?D.today||new Date().toISOString().slice(0,10):new Date().toISOString().slice(0,10);
+  const sym=(S.settings.trackSymbol||'').toUpperCase();
+  // Bugünün kârını servisin yeniden hesaplaması için sakla
+  const todayNet=(D&&D.todayProfit&&D.todayProfit.bySymbol&&D.todayProfit.bySymbol[sym])?(D.todayProfit.bySymbol[sym].netProfit||0):0;
   S.settings.trackAccum=0;
-  S.settings.trackLastDate='';
+  S.settings.trackLastDate=today;  // '' değil today — bugünün kârı yeniden eklenmez
   S._trackAlerted=false;
-  if(D){if(!D.settings)D.settings={};D.settings.trackAccum=0;D.settings.trackLastDate='';}
+  if(D){
+    if(!D.settings)D.settings={};
+    D.settings.trackAccum=0;
+    D.settings.trackLastDate=today;
+    D.settings.trackAccumBase=0;
+    D.settings.trackLastSymNet=todayNet;
+  }
   save();
   fbWrite('gridtracker/settings/trackAccum',0);
-  fbWrite('gridtracker/settings/trackLastDate','');
+  fbWrite('gridtracker/settings/trackLastDate',today);
+  fbWrite('gridtracker/settings/trackAccumBase',0);
+  fbWrite('gridtracker/settings/trackLastSymNet',todayNet);
   renderHTrack();
   toast('Sıfırlandı','ok');
 }
