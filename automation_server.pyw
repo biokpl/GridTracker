@@ -24,8 +24,10 @@ for _pkg in ['pywebpush']:
 FIREBASE_URL = 'https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app'
 
 if sys.platform == 'win32':
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    if sys.stdout is not None:
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    if sys.stderr is not None:
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
 for _pkg in ['flask', 'holidays', 'openpyxl']:
     try:
@@ -38,7 +40,7 @@ from flask import Flask, request, jsonify, Response
 SCRIPT_DIR  = Path(__file__).parent
 CONFIG_FILE = SCRIPT_DIR / 'morning_config.ini'
 TASK_NAME   = 'MatriksIQ_Sabah_Otomasyonu'
-PORT        = 5050
+PORT        = 5051
 
 app = Flask(__name__)
 
