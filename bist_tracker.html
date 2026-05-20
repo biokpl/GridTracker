@@ -23801,7 +23801,7 @@ function renderGridResults(b,support,resistance,atr,capital,commFrac,currentPric
     const isSell=i>=buyCount; // buyCount (fiyat-referanslı, bar ile tutarlı)
     const pctDiff=hasCurrent?((price-currentPrice)/currentPrice*100):null;
     const pctStr=pctDiff!==null?(pctDiff>=0?'+':'')+pctDiff.toFixed(1)+'%':'—';
-    const pctColor=pctDiff===null?'#71717a':pctDiff>=0?'#f87171':'#86efac';
+    const pctColor=pctDiff===null?'#71717a':isSell?'#f87171':'#86efac';
     rows.push(`<tr>
       <td style="color:#4e6080;font-family:var(--mono)">${i+1}</td>
       <td style="font-family:var(--mono);font-weight:600;color:${isSell?'#f87171':'#4ade80'};text-shadow:none">${fx2(price)}</td>
