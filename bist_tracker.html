@@ -23922,11 +23922,15 @@ function fxSr(n){
 function calcSr(){
   const txs=(D&&D.birikimTx)||[];
   const active=txs.filter(t=>!t.exclude);
-  // trackPayment işlemleri (MIATK havuzu) sermaye hesabına dahil edilmez
-  const anaPara=txs.filter(t=>!t.trackPayment).reduce((s,t)=>s+t.amount,0);
+  // anaPara: tüm işlemler (gerçek hesap bakiyesi — trackPayment çıkışları da dahil)
+  const anaPara=txs.reduce((s,t)=>s+t.amount,0);
+  // botKar için baz: sadece gerçek sermaye hareketleri (trackPayment hariç)
+  // todayOverall MatriksIQ'dan güncellenir, ödemeyi anlık yansıtmaz —
+  // bu ayrım olmazsa her ödeme botKar'ı yapay artırır
+  const sermayeBaz=txs.filter(t=>!t.trackPayment).reduce((s,t)=>s+t.amount,0);
   const totalIn=active.filter(t=>t.amount>0&&!t.trackPayment).reduce((s,t)=>s+t.amount,0);
   const totalOut=active.filter(t=>t.amount<0&&!t.trackPayment).reduce((s,t)=>s+Math.abs(t.amount),0);
-  const botKar=(D?D.todayOverall||0:0)-anaPara;
+  const botKar=(D?D.todayOverall||0:0)-sermayeBaz;
   return{anaPara,totalIn,totalOut,botKar};
 }
 
