@@ -23017,14 +23017,15 @@ let _gcRecData = null;
 
 async function gcRecFetch() {
   const card = $('gc-rec-card');
-  // Önce HTML'e gömülü veriyi dene (GitHub Pages uyumu)
-  if (window.__GRID_REC__) {
-    _gcRecData = window.__GRID_REC__;
+  // Önce Firebase'den gelen D.gridRec'i dene — tüm cihazlarda HTML cache'inden bağımsız güncel veri
+  const src = (D && D.gridRec) ? D.gridRec : window.__GRID_REC__;
+  if (src) {
+    _gcRecData = src;
     gcRecRender(_gcRecData);
     if (card) card.style.display = '';
     return;
   }
-  // Gömülü veri yoksa lokal API'yi dene
+  // Lokal API'yi dene (PC — server.py)
   try {
     const r = await fetch('/api/grid-analysis');
     if (!r.ok) { if (card) card.style.display = 'none'; return; }
@@ -24078,6 +24079,9 @@ function saveSettings(){
   fbWrite('gridtracker/settings/trackSymbol',S.settings.trackSymbol);
   fbWrite('gridtracker/settings/trackTarget',S.settings.trackTarget);
   fbWrite('gridtracker/settings/trackPayAmt',S.settings.trackPayAmt);
+  fbWrite('gridtracker/settings/commissionRate',S.settings.commissionRate);
+  fbWrite('gridtracker/settings/gridInterval',S.settings.gridInterval);
+  fbWrite('gridtracker/settings/lotTolerance',S.settings.lotTolerance);
 }
 function renderCostList(){
   $('costList').innerHTML=S.settings.costs.map((c,i)=>`
@@ -24094,6 +24098,7 @@ function saveCosts(){
   save();
   if(D) D.settings=S.settings;
   renderCostSummary(); renderLicense(getMonthStats(new Date().getFullYear(),new Date().getMonth()).comm);
+  fbWrite('gridtracker/settings/costs',S.settings.costs);
   toast('Kaydedildi','ok');
 }
 function renderCostSummary(){
@@ -24300,11 +24305,22 @@ document.addEventListener('DOMContentLoaded',async()=>{
     if(ds.trackLastDate!=null) S.settings.trackLastDate=ds.trackLastDate;
     if(ds.trackPayAmt!=null) S.settings.trackPayAmt=ds.trackPayAmt;
     if(ds.gridCalc!=null && !window._gcDirty) S.settings.gridCalc=ds.gridCalc;
+    // Daha önce sadece localStorage'daydı — artık Firebase'den de oku
+    if(ds.commissionRate!=null) S.settings.commissionRate=ds.commissionRate;
+    if(ds.gridInterval!=null)   S.settings.gridInterval=ds.gridInterval;
+    if(ds.lotTolerance!=null)   S.settings.lotTolerance=ds.lotTolerance;
   }
   function renderAll(showToast){
     syncSettings();
     renderHome();
     renderSermaye();
+    // Grid öneri: Firebase SSE ile D.gridRec geldiyse anında güncelle
+    if(D&&D.gridRec&&JSON.stringify(D.gridRec)!==JSON.stringify(_gcRecData)){
+      _gcRecData=D.gridRec;
+      const card=$('gc-rec-card');
+      if(card) card.style.display='';
+      gcRecRender(D.gridRec);
+    }
     const pid=document.querySelector('.page.on')?.id;
     if(pid==='pg-monthly'||pid==='pg-trades') renderMonthly();
     if(pid==='pg-overall') renderOverall();

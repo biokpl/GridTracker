@@ -40,7 +40,7 @@ Kullanim:
   python grid_analysis_auto.py --force  # Tatil/hafta sonu da calistir
 """
 
-import sys, json, logging, subprocess, argparse
+import sys, json, logging, subprocess, argparse, urllib.request
 from pathlib import Path
 from datetime import date, datetime
 
@@ -751,6 +751,18 @@ def run(dry_run=False, force=False):
         json.dumps(best, ensure_ascii=False, indent=2), encoding='utf-8'
     )
     log.info(f'Kaydedildi: {RESULT_FILE}')
+
+    # Firebase'e gridRec yaz — tüm cihazlar HTML cache'inden bağımsız güncel veriyi alır
+    try:
+        fb_url = 'https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app/gridtracker/gridRec.json'
+        payload_bytes = json.dumps(best, ensure_ascii=False).encode('utf-8')
+        req = urllib.request.Request(fb_url, data=payload_bytes, method='PUT')
+        req.add_header('Content-Type', 'application/json')
+        with urllib.request.urlopen(req, timeout=10):
+            pass
+        log.info(f'Firebase gridRec guncellendi ({best["symbol"]})')
+    except Exception as e:
+        log.warning(f'Firebase gridRec write hatasi: {e}')
 
     # bist_tracker.html içindeki window.__GRID_REC__ bloğunu güncelle (GitHub Pages uyumu)
     html_file = SCRIPT_DIR / 'bist_tracker.html'
