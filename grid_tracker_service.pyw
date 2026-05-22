@@ -1494,7 +1494,7 @@ def calc_monthly_kar(excel_date, overall, oh, birikim_tx=None):
     """
     Aylık net karı hesaplar:
     Bu ayın son günü overall'ı − Önceki ayın son günü overall'ı − O ay net sermaye hareketi
-    2026-03'ten itibaren sermaye hareketleri (birikimTx) hesaba katılır.
+    Sermaye hareketleri (birikimTx) düşülür; exclude:true ve trackPayment:true hariç tutulur.
     """
     month_key = excel_date[:7]                          # örn: '2026-03'
     y, m = int(month_key[:4]), int(month_key[5:7])
@@ -1511,21 +1511,19 @@ def calc_monthly_kar(excel_date, overall, oh, birikim_tx=None):
     prev_last = prev_entries[-1]['amount']
     raw_change = overall - prev_last
 
-    # 2026-03'ten itibaren sermaye hareketlerini çıkar
+    # Sermaye hareketlerini düşür (exclude ve trackPayment hariç)
     net_capital = 0
-    if birikim_tx and month_key >= '2026-03':
+    if birikim_tx:
         for tx in birikim_tx:
-            if tx.get('exclude'):
+            if tx.get('exclude'):        # Referans kayıt — atla
+                continue
+            if tx.get('trackPayment'):   # MIATK havuzu ödemeleri — atla
                 continue
             tx_date = tx.get('date', '')
             if not tx_date.startswith(month_key):
                 continue
-            tip = tx.get('tip', '')
-            miktar = tx.get('miktar', 0)
-            if tip == 'giriş':
-                net_capital += miktar
-            elif tip == 'çıkış':
-                net_capital -= miktar
+            amount = tx.get('amount', 0)  # pozitif = giriş, negatif = çıkış
+            net_capital += amount
         if net_capital:
             log.info(f'Sermaye düzeltmesi ({month_key}): net={net_capital:+,} ₺')
 
