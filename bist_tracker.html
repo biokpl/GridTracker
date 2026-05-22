@@ -26038,7 +26038,7 @@ function renderGridCalcPage(){
         ab.style.opacity='';
       }
     }
-    if(!window._gcFixedMode&&(!window._gcCalcTs||Date.now()-window._gcCalcTs>3000)) calcGridBot();
+    if(!window._gcFixedMode&&(!window._gcCalcTs||Date.now()-window._gcCalcTs>3000)) calcGridBot({silent:true});
   }
 }
 
@@ -26428,7 +26428,7 @@ function roundToTick(value,tick){
   return Math.round(value/tick)*tick;
 }
 
-function calcGridBot(){
+function calcGridBot({silent=false}={}){
   window._gcFixedMode=false;
   const sym=($('gc-sym').value||'').toUpperCase().trim();
   const capital=parseInt(($('gc-cap').value||'').replace(/[^\d]/g,''))||0;
@@ -26462,8 +26462,8 @@ function calcGridBot(){
   const _narrowRange=(minNfromATR>maxN);
   const minN=_narrowRange?Math.max(2,maxN):Math.max(2,minNfromATR);
 
-  if(maxN<2){toast('Destek-Direnç aralığı çok dar','err');return;}
-  if(_narrowRange) toast('Aralık ATR için dar — maksimum grid sayısı uygulandı','');
+  if(maxN<2){if(!silent)toast('Destek-Direnç aralığı çok dar','err');return;}
+  if(_narrowRange&&!silent) toast('Aralık ATR için dar — maksimum grid sayısı uygulandı','');
 
   // Bot kurulum fiyatı: currentPrice varsa kullan, yoksa orta noktaya düş
   const refPrice=(currentPrice>support&&currentPrice<resistance)?currentPrice:midPrice;
