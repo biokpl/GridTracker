@@ -28207,9 +28207,9 @@ function renderPositionMonitor() {
   const card = $('pm-card');
   if (!card) return;
 
-  // Aktif hisse: önce trackSymbol, sonra gridCalc.symbol
-  const activeSym = ((S.settings && S.settings.trackSymbol) || '').toUpperCase().trim()
-                 || ((S.settings && S.settings.gridCalc && S.settings.gridCalc.symbol) || '').toUpperCase().trim();
+  // Aktif hisse: gridCalc.symbol (grid hesaplayıcıdaki sembol = aktif grid pozisyonu)
+  // trackSymbol ödeme takibi içindir, pozisyon monitörünü etkilemez
+  const activeSym = ((S.settings && S.settings.gridCalc && S.settings.gridCalc.symbol) || '').toUpperCase().trim();
 
   if (!activeSym || !D) {
     card.style.display = 'none';
