@@ -284,13 +284,17 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .pm-score-big.pm-warn{color:#fbbf24;}
 .pm-score-big.pm-bad{color:#f87171;}
 .pm-score-info{flex:1;}
-.pm-score-label{font-size:9px;color:#4e6080;letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px;}
-.pm-trend-row{display:flex;align-items:flex-end;gap:3px;height:30px;}
-.pm-trend-bar{flex:1;border-radius:2px 2px 0 0;min-height:3px;transition:height .3s;}
-.pm-trend-bar.pm-good{background:rgba(74,222,128,.65);}
-.pm-trend-bar.pm-warn{background:rgba(251,191,36,.65);}
-.pm-trend-bar.pm-bad{background:rgba(248,113,113,.65);}
-.pm-trend-bar.pm-today{outline:1px solid rgba(255,255,255,.4);}
+.pm-score-label{font-size:9px;color:#4e6080;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;}
+.pm-trend-row{display:flex;align-items:center;gap:5px;height:34px;position:relative;}
+.pm-trend-row::before{content:'';position:absolute;top:50%;left:10px;right:10px;height:1px;background:rgba(255,255,255,.07);z-index:0;}
+.pm-dot{width:22px;height:22px;border-radius:50%;position:relative;flex-shrink:0;z-index:1;transition:transform .2s;}
+.pm-dot::after{content:'';position:absolute;top:4px;left:5px;width:7px;height:5px;background:rgba(255,255,255,.45);border-radius:50%;filter:blur(1.5px);}
+.pm-dot.pm-good{background:radial-gradient(circle at 35% 32%,#bbf7d0,#16a34a 70%);box-shadow:0 0 8px rgba(74,222,128,.6),0 2px 5px rgba(0,0,0,.45);}
+.pm-dot.pm-warn{background:radial-gradient(circle at 35% 32%,#fef08a,#d97706 70%);box-shadow:0 0 8px rgba(251,191,36,.6),0 2px 5px rgba(0,0,0,.45);}
+.pm-dot.pm-bad{background:radial-gradient(circle at 35% 32%,#fecaca,#dc2626 70%);box-shadow:0 0 8px rgba(248,113,113,.6),0 2px 5px rgba(0,0,0,.45);}
+.pm-dot.pm-today{outline:2px solid rgba(255,255,255,.55);outline-offset:2px;width:26px;height:26px;}
+.pm-dot.pm-today::after{top:5px;left:6px;width:8px;height:6px;}
+.pm-dot:hover{transform:scale(1.18);}
 .pm-trend-dates{display:flex;justify-content:space-between;margin-top:2px;}
 .pm-trend-dates span{font-size:8px;color:#4e6080;}
 .pm-divider{height:1px;background:rgba(255,255,255,.05);margin:9px 0;}
@@ -27439,8 +27443,8 @@ async function fbWrite(path,data){
 };
         // GRID_DATA_END
 
-                                                                                                                                                                                                                                                                                                                                                                                                // GRID_REC_START
-        window.__GRID_REC__ = {"symbol":"ALARK","price":96.05,"atr":3.74,"support":89.41,"resistance":98.77,"grid_interval":0.55,"lots":841,"buy_grids":12,"sell_grids":4,"total_grids":16,"pct_up":2.83,"pct_down":6.91,"daily_profit":3033.0,"capital_used":1259145.0,"grid_score":8.12,"rsi":50.4,"signals":"Osc=11x(cok-aktif!), Hold=83%(iyi), Vol=3.9%(ideal), Trend=notr(MA50-ustunde,mom=3.3%), Tetik=6.8/gun(iyi), Hacim=461M(likit), RSI=50(ideal)","final_score":6.566,"updated_at":"2026-05-26 13:35","capital":1400000,"market_status":"Piyasa=DUSUS(!)"};
+                                                                                                                                                                                                                                                                                                                                                                                                                                // GRID_REC_START
+        window.__GRID_REC__ = {"symbol":"ALARK","price":96.05,"atr":3.74,"support":89.41,"resistance":98.77,"grid_interval":0.55,"lots":841,"buy_grids":12,"sell_grids":4,"total_grids":16,"pct_up":2.83,"pct_down":6.91,"daily_profit":3033.0,"capital_used":1259145.0,"grid_score":8.12,"rsi":50.4,"signals":"Osc=11x(cok-aktif!), Hold=83%(iyi), Vol=3.9%(ideal), Trend=notr(MA50-ustunde,mom=3.3%), Tetik=6.8/gun(iyi), Hacim=461M(likit), RSI=50(ideal)","final_score":6.566,"updated_at":"2026-05-26 16:45","capital":1400000,"market_status":"Piyasa=DUSUS(!)"};
                                 // GRID_REC_END
 
 // ════════════════════════════════════════════════════════
@@ -28254,21 +28258,18 @@ function renderPositionMonitor() {
   if (barsEl) {
     barsEl.innerHTML = '';
     if (hist.length > 0) {
-      const maxGS = Math.max(...hist.map(h => h.gs || 0), 1);
       hist.forEach((h, i) => {
         const gs = h.gs || 0;
-        const pct = Math.max(8, (gs / 10) * 100);
         const cls = gs >= 6 ? 'pm-good' : gs >= 4 ? 'pm-warn' : 'pm-bad';
-        const today = i === hist.length - 1 ? ' pm-today' : '';
-        const bar = document.createElement('div');
-        bar.className = `pm-trend-bar ${cls}${today}`;
-        bar.style.height = pct + '%';
-        bar.title = `${h.date}: ${gs.toFixed(1)}`;
-        barsEl.appendChild(bar);
+        const isToday = i === hist.length - 1;
+        const dot = document.createElement('div');
+        dot.className = `pm-dot ${cls}${isToday ? ' pm-today' : ''}`;
+        dot.title = `${h.date ? h.date.slice(5) : ''}: ${gs.toFixed(1)} puan`;
+        barsEl.appendChild(dot);
       });
       st('pm-trend-from', hist[0].date ? hist[0].date.slice(5) : '—');
     } else {
-      barsEl.innerHTML = '<div style="font-size:9px;color:#4e6080;line-height:30px">Geçmiş yok</div>';
+      barsEl.innerHTML = '<div style="font-size:9px;color:#4e6080;line-height:34px">Geçmiş yok</div>';
       st('pm-trend-from', '—');
     }
   }

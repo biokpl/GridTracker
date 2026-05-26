@@ -92,6 +92,72 @@ def fb_put(path, data):
         log.warning(f'Firebase PUT {path}: {e}')
         return False
 
+
+def _notify_verdict(cfg, active_r, best_r, active_sym):
+    """Karar hesapla, önceki kararla karşılaştır, değiştiyse ntfy gönder."""
+    gs   = active_r.get('grid_score', 0) if active_r else 0
+    fs   = active_r.get('final_score', 0) if active_r else 0
+    best_sym = (best_r.get('symbol', '') if best_r else '').replace('.IS', '')
+    best_fs  = best_r.get('final_score', 0) if best_r else 0
+    score_diff = (best_fs - fs) if (best_r and best_sym != active_sym) else 0
+
+    # Karar
+    if gs < 3.5:
+        verdict, emoji = 'cik', '🚨'
+        reason = f'Grid skoru çok düşük ({gs:.1f}/10)'
+    elif gs < 4 or score_diff > 2.5:
+        verdict, emoji = 'dikkat', '⚠️'
+        reason = (f'Skor düşük ({gs:.1f}/10)' if gs < 4
+                  else f'{best_sym} {score_diff:.1f} puan daha iyi')
+    else:
+        verdict, emoji = 'devam', '✅'
+        reason = f'Skor iyi ({gs:.1f}/10)'
+
+    log.info(f'[Pozisyon] {active_sym}: {verdict.upper()} — {reason}')
+
+    # Önceki kararı Firebase'den oku
+    prev_verdict = fb_get('settings/pmVerdict') or ''
+    fb_put('settings/pmVerdict', verdict)
+
+    # Sadece kötüleşme varsa bildir: devam→dikkat, devam→cik, dikkat→cik
+    should_notify = False
+    if verdict == 'cik':
+        should_notify = True
+    elif verdict == 'dikkat' and prev_verdict == 'devam':
+        should_notify = True
+
+    if should_notify:
+        title_map = {'cik': f'{emoji} {active_sym} — ÇIK',
+                     'dikkat': f'{emoji} {active_sym} — DİKKAT'}
+        body_parts = [reason]
+        if best_r and best_sym != active_sym and score_diff > 0:
+            body_parts.append(f'Yeni öneri: {best_sym} ({score_diff:.1f} puan fark)')
+        prio = 'urgent' if verdict == 'cik' else 'high'
+        tags = 'rotating_light' if verdict == 'cik' else 'warning'
+        send_ntfy(cfg, title_map[verdict], '\n'.join(body_parts), prio, tags)
+    else:
+        log.info(f'[ntfy] Bildirim gerekmiyor ({prev_verdict} → {verdict})')
+
+
+def send_ntfy(cfg, title, body, priority='default', tags='chart_with_downwards_trend'):
+    """ntfy.sh üzerinden push bildirimi gönder."""
+    topic = (cfg.get('ntfy_topic') or '').strip()
+    if not topic:
+        return  # topic ayarlanmamış, sessizce geç
+    try:
+        url = f'https://ntfy.sh/{topic}'.encode('utf-8')
+        req = urllib.request.Request(f'https://ntfy.sh/{topic}',
+                                     data=body.encode('utf-8'), method='POST')
+        req.add_header('Title',    title)
+        req.add_header('Priority', priority)
+        req.add_header('Tags',     tags)
+        req.add_header('Content-Type', 'text/plain; charset=utf-8')
+        with urllib.request.urlopen(req, timeout=10):
+            pass
+        log.info(f'[ntfy] Bildirim gonderildi: {title}')
+    except Exception as e:
+        log.warning(f'[ntfy] Hata: {e}')
+
 _handlers = [logging.FileHandler(LOG_FILE, encoding='utf-8')]
 if sys.stdout:
     _handlers.append(logging.StreamHandler(sys.stdout))
@@ -855,6 +921,8 @@ def run(dry_run=False, force=False):
                 log.info(f'Firebase gridRecActive guncellendi ({active_sym})')
             else:
                 log.warning(f'Firebase gridRecActive write hatasi')
+            # ── Karar + ntfy bildirimi ──
+            _notify_verdict(cfg, active_r, best, active_sym)
         else:
             log.info(f'Aktif hisse analiz sonucu yok: {active_sym} (dusuk skor veya veri)')
             # Yine de mevcut fiyat+skor bilgisini almaya calis (sadece skor icin)
@@ -871,6 +939,8 @@ def run(dry_run=False, force=False):
         active_copy = dict(best)
         if fb_put('gridRecActive', active_copy):
             log.info(f'Firebase gridRecActive = gridRec (aktif == en iyi: {active_sym})')
+        # Aktif == en iyi: sadece düşük skor varsa bildir
+        _notify_verdict(cfg, active_copy, None, active_sym)
     else:
         log.info('Aktif hisse ayarlanmamis, gridRecActive atlanıyor.')
 
