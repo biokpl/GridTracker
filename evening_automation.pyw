@@ -148,44 +148,69 @@ def bring_to_front(title):
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 def _ensure_server():
-    """Server çalışmıyorsa başlatır, hazır olana kadar bekler (maks 15s)."""
+    """automation_server (port 5051) çalışmıyorsa başlatır, hazır olana kadar bekler (maks 15s)."""
     import urllib.request as _ur
     try:
-        _ur.urlopen('http://127.0.0.1:5050/api/health', timeout=2)
+        _ur.urlopen('http://127.0.0.1:5051/api/health', timeout=2)
         return True  # zaten çalışıyor
     except Exception:
         pass
     # Başlat
     pythonw = str(Path(sys.executable).parent / 'pythonw.exe')
-    server  = str(SCRIPT_DIR / 'server.py')
+    server  = str(SCRIPT_DIR / 'automation_server.pyw')
     subprocess.Popen([pythonw, server], cwd=str(SCRIPT_DIR),
                      creationflags=0x00000008)  # DETACHED_PROCESS
-    log.info('[Push] Server başlatıldı, hazır olması bekleniyor...')
+    log.info('[Push] automation_server başlatıldı, hazır olması bekleniyor...')
     for _ in range(15):
         time.sleep(1)
         try:
-            _ur.urlopen('http://127.0.0.1:5050/api/health', timeout=1)
-            log.info('[Push] Server hazır.')
+            _ur.urlopen('http://127.0.0.1:5051/api/health', timeout=1)
+            log.info('[Push] automation_server hazır.')
             return True
         except Exception:
             pass
-    log.warning('[Push] Server 15s içinde başlamadı.')
+    log.warning('[Push] automation_server 15s içinde başlamadı.')
     return False
 
 
-def _send_notify(title, body, tag='gridtracker'):
-    """automation_server /api/notify endpoint'ine POST atar."""
-    import urllib.request as _ur, json as _json
-    _ensure_server()
+def _load_ntfy_topic():
+    """grid_analysis_config.json'dan ntfy_topic okur."""
+    import json as _json
+    cfg_file = SCRIPT_DIR / 'grid_analysis_config.json'
     try:
-        payload = _json.dumps({'title': title, 'body': body, 'tag': tag}).encode()
-        req = _ur.Request('http://127.0.0.1:5050/api/notify',
-                          data=payload, method='POST',
-                          headers={'Content-Type': 'application/json'})
-        _ur.urlopen(req, timeout=5)
-        log.info(f'[Push] Bildirim gönderildi: {title}')
+        cfg = _json.loads(cfg_file.read_text(encoding='utf-8'))
+        return (cfg.get('ntfy_topic') or '').strip()
+    except Exception:
+        return ''
+
+
+def _send_notify(title, body, tag='gridtracker', priority='default'):
+    """ntfy.sh üzerinden push bildirimi gönderir."""
+    import urllib.request as _ur
+    topic = _load_ntfy_topic()
+    if not topic:
+        log.warning('[Push] ntfy_topic ayarlanmamış, bildirim atlandı.')
+        return
+    tags_map = {
+        'evening-done':  'moon',
+        'evening-warn':  'warning',
+        'evening-error': 'rotating_light',
+    }
+    ntfy_tag = tags_map.get(tag, 'bell')
+    try:
+        req = _ur.Request(
+            f'https://ntfy.sh/{topic}',
+            data=body.encode('utf-8'),
+            method='POST'
+        )
+        req.add_header('Title',    title)
+        req.add_header('Priority', priority)
+        req.add_header('Tags',     ntfy_tag)
+        req.add_header('Content-Type', 'text/plain; charset=utf-8')
+        _ur.urlopen(req, timeout=10)
+        log.info(f'[Push] ntfy bildirimi gönderildi: {title}')
     except Exception as e:
-        log.warning(f'[Push] Bildirim gönderilemedi: {e}')
+        log.warning(f'[Push] ntfy hatası: {e}')
 
 
 def run(mode='normal'):
@@ -305,7 +330,8 @@ def run(mode='normal'):
     log.info('══════════════════════════════════════════')
     log.info('  AKSAM OTOMASYONU TAMAMLANDI')
     log.info('══════════════════════════════════════════')
-    _send_notify('🌙 Akşam Otomasyonu Tamamlandı', 'Günlük veriler işlendi ve kaydedildi.', 'evening-done')
+    _send_notify('🌙 Akşam Otomasyonu Tamamlandı', 'Günlük veriler işlendi ve kaydedildi.',
+                 tag='evening-done', priority='default')
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

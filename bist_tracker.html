@@ -29609,56 +29609,32 @@ document.addEventListener('DOMContentLoaded',async()=>{
 });
 </script>
 <script>
-// ── Push Bildirimleri ─────────────────────────────────
-const VAPID_PUBLIC_KEY='BD5u-XkJ90U0fFjGHsCRUgGu-CfMD-a0DO_3_YwPQruhJLiFJwI5eI-Q4Z9BzCF_z_AfzBUAohx6d3Kwzqp7-DA';
+// ── Push Bildirimleri (ntfy.sh) ───────────────────────
+const NTFY_TOPIC = 'GridTracker-bkpl-07';
 
-function _urlB64ToUint8(b64){
-  const p='='.repeat((4-b64.length%4)%4);
-  const b=(b64+p).replace(/-/g,'+').replace(/_/g,'/');
-  const raw=atob(b);
-  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
-}
-
-// Bildirim isteğini Firebase'e yaz — Python server okuyup push gönderir
 async function sendPushNotify(title, body, tag){
+  if(!NTFY_TOPIC) return;
+  const tagsMap = {
+    'target-done': 'tada',
+    'track-done':  'moneybag',
+  };
   try{
-    await fetch(FIREBASE_URL+'/gridtracker/pushQueue/'+tag+'.json',{
-      method:'PUT',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({title, body, tag, ts:Date.now()})
+    await fetch('https://ntfy.sh/'+NTFY_TOPIC, {
+      method: 'POST',
+      headers: {
+        'Title':        title,
+        'Tags':         tagsMap[tag] || 'bell',
+        'Priority':     'default',
+        'Content-Type': 'text/plain; charset=utf-8'
+      },
+      body: body
     });
-  }catch(e){}
-}
-
-async function initPush(){
-  if(!('serviceWorker' in navigator)||!('PushManager' in window)) return;
-  try{
-    const reg=await navigator.serviceWorker.ready;
-    let sub=await reg.pushManager.getSubscription();
-    if(!sub){
-      const perm=await Notification.requestPermission();
-      if(perm!=='granted') return;
-      sub=await reg.pushManager.subscribe({
-        userVisibleOnly:true,
-        applicationServerKey:_urlB64ToUint8(VAPID_PUBLIC_KEY)
-      });
-    }
-    // Subscription'ı her açılışta Firebase'e kaydet/yenile
-    // (Firebase kaydı silinmiş olsa bile cihaz yeniden aktif olur)
-    const subStr=JSON.stringify(sub);
-    const subKey=btoa(sub.endpoint).replace(/[^a-zA-Z0-9]/g,'').slice(-40);
-    await fetch(FIREBASE_URL+'/gridtracker/pushSubscriptions/'+subKey+'.json',{
-      method:'PUT',headers:{'Content-Type':'application/json'},body:subStr
-    });
-  }catch(e){ console.warn('initPush hata:',e); }
+  }catch(e){ console.warn('ntfy bildirim hatası:',e); }
 }
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js')
-    .then(reg=>{
-      reg.update(); // Her açılışta SW güncellemesini zorla
-      setTimeout(initPush, 2000);
-    })
+    .then(reg=>reg.update())
     .catch(()=>{});
 }
 
