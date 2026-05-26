@@ -627,53 +627,80 @@ def click_infoyatirim():
     time.sleep(4)
 
 
-def extract_b001():
+def extract_b001(sms_sent_at=None, timeout=300, retry_interval=20):
     """
-    INFOYATIRIM konuşması açıkken Ctrl+A + Ctrl+C ile tüm sayfa
-    metnini kopyalar, regex ile son B001 ibaresinin solundaki
-    6 haneli sayıyı çeker.
+    INFOYATIRIM konuşması açıkken B001 kodunu çeker.
+
+    sms_sent_at : SMS tıklamasının time.time() değeri.
+                  Verilirse bu zamandan SONRA gelen yeni bir kod aranır.
+                  Verilmezse en son kodu alır (eski davranış).
+    timeout     : Yeni kod için bekleme süresi (saniye, varsayılan 5 dk).
+    retry_interval : Her denemeler arası bekleme (saniye).
+
+    Bulunamazsa None döner (sys.exit yerine — çağıran karar verir).
     """
     import re as _re
-    log.info('Son B001 verisi çekiliyor...')
+    log.info('B001 verisi çekiliyor...')
     if DRY_RUN:
         return '123456'
 
     wins = gw.getWindowsWithTitle('Vivaldi')
     if not wins:
         log.error('Vivaldi penceresi bulunamadı')
-        sys.exit(1)
+        return None
     win = wins[0]
 
-    # Mesaj içerik alanına tıkla (sol panel ~360px, geri kalan mesajlar)
-    msg_x = win.left + 700
-    msg_y = win.top + 400
-    pyautogui.click(msg_x, msg_y)
-    time.sleep(0.5)
+    deadline = time.time() + (timeout if sms_sent_at else 0)
+    attempt  = 0
 
-    # En alta in (son mesajlar görünsün)
-    pyautogui.hotkey('ctrl', 'end')
-    time.sleep(1.0)
+    while True:
+        attempt += 1
+        log.info(f'B001 deneme #{attempt}...')
 
-    # Tüm metni seç ve kopyala
-    pyperclip.copy('')
-    pyautogui.hotkey('ctrl', 'a')
-    time.sleep(0.3)
-    pyautogui.hotkey('ctrl', 'c')
-    time.sleep(0.8)
+        # Mesaj alanına tıkla, en alta in
+        msg_x = win.left + 700
+        msg_y = win.top + 400
+        pyautogui.click(msg_x, msg_y)
+        time.sleep(0.5)
+        pyautogui.hotkey('ctrl', 'end')
+        time.sleep(1.0)
 
-    text = pyperclip.paste()
-    if not text:
-        log.error('Sayfa metni kopyalanamadı')
-        sys.exit(1)
+        # Sayfayı F5 ile yenile (yeni mesaj gelmiş olabilir)
+        if attempt > 1:
+            pyautogui.hotkey('ctrl', 'r')
+            time.sleep(4.0)
+            pyautogui.click(msg_x, msg_y)
+            time.sleep(0.5)
+            pyautogui.hotkey('ctrl', 'end')
+            time.sleep(1.0)
 
-    matches = _re.findall(r'(\d{6})\s*B001', text)
-    if not matches:
-        log.error('B001 kodu bulunamadı')
-        sys.exit(1)
+        # Metni kopyala
+        pyperclip.copy('')
+        pyautogui.hotkey('ctrl', 'a')
+        time.sleep(0.3)
+        pyautogui.hotkey('ctrl', 'c')
+        time.sleep(0.8)
 
-    value = matches[-1]
-    log.info(f'B001 değeri: {value} ({len(matches)} eşleşmeden sonuncusu)')
-    return value
+        text = pyperclip.paste()
+        if not text:
+            log.warning(f'Deneme #{attempt}: Sayfa metni boş')
+        else:
+            matches = _re.findall(r'(\d{6})\s*B001', text)
+            if matches:
+                value = matches[-1]
+                log.info(f'B001 bulundu: {value} ({len(matches)} eşleşme, deneme #{attempt})')
+                return value
+            else:
+                log.warning(f'Deneme #{attempt}: B001 kodu bulunamadı')
+
+        # Timeout kontrolü
+        if time.time() >= deadline:
+            log.error(f'B001 {timeout}s içinde bulunamadı ({attempt} deneme)')
+            return None
+
+        kalan = int(deadline - time.time())
+        log.info(f'Yeni kod bekleniyor... ({kalan}s kaldı, {retry_interval}s sonra tekrar)')
+        time.sleep(retry_interval)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -699,18 +726,45 @@ def check_skip_today():
     return False
 
 
-def _send_notify(title, body, tag='gridtracker'):
-    """automation_server /api/notify endpoint'ine POST atar."""
-    import urllib.request as _ur, json as _json
+def _load_ntfy_topic():
+    """grid_analysis_config.json'dan ntfy_topic okur."""
+    import json as _json
+    cfg_file = SCRIPT_DIR / 'grid_analysis_config.json'
     try:
-        payload = _json.dumps({'title': title, 'body': body, 'tag': tag}).encode()
-        req = _ur.Request('http://127.0.0.1:5050/api/notify',
-                          data=payload, method='POST',
-                          headers={'Content-Type': 'application/json'})
-        _ur.urlopen(req, timeout=5)
-        log.info(f'[Push] Bildirim gönderildi: {title}')
+        cfg = _json.loads(cfg_file.read_text(encoding='utf-8'))
+        return (cfg.get('ntfy_topic') or '').strip()
+    except Exception:
+        return ''
+
+
+def _send_notify(title, body, tag='gridtracker', priority='default'):
+    """ntfy.sh üzerinden push bildirimi gönderir."""
+    import urllib.request as _ur
+    topic = _load_ntfy_topic()
+    if not topic:
+        log.warning('[Push] ntfy_topic ayarlanmamış, bildirim atlandı.')
+        return
+    try:
+        tags_map = {
+            'morning-done':        'sunny',
+            'morning-warn':        'warning',
+            'morning-sms-fail':    'rotating_light',
+            'morning-dialog-warn': 'warning',
+        }
+        ntfy_tag = tags_map.get(tag, 'bell')
+        req = _ur.Request(
+            f'https://ntfy.sh/{topic}',
+            data=body.encode('utf-8'),
+            method='POST'
+        )
+        req.add_header('Title',    title)
+        req.add_header('Priority', priority)
+        req.add_header('Tags',     ntfy_tag)
+        req.add_header('Content-Type', 'text/plain; charset=utf-8')
+        _ur.urlopen(req, timeout=10)
+        log.info(f'[Push] ntfy bildirimi gönderildi: {title}')
     except Exception as e:
-        log.warning(f'[Push] Bildirim gönderilemedi: {e}')
+        log.warning(f'[Push] ntfy hatası: {e}')
 
 
 def run():
@@ -753,7 +807,10 @@ def run():
     press('enter',  wait=2.0)
     log.info('Şifre girildi ve Enter basıldı')
 
+    # SMS gönder butonu — tıklama zamanını kaydet (yeni kod tespiti için)
+    sms_sent_at = time.time()
     click(2556, 808, wait=3)
+    log.info(f'SMS tetiklendi @ {time.strftime("%H:%M:%S")} — yeni B001 bekleniyor')
 
     # ── Adım 5: Vivaldi'yi aç (zorunlu) ────────────────────
     vivaldi_path = DESKTOP / 'Vivaldi.lnk'
@@ -763,20 +820,28 @@ def run():
     time.sleep(1)
 
     # ── Adım 6: CepTel_Mesajlar sayfasına git ──────────────
-    # Koordinata bağlı değil — F2 Quick Commands ile açılır
     navigate_to_ceptel()
 
     # ── Adım 6.5: Banner'ı kapat (varsa) ───────────────────
-    # "Mobil veri kullanılıyor" gibi banner'lar INFOYATIRIM'ı aşağı iter
     dismiss_banner()
 
     # ── Adım 7: INFOYATIRIM konuşmasını bul ve tıkla ───────
-    # Koordinata bağlı değil — DevTools JS ile bulunur
     click_infoyatirim()
 
-    # ── Adım 8: Son B001 verisini çek ──────────────────────
-    # Koordinata bağlı değil — DevTools JS ile çekilir
-    b001_value = extract_b001()
+    # ── Adım 8: Yeni B001 verisini çek (max 5 dakika bekle) ─
+    b001_value = extract_b001(sms_sent_at=sms_sent_at, timeout=300, retry_interval=20)
+
+    if not b001_value:
+        log.error('B001 kodu alınamadı — SMS gelmedi veya tıklama kaçtı. Otomasyon durduruluyor.')
+        _send_notify(
+            '🚨 Sabah Otomasyonu — SMS Hatası',
+            'MatriksIQ giriş kodu (B001) 5 dakika içinde gelmedi.\n'
+            'Koordinat kaçmış olabilir (2556, 808). Manuel müdahale gerekli.',
+            tag='morning-sms-fail',
+            priority='urgent'
+        )
+        close_vivaldi()
+        return   # Devam ettirme — MatriksIQ'ya yanlış kod yapıştırma
 
     # ── Adım 9: MatriksIQ'ya dön ve değeri yapıştır ────────
     bring_to_front('MatriksIQ')
@@ -809,9 +874,9 @@ def run():
         tamam_tmpl = SCRIPT_DIR / 'tamam_btn.png'
         if tamam_tmpl.exists() and _locate_template('tamam_btn.png', confidence=0.75):
             log.warning('Bilgi dialog handle_dialogs sonrası hala açık! Bildirim gönderiliyor.')
-            _send_notify('⚠️ Sabah Otomasyonu - Dialog Sorunu',
+            _send_notify('⚠️ Sabah Otomasyonu — Dialog Sorunu',
                          'Bilgi penceresi kapatılamadı. Explorer başlatılamıyor olabilir.',
-                         'morning-dialog-warn')
+                         tag='morning-dialog-warn', priority='high')
             time.sleep(2)
 
     # ── Adım 13: Son tıklama ─────────────────────────────────
@@ -846,9 +911,11 @@ def run():
     log.info('  SABAH OTOMASYONU TAMAMLANDI')
     log.info('══════════════════════════════════════════')
     if explorer_ok:
-        _send_notify('☀️ Sabah Otomasyonu Tamamlandı', 'Tüm adımlar başarıyla tamamlandı.', 'morning-done')
+        _send_notify('☀️ Sabah Otomasyonu Tamamlandı', 'Tüm adımlar başarıyla tamamlandı.',
+                     tag='morning-done', priority='default')
     else:
-        _send_notify('⚠️ Sabah Otomasyonu - Sorun', 'Explorer adımı tamamlanamadı, kontrol edin.', 'morning-warn')
+        _send_notify('⚠️ Sabah Otomasyonu — Sorun', 'Explorer adımı tamamlanamadı, kontrol edin.',
+                     tag='morning-warn', priority='high')
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
