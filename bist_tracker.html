@@ -28297,7 +28297,9 @@ function renderPositionMonitor() {
         totalCost += qty * price;
       });
       openAvg = openQty > 0 ? totalCost / openQty : 0;
-      const curPrice = activePrice || (D.lastPrices && D.lastPrices[activeSym]) || 0;
+      // Fiyat önceliği: D.stocks (grid_tracker_service güncel fiyat) → gridRecActive → 0
+      const curPrice = (D.stocks && D.stocks[activeSym] && D.stocks[activeSym].price)
+                    || activePrice || 0;
       if (openQty > 0 && openAvg > 0 && curPrice > 0) {
         openPnl = (curPrice - openAvg) * openQty;
       }
