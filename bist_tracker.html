@@ -287,13 +287,13 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .pm-score-label{font-size:9px;color:#4e6080;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;}
 .pm-trend-row{display:flex;align-items:center;gap:5px;height:34px;position:relative;}
 .pm-trend-row::before{content:'';position:absolute;top:50%;left:10px;right:10px;height:1px;background:rgba(255,255,255,.07);z-index:0;}
-.pm-dot{width:22px;height:22px;border-radius:50%;position:relative;flex-shrink:0;z-index:1;transition:transform .2s;}
-.pm-dot::after{content:'';position:absolute;top:4px;left:5px;width:7px;height:5px;background:rgba(255,255,255,.45);border-radius:50%;filter:blur(1.5px);}
-.pm-dot.pm-good{background:radial-gradient(circle at 35% 32%,#bbf7d0,#16a34a 70%);box-shadow:0 0 8px rgba(74,222,128,.6),0 2px 5px rgba(0,0,0,.45);}
-.pm-dot.pm-warn{background:radial-gradient(circle at 35% 32%,#fef08a,#d97706 70%);box-shadow:0 0 8px rgba(251,191,36,.6),0 2px 5px rgba(0,0,0,.45);}
-.pm-dot.pm-bad{background:radial-gradient(circle at 35% 32%,#fecaca,#dc2626 70%);box-shadow:0 0 8px rgba(248,113,113,.6),0 2px 5px rgba(0,0,0,.45);}
-.pm-dot.pm-today{outline:2px solid rgba(255,255,255,.55);outline-offset:2px;width:26px;height:26px;}
-.pm-dot.pm-today::after{top:5px;left:6px;width:8px;height:6px;}
+.pm-dot{width:16px;height:16px;border-radius:50%;position:relative;flex-shrink:0;z-index:1;transition:transform .2s;}
+.pm-dot::after{content:'';position:absolute;top:3px;left:4px;width:5px;height:4px;background:rgba(255,255,255,.45);border-radius:50%;filter:blur(1.5px);}
+.pm-dot.pm-good{background:radial-gradient(circle at 35% 32%,#bbf7d0,#16a34a 70%);box-shadow:0 0 6px rgba(74,222,128,.6),0 2px 4px rgba(0,0,0,.45);}
+.pm-dot.pm-warn{background:radial-gradient(circle at 35% 32%,#fef08a,#d97706 70%);box-shadow:0 0 6px rgba(251,191,36,.6),0 2px 4px rgba(0,0,0,.45);}
+.pm-dot.pm-bad{background:radial-gradient(circle at 35% 32%,#fecaca,#dc2626 70%);box-shadow:0 0 6px rgba(248,113,113,.6),0 2px 4px rgba(0,0,0,.45);}
+.pm-dot.pm-today{outline:2px solid rgba(255,255,255,.55);outline-offset:2px;width:20px;height:20px;}
+.pm-dot.pm-today::after{top:4px;left:5px;width:6px;height:5px;}
 .pm-dot:hover{transform:scale(1.18);}
 .pm-trend-dates{display:flex;justify-content:space-between;margin-top:2px;}
 .pm-trend-dates span{font-size:8px;color:#4e6080;}
