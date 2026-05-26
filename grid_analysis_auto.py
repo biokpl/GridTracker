@@ -56,10 +56,41 @@ import pandas as pd
 import numpy as np
 import holidays as _holidays
 
-SCRIPT_DIR  = Path(__file__).parent
-LOG_FILE    = SCRIPT_DIR / 'grid_analysis.log'
-CONFIG_FILE = SCRIPT_DIR / 'grid_analysis_config.json'
-RESULT_FILE = SCRIPT_DIR / 'grid_analysis_result.json'
+SCRIPT_DIR    = Path(__file__).parent
+LOG_FILE      = SCRIPT_DIR / 'grid_analysis.log'
+CONFIG_FILE   = SCRIPT_DIR / 'grid_analysis_config.json'
+RESULT_FILE   = SCRIPT_DIR / 'grid_analysis_result.json'
+FIREBASE_BASE = 'https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app/gridtracker'
+SCORE_HIST_MAX = 10  # Her hisse için saklanacak maksimum gün
+
+
+# =============================================================================
+#  FİREBASE YARDIMCILARI
+# =============================================================================
+
+def fb_get(path):
+    """Firebase'den JSON oku."""
+    try:
+        url = f'{FIREBASE_BASE}/{path}.json'
+        with urllib.request.urlopen(url, timeout=10) as r:
+            return json.loads(r.read().decode('utf-8'))
+    except Exception as e:
+        log.debug(f'Firebase GET {path}: {e}')
+        return None
+
+def fb_put(path, data):
+    """Firebase'e JSON yaz."""
+    try:
+        url = f'{FIREBASE_BASE}/{path}.json'
+        payload = json.dumps(data, ensure_ascii=False).encode('utf-8')
+        req = urllib.request.Request(url, data=payload, method='PUT')
+        req.add_header('Content-Type', 'application/json')
+        with urllib.request.urlopen(req, timeout=10):
+            pass
+        return True
+    except Exception as e:
+        log.warning(f'Firebase PUT {path}: {e}')
+        return False
 
 _handlers = [logging.FileHandler(LOG_FILE, encoding='utf-8')]
 if sys.stdout:
@@ -525,7 +556,13 @@ def get_market_context():
 #  HİSSE ANALİZİ
 # =============================================================================
 
-def analyze_stock(ticker, cfg):
+def analyze_stock(ticker, cfg, min_score=None):
+    """
+    min_score=None -> MIN_GRID_SCORE kullan (varsayilan BIST50 taramasi).
+    min_score=0    -> skor filtresi yok (aktif hisse analizi icin).
+    """
+    if min_score is None:
+        min_score = MIN_GRID_SCORE
     try:
         df = yf.Ticker(ticker).history(period='90d', interval='1d', auto_adjust=True)
         if df is None or len(df) < 55:   # MA50 + buffer icin
@@ -546,8 +583,8 @@ def analyze_stock(ticker, cfg):
         if pd.isna(atr) or atr <= 0:
             return None
 
-        # Volatilite filtresi — cok yuksek = grid calismaz
-        if atr / price > 0.08:
+        # Volatilite filtresi — cok yuksek = grid calismaz (aktif hisse icin atla)
+        if min_score > 0 and atr / price > 0.08:
             return None
 
         # v5: Percentile tabanli destek / direnc (60-gun, %15/%85)
@@ -592,7 +629,7 @@ def analyze_stock(ticker, cfg):
             high, low, close, volume,
             support, resistance, atr, grid_interval
         )
-        if grid_score < MIN_GRID_SCORE:
+        if grid_score < min_score:
             return None
 
         pct_up   = (resistance - price) / price * 100
@@ -763,6 +800,79 @@ def run(dry_run=False, force=False):
         log.info(f'Firebase gridRec guncellendi ({best["symbol"]})')
     except Exception as e:
         log.warning(f'Firebase gridRec write hatasi: {e}')
+
+    # -------------------------------------------------------------------------
+    # AKTIF HİSSE ANALİZİ + scoreHistory
+    # -------------------------------------------------------------------------
+    today_str = datetime.now().strftime('%Y-%m-%d')
+
+    def update_score_history(symbol, grid_sc, final_sc, price_val):
+        """Firebase scoreHistory guncellemesi — sembol basina max SCORE_HIST_MAX kayit."""
+        hist = fb_get(f'scoreHistory/{symbol}') or []
+        if not isinstance(hist, list):
+            hist = []
+        # Bugunku kayit varsa guncelle, yoksa ekle
+        if hist and hist[-1].get('date') == today_str:
+            hist[-1] = {'date': today_str, 'gs': round(grid_sc, 2),
+                        'fs': round(final_sc, 2), 'price': round(price_val, 2)}
+        else:
+            hist.append({'date': today_str, 'gs': round(grid_sc, 2),
+                         'fs': round(final_sc, 2), 'price': round(price_val, 2)})
+        if len(hist) > SCORE_HIST_MAX:
+            hist = hist[-SCORE_HIST_MAX:]
+        fb_put(f'scoreHistory/{symbol}', hist)
+        log.info(f'scoreHistory guncellendi: {symbol} ({len(hist)} kayit)')
+
+    # En iyi hissenin scoreHistory'sini guncelle
+    update_score_history(best['symbol'], best['grid_score'], best['final_score'], best['price'])
+
+    # Aktif hisseyi Firebase'den oku
+    active_sym = None
+    try:
+        settings_data = fb_get('settings')
+        if settings_data and isinstance(settings_data, dict):
+            gc = settings_data.get('gridCalc', {})
+            if isinstance(gc, dict):
+                active_sym = (gc.get('symbol') or '').upper().strip()
+    except Exception as e:
+        log.warning(f'Aktif hisse okunamadi: {e}')
+
+    if active_sym and active_sym != best['symbol']:
+        log.info(f'Aktif hisse analiz ediliyor: {active_sym}')
+        active_ticker = active_sym + '.IS'
+        active_r = analyze_stock(active_ticker, cfg, min_score=0)
+        if active_r:
+            # Final skorunu tek hisse normalizasyonu ile hesapla
+            active_r['final_score'] = round(active_r['grid_score'] * market_mult, 3)
+            active_r.pop('_raw_profit', None)
+            active_r['updated_at']    = datetime.now().strftime('%Y-%m-%d %H:%M')
+            active_r['market_status'] = market_sig
+            # Aktif hissenin scoreHistory'sini guncelle
+            update_score_history(active_r['symbol'], active_r['grid_score'],
+                                 active_r['final_score'], active_r['price'])
+            # gridRecActive yaz
+            if fb_put('gridRecActive', active_r):
+                log.info(f'Firebase gridRecActive guncellendi ({active_sym})')
+            else:
+                log.warning(f'Firebase gridRecActive write hatasi')
+        else:
+            log.info(f'Aktif hisse analiz sonucu yok: {active_sym} (dusuk skor veya veri)')
+            # Yine de mevcut fiyat+skor bilgisini almaya calis (sadece skor icin)
+            try:
+                import yfinance as _yf
+                _df = _yf.Ticker(active_ticker).history(period='30d', interval='1d', auto_adjust=True)
+                if _df is not None and len(_df) > 0:
+                    _price = float(_df['Close'].iloc[-1])
+                    log.info(f'{active_sym} son fiyat: {_price:.2f} (tam analiz yapılamadı)')
+            except Exception:
+                pass
+    elif active_sym == best['symbol']:
+        # Aktif hisse zaten en iyi hisse — gridRecActive = gridRec kopyasi
+        active_copy = dict(best)
+        if fb_put('gridRecActive', active_copy):
+            log.info(f'Firebase gridRecActive = gridRec (aktif == en iyi: {active_sym})')
+    else:
+        log.info('Aktif hisse ayarlanmamis, gridRecActive atlanıyor.')
 
     # bist_tracker.html içindeki window.__GRID_REC__ bloğunu güncelle (GitHub Pages uyumu)
     html_file = SCRIPT_DIR / 'bist_tracker.html'

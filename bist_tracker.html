@@ -272,6 +272,53 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .gc-rec-loading{text-align:center;padding:16px;font-size:10px;color:#4e6080;letter-spacing:.8px;}
 .gc-rec-loading span{animation:gc-rec-blink 1.4s ease-in-out infinite;}
 
+/* ── POZİSYON TAKİP KARTI ── */
+.pm-wrap{background:linear-gradient(145deg,rgba(249,115,22,.05) 0%,rgba(234,88,12,.02) 60%,transparent 100%);border:1px solid rgba(249,115,22,.22);border-radius:var(--r);padding:14px;position:relative;overflow:hidden;margin-bottom:10px;}
+.pm-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 5%,rgba(249,115,22,.4) 30%,rgba(251,146,60,.85) 50%,rgba(249,115,22,.4) 70%,transparent 95%);filter:drop-shadow(0 0 5px rgba(249,115,22,.5));}
+.pm-header{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
+.pm-title{font-size:10px;font-weight:800;letter-spacing:2px;color:#fb923c;text-transform:uppercase;flex:1;}
+.pm-sym-badge{font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;background:rgba(249,115,22,.12);color:#fdba74;border:1px solid rgba(249,115,22,.28);}
+.pm-score-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.pm-score-big{font-family:var(--mono);font-size:32px;font-weight:800;line-height:1;min-width:60px;text-align:center;}
+.pm-score-big.pm-good{color:#4ade80;}
+.pm-score-big.pm-warn{color:#fbbf24;}
+.pm-score-big.pm-bad{color:#f87171;}
+.pm-score-info{flex:1;}
+.pm-score-label{font-size:9px;color:#4e6080;letter-spacing:.5px;text-transform:uppercase;margin-bottom:3px;}
+.pm-trend-row{display:flex;align-items:flex-end;gap:3px;height:30px;}
+.pm-trend-bar{flex:1;border-radius:2px 2px 0 0;min-height:3px;transition:height .3s;}
+.pm-trend-bar.pm-good{background:rgba(74,222,128,.65);}
+.pm-trend-bar.pm-warn{background:rgba(251,191,36,.65);}
+.pm-trend-bar.pm-bad{background:rgba(248,113,113,.65);}
+.pm-trend-bar.pm-today{outline:1px solid rgba(255,255,255,.4);}
+.pm-trend-dates{display:flex;justify-content:space-between;margin-top:2px;}
+.pm-trend-dates span{font-size:8px;color:#4e6080;}
+.pm-divider{height:1px;background:rgba(255,255,255,.05);margin:9px 0;}
+.pm-pnl-row{display:flex;gap:6px;margin-bottom:9px;}
+.pm-pnl-box{flex:1;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);border-radius:7px;padding:7px 6px;text-align:center;}
+.pm-pnl-val{font-family:var(--mono);font-size:13px;font-weight:700;line-height:1.2;}
+.pm-pnl-val.pos{color:#4ade80;}
+.pm-pnl-val.neg{color:#f87171;}
+.pm-pnl-val.neu{color:#94a3b8;}
+.pm-pnl-lbl{font-size:8px;color:#4e6080;margin-top:3px;letter-spacing:.3px;}
+.pm-verdict{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;margin-bottom:9px;}
+.pm-verdict.v-devam{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.22);}
+.pm-verdict.v-dikkat{background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.22);}
+.pm-verdict.v-cik{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.22);}
+.pm-verdict-icon{font-size:18px;flex-shrink:0;}
+.pm-verdict-text{flex:1;}
+.pm-verdict-title{font-size:11px;font-weight:800;letter-spacing:.5px;line-height:1;}
+.pm-verdict.v-devam .pm-verdict-title{color:#4ade80;}
+.pm-verdict.v-dikkat .pm-verdict-title{color:#fbbf24;}
+.pm-verdict.v-cik .pm-verdict-title{color:#f87171;}
+.pm-verdict-reason{font-size:9px;color:#94a3b8;margin-top:2px;line-height:1.4;}
+.pm-new-rec{display:flex;align-items:center;gap:8px;background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.18);border-radius:8px;padding:8px 10px;}
+.pm-new-rec-label{font-size:9px;color:#67e8f9;letter-spacing:.5px;text-transform:uppercase;flex-shrink:0;}
+.pm-new-rec-sym{font-family:var(--mono);font-size:16px;font-weight:800;color:#22d3ee;}
+.pm-new-rec-score{font-family:var(--mono);font-size:11px;color:#a5f3fc;margin-left:4px;}
+.pm-new-rec-diff{font-size:9px;padding:2px 6px;border-radius:4px;background:rgba(34,197,94,.1);color:#86efac;border:1px solid rgba(34,197,94,.2);white-space:nowrap;}
+.pm-empty{text-align:center;padding:18px 10px;font-size:10px;color:#4e6080;letter-spacing:.5px;}
+
 /* ── SCROLL AREA ── */
 .content{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:rgba(59,130,246,.25) transparent;}
 .content::-webkit-scrollbar{width:4px;}
@@ -1559,6 +1606,57 @@ select.field-input option{background:var(--surface2);}
       <div class="gc-rec-footer">
         <div id="gc-rec-time" class="gc-rec-time">↻ —</div>
         <button class="gc-rec-apply-btn" onclick="gcRecApply()">Bu Hisseyi Uygula →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── POZİSYON TAKİP KARTI ── -->
+  <div id="pm-card" style="display:none">
+    <div class="pm-wrap">
+      <div class="pm-header">
+        <span style="font-size:15px;line-height:1">📊</span>
+        <div class="pm-title">Pozisyon Takip</div>
+        <div id="pm-sym-badge" class="pm-sym-badge">—</div>
+      </div>
+      <!-- Skor + Trend -->
+      <div class="pm-score-row">
+        <div id="pm-score-big" class="pm-score-big pm-warn">—</div>
+        <div class="pm-score-info">
+          <div class="pm-score-label">Aktif Hisse Grid Skoru</div>
+          <div class="pm-trend-row" id="pm-trend-bars"></div>
+          <div class="pm-trend-dates"><span id="pm-trend-from">—</span><span>bugün</span></div>
+        </div>
+      </div>
+      <div class="pm-divider"></div>
+      <!-- P&L satırı -->
+      <div class="pm-pnl-row">
+        <div class="pm-pnl-box">
+          <div id="pm-open-qty" class="pm-pnl-val neu">—</div>
+          <div class="pm-pnl-lbl">Açık Lot</div>
+        </div>
+        <div class="pm-pnl-box">
+          <div id="pm-open-pnl" class="pm-pnl-val neu">—</div>
+          <div class="pm-pnl-lbl">Anlık K/Z</div>
+        </div>
+        <div class="pm-pnl-box">
+          <div id="pm-today-net" class="pm-pnl-val neu">—</div>
+          <div class="pm-pnl-lbl">Bugün Net</div>
+        </div>
+      </div>
+      <!-- Karar -->
+      <div id="pm-verdict" class="pm-verdict v-dikkat">
+        <div class="pm-verdict-icon" id="pm-verdict-icon">⏳</div>
+        <div class="pm-verdict-text">
+          <div class="pm-verdict-title" id="pm-verdict-title">ANALİZ EDİLİYOR</div>
+          <div class="pm-verdict-reason" id="pm-verdict-reason">Veri bekleniyor...</div>
+        </div>
+      </div>
+      <!-- Yeni öneri (sadece ÇIK durumunda görünür) -->
+      <div id="pm-new-rec" class="pm-new-rec" style="display:none">
+        <div class="pm-new-rec-label">Yeni Öneri</div>
+        <div id="pm-new-rec-sym" class="pm-new-rec-sym">—</div>
+        <div id="pm-new-rec-score" class="pm-new-rec-score">—</div>
+        <div id="pm-new-rec-diff" class="pm-new-rec-diff">—</div>
       </div>
     </div>
   </div>
@@ -27976,6 +28074,7 @@ async function gcRecFetch() {
     _gcRecData = src;
     gcRecRender(_gcRecData);
     if (card) card.style.display = '';
+    renderPositionMonitor();
     return;
   }
   // Lokal API'yi dene (PC — server.py)
@@ -27985,6 +28084,7 @@ async function gcRecFetch() {
     _gcRecData = await r.json();
     gcRecRender(_gcRecData);
     if (card) card.style.display = '';
+    renderPositionMonitor();
   } catch(e) {
     if (card) card.style.display = 'none';
   }
@@ -28100,6 +28200,186 @@ function gcRecApply() {
   // Analizin kesin değerleriyle doğrudan render et — calculator formülü bypass
   setTimeout(() => gcRecDirectRender(d), 50);
   toast('🤖 ' + sym + ' uygulandı', 'ok');
+  renderPositionMonitor();
+}
+
+function renderPositionMonitor() {
+  const card = $('pm-card');
+  if (!card) return;
+
+  // Aktif hisse: önce trackSymbol, sonra gridCalc.symbol
+  const activeSym = ((S.settings && S.settings.trackSymbol) || '').toUpperCase().trim()
+                 || ((S.settings && S.settings.gridCalc && S.settings.gridCalc.symbol) || '').toUpperCase().trim();
+
+  if (!activeSym || !D) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = '';
+
+  const st = (id, v) => { const e = $(id); if (e) e.textContent = v; };
+
+  // Sembol badge
+  st('pm-sym-badge', activeSym);
+
+  // Aktif hisse analizi (gridRecActive veya gridRec fallback)
+  const active = (D.gridRecActive && D.gridRecActive.symbol === activeSym) ? D.gridRecActive
+               : (D.gridRec && D.gridRec.symbol === activeSym) ? D.gridRec
+               : null;
+
+  const activeGS   = active ? (active.grid_score  || 0) : null;
+  const activeFS   = active ? (active.final_score || 0) : null;
+  const activePrice = active ? (active.price || 0) : 0;
+
+  // Best öneri (gridRec)
+  const best    = D.gridRec || null;
+  const bestSym = best ? (best.symbol || '').replace('.IS', '') : '';
+  const bestFS  = best ? (best.final_score || 0) : 0;
+
+  // ── Skor göster ──
+  const scoreEl = $('pm-score-big');
+  if (scoreEl) {
+    if (activeGS !== null) {
+      scoreEl.textContent = activeGS.toFixed(1);
+      scoreEl.className = 'pm-score-big ' + (activeGS >= 6 ? 'pm-good' : activeGS >= 4 ? 'pm-warn' : 'pm-bad');
+    } else {
+      scoreEl.textContent = '?';
+      scoreEl.className = 'pm-score-big pm-warn';
+    }
+  }
+
+  // ── Skor geçmişi (trend bar chart) ──
+  const hist = (D.scoreHistory && D.scoreHistory[activeSym]) || [];
+  const barsEl = $('pm-trend-bars');
+  if (barsEl) {
+    barsEl.innerHTML = '';
+    if (hist.length > 0) {
+      const maxGS = Math.max(...hist.map(h => h.gs || 0), 1);
+      hist.forEach((h, i) => {
+        const gs = h.gs || 0;
+        const pct = Math.max(8, (gs / 10) * 100);
+        const cls = gs >= 6 ? 'pm-good' : gs >= 4 ? 'pm-warn' : 'pm-bad';
+        const today = i === hist.length - 1 ? ' pm-today' : '';
+        const bar = document.createElement('div');
+        bar.className = `pm-trend-bar ${cls}${today}`;
+        bar.style.height = pct + '%';
+        bar.title = `${h.date}: ${gs.toFixed(1)}`;
+        barsEl.appendChild(bar);
+      });
+      st('pm-trend-from', hist[0].date ? hist[0].date.slice(5) : '—');
+    } else {
+      barsEl.innerHTML = '<div style="font-size:9px;color:#4e6080;line-height:30px">Geçmiş yok</div>';
+      st('pm-trend-from', '—');
+    }
+  }
+
+  // ── Trend hesapla (son 3 gün) ──
+  let trendDir = 'stable'; // rising / falling / stable
+  if (hist.length >= 3) {
+    const last3 = hist.slice(-3).map(h => h.gs || 0);
+    const delta = last3[2] - last3[0];
+    if (delta > 0.5)  trendDir = 'rising';
+    if (delta < -0.5) trendDir = 'falling';
+  }
+
+  // ── Açık pozisyon P&L ──
+  // openPositions: D.todayProfit.bySymbol[sym].openPositions = [{execPrice, execQty, qty, ...}]
+  let openQty = 0, openAvg = 0, openPnl = null;
+  try {
+    const symData = D.todayProfit && D.todayProfit.bySymbol && D.todayProfit.bySymbol[activeSym];
+    const opList = symData && Array.isArray(symData.openPositions) ? symData.openPositions : null;
+    if (opList && opList.length > 0) {
+      let totalCost = 0;
+      opList.forEach(t => {
+        const qty = t.execQty || t.qty || 0;
+        const price = t.execPrice || 0;
+        openQty += qty;
+        totalCost += qty * price;
+      });
+      openAvg = openQty > 0 ? totalCost / openQty : 0;
+      const curPrice = activePrice || (D.lastPrices && D.lastPrices[activeSym]) || 0;
+      if (openQty > 0 && openAvg > 0 && curPrice > 0) {
+        openPnl = (curPrice - openAvg) * openQty;
+      }
+    }
+  } catch(e) {}
+
+  st('pm-open-qty', openQty > 0 ? openQty + ' lot' : '—');
+  const pnlEl = $('pm-open-pnl');
+  if (pnlEl) {
+    if (openPnl !== null) {
+      pnlEl.textContent = (openPnl >= 0 ? '+' : '') + fxi(openPnl) + ' ₺';
+      pnlEl.className = 'pm-pnl-val ' + (openPnl > 0 ? 'pos' : openPnl < 0 ? 'neg' : 'neu');
+    } else {
+      pnlEl.textContent = '—'; pnlEl.className = 'pm-pnl-val neu';
+    }
+  }
+
+  // Bugün net kar
+  let todayNet = null;
+  try {
+    const tp = D.todayProfit && D.todayProfit.bySymbol && D.todayProfit.bySymbol[activeSym];
+    if (tp) todayNet = tp.netProfit || tp.net || 0;
+  } catch(e) {}
+  const todayEl = $('pm-today-net');
+  if (todayEl) {
+    if (todayNet !== null) {
+      todayEl.textContent = (todayNet >= 0 ? '+' : '') + fxi(todayNet) + ' ₺';
+      todayEl.className = 'pm-pnl-val ' + (todayNet > 0 ? 'pos' : todayNet < 0 ? 'neg' : 'neu');
+    } else {
+      todayEl.textContent = '—'; todayEl.className = 'pm-pnl-val neu';
+    }
+  }
+
+  // ── KARAR MANTIĞI ──
+  const newRecEl  = $('pm-new-rec');
+  const verdictEl = $('pm-verdict');
+  const scoreDiff = (activeFS !== null && bestFS > 0 && bestSym !== activeSym)
+                  ? (bestFS - activeFS) : 0;
+
+  let verdict = 'devam', icon = '✅', title = 'DEVAM ET', reason = '';
+
+  if (activeGS === null) {
+    verdict = 'dikkat'; icon = '⚠️'; title = 'VERİ YOK';
+    reason = 'Aktif hisse analiz edilemedi. Sabah otomasyonu bekleniyor.';
+  } else if (activeGS < 3.5) {
+    verdict = 'cik'; icon = '🚨'; title = 'ÇIK';
+    reason = `Grid skoru çok düşük (${activeGS.toFixed(1)}/10). Bu hissede grid verimsiz çalışıyor.`;
+  } else if (trendDir === 'falling' && activeGS < 5 && scoreDiff > 2.5) {
+    verdict = 'cik'; icon = '🚨'; title = 'ÇIK';
+    reason = `Skor düşüyor (${activeGS.toFixed(1)}/10) ve yeni öneri ${scoreDiff.toFixed(1)} puan daha iyi.`;
+  } else if (activeGS < 4 || (trendDir === 'falling' && activeGS < 5)) {
+    verdict = 'dikkat'; icon = '⚠️'; title = 'DİKKAT';
+    reason = activeGS < 4
+      ? `Grid skoru zayıf (${activeGS.toFixed(1)}/10). Pozisyonu izlemeye devam et.`
+      : `Skor son günlerde düşüyor (${activeGS.toFixed(1)}/10). Çıkış için hazır ol.`;
+  } else if (scoreDiff > 2.5) {
+    verdict = 'dikkat'; icon = '⚠️'; title = 'DEĞİŞTİR?';
+    reason = `${bestSym} ${scoreDiff.toFixed(1)} puan daha iyi. Mevcut pozisyonu kapat ve geç.`;
+  } else {
+    verdict = 'devam'; icon = '✅'; title = 'DEVAM ET';
+    const trendTxt = trendDir === 'rising' ? 'Skor yükseliyor.' : trendDir === 'falling' ? 'Skor sabit tutulmalı.' : '';
+    reason = `Skor iyi durumda (${activeGS.toFixed(1)}/10). ${trendTxt} Grid çalışmaya devam etsin.`;
+  }
+
+  if (verdictEl) {
+    verdictEl.className = 'pm-verdict v-' + verdict;
+    st('pm-verdict-icon', icon);
+    st('pm-verdict-title', title);
+    st('pm-verdict-reason', reason);
+  }
+
+  // Yeni öneri — ÇIK veya DEĞİŞTİR durumunda göster
+  if (newRecEl) {
+    if ((verdict === 'cik' || (verdict === 'dikkat' && scoreDiff > 2.5)) && best && bestSym !== activeSym) {
+      newRecEl.style.display = '';
+      st('pm-new-rec-sym', bestSym);
+      st('pm-new-rec-score', (best.grid_score || 0).toFixed(1) + ' / ' + (bestFS || 0).toFixed(2));
+      st('pm-new-rec-diff', '+' + scoreDiff.toFixed(1) + ' puan fark');
+    } else {
+      newRecEl.style.display = 'none';
+    }
+  }
 }
 
 function gcRecDirectRender(d) {
@@ -28139,6 +28419,8 @@ function gcRecDirectRender(d) {
 function renderGridCalcPage(){
   // Öneri kartını yükle (henüz yüklenmediyse)
   if (!_gcRecData) gcRecFetch();
+  // Pozisyon takip kartını her zaman güncelle
+  renderPositionMonitor();
 
   const gc=S.settings.gridCalc||{};
   // Hisse kodu: kullanıcı düzenlemiyorsa (dirty değilse) daima kayıtlı sembolle eşitle
@@ -29274,6 +29556,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
       if(card) card.style.display='';
       gcRecRender(D.gridRec);
     }
+    renderPositionMonitor();
     const pid=document.querySelector('.page.on')?.id;
     if(pid==='pg-monthly'||pid==='pg-trades') renderMonthly();
     if(pid==='pg-overall') renderOverall();
