@@ -416,7 +416,8 @@ class Handler(SimpleHTTPRequestHandler):
                 'currentMonthNet': 0.0,
                 'botSymbols': [], 'monthlyKar': [], 'openPositions': [],
                 'dailyLog': {},
-                'posMonitor': {}
+                'posMonitor': {},
+                'posVerdict': {}
             }
             if os.path.exists(bt_file):
                 try:
@@ -505,6 +506,67 @@ class Handler(SimpleHTTPRequestHandler):
                                                'avgCost': round(avg_c, 2), 'curPrice': round(c_px, 2),
                                                'unrealPnl': round(u_pnl, 0), 'posCount': len(pl)}
                                 data['posMonitor'] = pos_mon
+
+                                # posVerdict — karar sistemi (LCD 5. sayfa ana içerik)
+                                pv_sym = pos_mon.get('symbol', '')
+                                pv = {'symbol': pv_sym, 'gridScore': 0.0, 'finalScore': 0.0,
+                                      'verdict': 'dikkat', 'title': 'VERI YOK',
+                                      'reason': 'Analiz bekleniyor...', 'trend': 'stable'}
+                                if pv_sym:
+                                    try:
+                                        # gridRecActive — aktif sembol analiz verisi
+                                        gr_active = firebase_get('gridtracker/gridRecActive') or {}
+                                        rec_sym = (gr_active.get('symbol') or '').replace('.IS', '').upper()
+                                        if rec_sym != pv_sym:
+                                            # Fallback: gridRec (en iyi öneri)
+                                            gr_active = firebase_get('gridtracker/gridRec') or {}
+                                            rec_sym = (gr_active.get('symbol') or '').replace('.IS', '').upper()
+                                        gs  = float(gr_active.get('grid_score', 0) or 0) if rec_sym == pv_sym else 0.0
+                                        fs  = float(gr_active.get('final_score', 0) or 0) if rec_sym == pv_sym else 0.0
+
+                                        # scoreHistory — trend hesapla (son 3 gün)
+                                        trend_dir = 'stable'
+                                        hist = firebase_get(f'gridtracker/scoreHistory/{pv_sym}') or []
+                                        if isinstance(hist, list) and len(hist) >= 3:
+                                            last3 = [float(h.get('gs', 0) or 0) for h in hist[-3:]]
+                                            delta = last3[2] - last3[0]
+                                            if delta > 0.5:   trend_dir = 'rising'
+                                            elif delta < -0.5: trend_dir = 'falling'
+
+                                        # gridRec — en iyi öneri (skor farkı için)
+                                        gr_best = firebase_get('gridtracker/gridRec') or {}
+                                        best_s = (gr_best.get('symbol') or '').replace('.IS', '').upper()
+                                        best_fs = float(gr_best.get('final_score', 0) or 0)
+                                        score_diff = (best_fs - fs) if (best_s and best_s != pv_sym and best_fs > 0 and fs > 0) else 0.0
+
+                                        # Karar mantığı (JS ile birebir)
+                                        if gs <= 0:
+                                            verdict, title = 'dikkat', 'VERI YOK'
+                                            reason = 'Analiz bekleniyor...'
+                                        elif gs < 3.5:
+                                            verdict, title = 'cik', 'CIK'
+                                            reason = f'Skor cok dusuk ({gs:.1f}/10)'
+                                        elif trend_dir == 'falling' and gs < 5 and score_diff > 2.5:
+                                            verdict, title = 'cik', 'CIK'
+                                            reason = f'Skor dusuyor ({gs:.1f}/10), {score_diff:.1f}pt fark'
+                                        elif gs < 4 or (trend_dir == 'falling' and gs < 5):
+                                            verdict, title = 'dikkat', 'DIKKAT'
+                                            reason = (f'Skor zayif ({gs:.1f}/10)' if gs < 4
+                                                      else f'Skor dusuyor ({gs:.1f}/10)')
+                                        elif score_diff > 2.5:
+                                            verdict, title = 'dikkat', 'DEGISTIR?'
+                                            reason = f'{best_s} {score_diff:.1f} puan daha iyi'
+                                        else:
+                                            verdict, title = 'devam', 'DEVAM ET'
+                                            t = 'Yukseliyor.' if trend_dir == 'rising' else ('Dusuyor.' if trend_dir == 'falling' else '')
+                                            reason = f'Skor iyi ({gs:.1f}/10). {t}'.strip()
+
+                                        pv = {'symbol': pv_sym, 'gridScore': round(gs, 1),
+                                              'finalScore': round(fs, 3), 'verdict': verdict,
+                                              'title': title, 'reason': reason, 'trend': trend_dir}
+                                    except Exception as e:
+                                        slog.warning(f'[posVerdict] hata: {e}')
+                                data['posVerdict'] = pv
                             else:
                                 data['realNet'] = gd.get('realNet', 0.0)
                                 data['openPosCount'] = gd.get('openPosCount', 0)
