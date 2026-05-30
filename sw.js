@@ -1,4 +1,4 @@
-const CACHE = 'gridtracker-v6';
+const CACHE = 'gridtracker-v12';
 const ASSETS = ['./bist_tracker.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -28,7 +28,6 @@ self.addEventListener('push', e => {
   const options = {
     body:    data.body  || '',
     icon:    './icon-192.png',
-    badge:   './icon-192.png',
     tag:     data.tag   || 'gridtracker',
     renotify: true,
     silent:  false,

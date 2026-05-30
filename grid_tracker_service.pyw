@@ -2057,6 +2057,26 @@ def delete_excel_files():
             log.warning(f"Silinemedi ({f.name}): {e}")
 
 # ──────────────────────────────────────────────────────────
+#  OTOMATIK BAŞLATMA (REGISTRY)
+# ──────────────────────────────────────────────────────────
+def setup_autostart():
+    """Registry HKCU\Run'a kendini ekler — her çalışmada günceller."""
+    try:
+        import winreg
+        pythonw = str(Path(sys.executable).parent / 'pythonw.exe')
+        script  = str(Path(__file__).resolve())
+        value   = f'"{pythonw}" "{script}"'
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER,
+                             r'Software\Microsoft\Windows\CurrentVersion\Run',
+                             0, winreg.KEY_SET_VALUE)
+        winreg.SetValueEx(key, 'GridTrackerService', 0, winreg.REG_SZ, value)
+        winreg.CloseKey(key)
+        log.info('[Autostart] Registry kaydı güncellendi.')
+    except Exception as e:
+        log.warning(f'[Autostart] Registry hatası: {e}')
+
+
+# ──────────────────────────────────────────────────────────
 #  GÖREV ZAMANLAYICI
 # ──────────────────────────────────────────────────────────
 def setup_task_scheduler():
@@ -2071,6 +2091,7 @@ def setup_task_scheduler():
 #  SERVİS DÖNGÜSÜ
 # ──────────────────────────────────────────────────────────
 def run_service():
+    setup_autostart()
     log.info("Grid Bot Tracker Servisi başlatıldı")
     log.info(f"Klasör : {SCRIPT_DIR}")
     log.info(f"HTML   : {HTML_FILE}")

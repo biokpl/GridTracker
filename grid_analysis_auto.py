@@ -141,14 +141,18 @@ def _notify_verdict(cfg, active_r, best_r, active_sym):
 
 def send_ntfy(cfg, title, body, priority='default', tags='chart_with_downwards_trend'):
     """ntfy.sh üzerinden push bildirimi gönder."""
+    import base64 as _b64
     topic = (cfg.get('ntfy_topic') or '').strip()
     if not topic:
         return  # topic ayarlanmamış, sessizce geç
     try:
-        url = f'https://ntfy.sh/{topic}'.encode('utf-8')
+        # RFC 2047 base64 — emoji/Türkçe içeren başlıklar latin-1 ile encode edilemiyor
+        encoded_title = ('=?utf-8?b?' +
+                         _b64.b64encode(title.encode('utf-8')).decode('ascii') +
+                         '?=')
         req = urllib.request.Request(f'https://ntfy.sh/{topic}',
                                      data=body.encode('utf-8'), method='POST')
-        req.add_header('Title',    title)
+        req.add_header('Title',    encoded_title)
         req.add_header('Priority', priority)
         req.add_header('Tags',     tags)
         req.add_header('Content-Type', 'text/plain; charset=utf-8')

@@ -24,6 +24,7 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 import urllib.request, json, socket, threading, time, os, logging
 
 FIREBASE_URL = 'https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app'
+NTFY_TOPIC   = 'GridTracker-bkpl-07'
 PORT = 5050
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ATR_FILE   = os.path.join(BASE_DIR, 'ATR_Sonuc.xlsx')
@@ -289,6 +290,180 @@ def _check_push_queue():
         slog.warning(f'[PushQueue] hata: {e}')
 
 # ---------------------------------------------------------------------------
+# ntfy.sh Push
+# ---------------------------------------------------------------------------
+
+def send_ntfy(title, body, priority=3, tags=None):
+    """ntfy.sh üzerinden push bildirimi gönderir (JSON body — Türkçe + emoji destekli)."""
+    import http.client, json
+    try:
+        payload = {
+            'topic':    NTFY_TOPIC,
+            'title':    title,
+            'message':  body,
+            'priority': priority,   # 1=min 2=low 3=default 4=high 5=max
+        }
+        if tags:
+            payload['tags'] = tags if isinstance(tags, list) else [tags]
+        data = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+        conn = http.client.HTTPSConnection('ntfy.sh', timeout=10)
+        conn.request('POST', '/', body=data,
+                     headers={'Content-Type': 'application/json'})
+        resp = conn.getresponse()
+        conn.close()
+        slog.info(f'[ntfy] Gönderildi: {title} (HTTP {resp.status})')
+    except Exception as e:
+        slog.warning(f'[ntfy] Hata: {e}')
+
+
+# ---------------------------------------------------------------------------
+# Pozisyon Verdict Hesaplama (paylaşılan fonksiyon)
+# ---------------------------------------------------------------------------
+
+def compute_pos_verdict():
+    """
+    Firebase verilerinden aktif açık pozisyonun karar skorunu hesaplar.
+    Döner: dict (symbol, gridScore, finalScore, verdict, title, reason, trend)
+    ya da None (veri yoksa / hesaplanamıyorsa).
+    """
+    try:
+        tp = firebase_get('gridtracker/todayProfit')
+        if not tp:
+            return None
+        open_pos_all = tp.get('openPositions', {})
+        if not open_pos_all:
+            return None
+
+        # botSymbols — Firebase settings'ten al
+        settings_fb = firebase_get('gridtracker/settings') or {}
+        bot_syms    = [s.upper() for s in (settings_fb.get('botSymbols') or [])]
+        open_pos    = {k: v for k, v in open_pos_all.items() if k in bot_syms} if bot_syms else open_pos_all
+        if not open_pos:
+            return None
+
+        # En fazla lotlu sembol
+        stocks_raw = firebase_get('gridtracker/stocks') or {}
+        best_sym, best_qty = '', 0
+        for sym, pl in open_pos.items():
+            q = sum(p.get('execQty', 0) for p in pl)
+            if q > best_qty:
+                best_qty, best_sym = q, sym
+        if not best_sym:
+            return None
+
+        pv_sym = best_sym
+
+        # gridRecActive (aktif sembol) → yoksa gridRec (en iyi öneri)
+        gr_active = firebase_get('gridtracker/gridRecActive') or {}
+        rec_sym   = (gr_active.get('symbol') or '').replace('.IS', '').upper()
+        if rec_sym != pv_sym:
+            gr_active = firebase_get('gridtracker/gridRec') or {}
+            rec_sym   = (gr_active.get('symbol') or '').replace('.IS', '').upper()
+        gs = float(gr_active.get('grid_score',  0) or 0) if rec_sym == pv_sym else 0.0
+        fs = float(gr_active.get('final_score', 0) or 0) if rec_sym == pv_sym else 0.0
+
+        # Trend — son 3 günlük skor geçmişi
+        trend_dir = 'stable'
+        hist = firebase_get(f'gridtracker/scoreHistory/{pv_sym}') or []
+        if isinstance(hist, list) and len(hist) >= 3:
+            last3 = [float(h.get('gs', 0) or 0) for h in hist[-3:]]
+            delta = last3[2] - last3[0]
+            if   delta >  0.5: trend_dir = 'rising'
+            elif delta < -0.5: trend_dir = 'falling'
+
+        # score_diff — en iyi öneri ile fark
+        gr_best    = firebase_get('gridtracker/gridRec') or {}
+        best_s     = (gr_best.get('symbol') or '').replace('.IS', '').upper()
+        best_fs    = float(gr_best.get('final_score', 0) or 0)
+        score_diff = (best_fs - fs) if (best_s and best_s != pv_sym and best_fs > 0 and fs > 0) else 0.0
+
+        # Karar mantığı (JS ile birebir)
+        if gs <= 0:
+            verdict, title = 'dikkat', 'VERI YOK'
+            reason = 'Analiz bekleniyor...'
+        elif gs < 3.5:
+            verdict, title = 'cik', 'ÇIK'
+            reason = f'Skor çok düşük ({gs:.1f}/10). Grid bot bu hissede verimsiz.'
+        elif trend_dir == 'falling' and gs < 5 and score_diff > 2.5:
+            verdict, title = 'cik', 'ÇIK'
+            reason = f'Skor düşüyor ({gs:.1f}/10), {best_s} {score_diff:.1f} puan daha iyi. Alternatif var.'
+        elif gs < 4 or (trend_dir == 'falling' and gs < 5):
+            verdict, title = 'dikkat', 'DİKKAT'
+            reason = (f'Skor zayıfladı ({gs:.1f}/10). Pozisyonu izle, çıkışa hazır ol.'
+                      if gs < 4 else
+                      f'Skor düşüyor ({gs:.1f}/10). Pozisyonu izle, çıkışa hazır ol.')
+        elif score_diff > 2.5:
+            verdict, title = 'dikkat', 'DEĞİŞTİR?'
+            reason = f'{best_s} {score_diff:.1f} puan daha iyi. Kârdaysan geçişi değerlendir.'
+        else:
+            verdict, title = 'devam', 'DEVAM ET'
+            t = (' Skor yükseliyor.' if trend_dir == 'rising' else '')
+            reason = f'Skor iyi ({gs:.1f}/10). Grid bot verimli çalışıyor.{t}'
+
+        return {'symbol': pv_sym, 'gridScore': round(gs, 1), 'finalScore': round(fs, 3),
+                'verdict': verdict, 'title': title, 'reason': reason, 'trend': trend_dir}
+    except Exception as e:
+        slog.warning(f'[posVerdict] hata: {e}')
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Verdict Değişiklik Monitörü
+# ---------------------------------------------------------------------------
+
+def _verdict_monitor_loop():
+    """
+    Her 90 saniyede posVerdict'i hesaplar.
+    verdict veya sembol değişince push bildirimi gönderir.
+    Son durum Firebase gridtracker/verdictState altında saklanır.
+    """
+    time.sleep(45)   # Server tam ayağa kalksın
+    while True:
+        try:
+            pv = compute_pos_verdict()
+            # Veri yoksa veya anlamlı bir durum yoksa atla
+            if not pv or (pv['verdict'] == 'dikkat' and pv['title'] == 'VERI YOK'):
+                time.sleep(90)
+                continue
+
+            sym        = pv['symbol']
+            new_verdict = pv['verdict']
+            new_title   = pv['title']
+
+            # Firebase'deki son kayıtlı durum
+            last       = firebase_get('gridtracker/verdictState') or {}
+            last_sym   = last.get('symbol', '')
+            last_title = last.get('title', '')   # title bazlı karşılaştırma (DEĞİŞTİR? ayrı sayılır)
+
+            if last_sym != sym or last_title != new_title:
+                emoji_map = {'devam': '✅', 'dikkat': '⚠️', 'cik': '🔴'}
+                prio_map  = {'devam': 3,   'dikkat': 4,     'cik': 5}
+                em = emoji_map.get(new_verdict, '•')
+                push_title = f'{em} {sym} → {new_title} {em}'
+                push_body  = pv['reason']
+
+                slog.info(f'[Verdict] Değişiklik: {last_sym}/{last_title} → {sym}/{new_title}')
+                threading.Thread(
+                    target=send_ntfy,
+                    args=(push_title, push_body,
+                          prio_map.get(new_verdict, 3)),
+                    daemon=True
+                ).start()
+
+                # Yeni durumu kaydet
+                firebase_put('gridtracker/verdictState', {
+                    'symbol':  sym,
+                    'verdict': new_verdict,
+                    'title':   pv['title'],
+                    'reason':  pv['reason'],
+                    'ts':      int(time.time()),
+                })
+        except Exception as e:
+            slog.warning(f'[VerdictMonitor] hata: {e}')
+        time.sleep(90)
+
+
+# ---------------------------------------------------------------------------
 # HTTP Handler
 # ---------------------------------------------------------------------------
 
@@ -339,6 +514,32 @@ class Handler(SimpleHTTPRequestHandler):
             ).start()
             self.send_json(200, {'ok': True})
             return
+        # POST /api/advisor/capital — Sermaye güncelle
+        if path == '/api/advisor/capital':
+            try:
+                length = int(self.headers.get('Content-Length', 0))
+                body   = self.rfile.read(length)
+                data   = json.loads(body.decode('utf-8')) if body else {}
+                capital = float(data.get('capital', 0))
+                if capital < 0:
+                    self.send_json(400, {'error': 'Geçersiz sermaye'}); return
+                state_path = os.path.join(
+                    os.path.dirname(BASE_DIR),
+                    'Günlük Sermaye Yönetimi', 'state.json'
+                )
+                if os.path.exists(state_path):
+                    with open(state_path, 'r', encoding='utf-8') as f:
+                        st = json.load(f)
+                    st['capital'] = capital
+                    with open(state_path, 'w', encoding='utf-8') as f:
+                        json.dump(st, f, ensure_ascii=False, indent=2)
+                    self.send_json(200, {'ok': True, 'capital': capital})
+                else:
+                    self.send_json(404, {'error': 'state.json bulunamadı'})
+            except Exception as e:
+                self.send_json(500, {'error': str(e)})
+            return
+
         self.send_json(405, {'error': 'Method Not Allowed'})
 
     def do_GET(self):
@@ -545,21 +746,22 @@ class Handler(SimpleHTTPRequestHandler):
                                             reason = 'Analiz bekleniyor...'
                                         elif gs < 3.5:
                                             verdict, title = 'cik', 'CIK'
-                                            reason = f'Skor cok dusuk ({gs:.1f}/10)'
+                                            reason = f'Skor çok düşük ({gs:.1f}/10). Grid bot bu hissede verimsiz.'
                                         elif trend_dir == 'falling' and gs < 5 and score_diff > 2.5:
                                             verdict, title = 'cik', 'CIK'
-                                            reason = f'Skor dusuyor ({gs:.1f}/10), {score_diff:.1f}pt fark'
+                                            reason = f'Skor düşüyor ({gs:.1f}/10), {best_s} {score_diff:.1f} puan daha iyi. Alternatif var.'
                                         elif gs < 4 or (trend_dir == 'falling' and gs < 5):
                                             verdict, title = 'dikkat', 'DIKKAT'
-                                            reason = (f'Skor zayif ({gs:.1f}/10)' if gs < 4
-                                                      else f'Skor dusuyor ({gs:.1f}/10)')
+                                            reason = (f'Skor zayıfladı ({gs:.1f}/10). Pozisyonu izle, çıkışa hazır ol.'
+                                                      if gs < 4 else
+                                                      f'Skor düşüyor ({gs:.1f}/10). Pozisyonu izle, çıkışa hazır ol.')
                                         elif score_diff > 2.5:
                                             verdict, title = 'dikkat', 'DEGISTIR?'
-                                            reason = f'{best_s} {score_diff:.1f} puan daha iyi'
+                                            reason = f'{best_s} {score_diff:.1f} puan daha iyi. Kârdaysan geçişi değerlendir.'
                                         else:
                                             verdict, title = 'devam', 'DEVAM ET'
-                                            t = 'Yukseliyor.' if trend_dir == 'rising' else ('Dusuyor.' if trend_dir == 'falling' else '')
-                                            reason = f'Skor iyi ({gs:.1f}/10). {t}'.strip()
+                                            t = (' Skor yükseliyor.' if trend_dir == 'rising' else '')
+                                            reason = f'Skor iyi ({gs:.1f}/10). Grid bot verimli çalışıyor.{t}'
 
                                         pv = {'symbol': pv_sym, 'gridScore': round(gs, 1),
                                               'finalScore': round(fs, 3), 'verdict': verdict,
@@ -676,6 +878,20 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_json(404, {'error': 'Henuz analiz yapilmadi'})
             return
 
+        # /api/advisor — Günlük Sermaye Danışmanı sonucu
+        if path == '/api/advisor' or path == '/advisor_result.json':
+            result_file = os.path.join(BASE_DIR, 'advisor_result.json')
+            if os.path.exists(result_file):
+                try:
+                    with open(result_file, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    self.send_json(200, data)
+                except Exception as e:
+                    self.send_json(500, {'error': str(e)})
+            else:
+                self.send_json(404, {'error': 'Henuz analiz yapilmadi'})
+            return
+
         # Statik dosyalar
         super().do_GET()
 
@@ -707,7 +923,9 @@ if __name__ == '__main__':
     threading.Thread(target=firebase_put, daemon=True,
         args=('gridtracker/stocks', dict(_stocks))).start()
     # Arka plan döngüsü
-    threading.Thread(target=_bg_loop, daemon=True).start()
+    threading.Thread(target=_bg_loop,              daemon=True).start()
+    # Verdict değişiklik monitörü — push bildirimi gönderir
+    threading.Thread(target=_verdict_monitor_loop, daemon=True).start()
     # Push queue → automation_server.pyw (port 5051) tarafından işleniyor
     server = HTTPServer(('0.0.0.0', PORT), Handler)
     slog.info(f'[GridTracker] http://localhost:{PORT}/bist_tracker.html')

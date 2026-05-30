@@ -187,6 +187,7 @@ def _load_ntfy_topic():
 def _send_notify(title, body, tag='gridtracker', priority='default'):
     """ntfy.sh üzerinden push bildirimi gönderir."""
     import urllib.request as _ur
+    import base64 as _b64
     topic = _load_ntfy_topic()
     if not topic:
         log.warning('[Push] ntfy_topic ayarlanmamış, bildirim atlandı.')
@@ -198,12 +199,16 @@ def _send_notify(title, body, tag='gridtracker', priority='default'):
     }
     ntfy_tag = tags_map.get(tag, 'bell')
     try:
+        # RFC 2047 base64 — emoji/Türkçe içeren başlıklar latin-1 ile encode edilemiyor
+        encoded_title = ('=?utf-8?b?' +
+                         _b64.b64encode(title.encode('utf-8')).decode('ascii') +
+                         '?=')
         req = _ur.Request(
             f'https://ntfy.sh/{topic}',
             data=body.encode('utf-8'),
             method='POST'
         )
-        req.add_header('Title',    title)
+        req.add_header('Title',    encoded_title)
         req.add_header('Priority', priority)
         req.add_header('Tags',     ntfy_tag)
         req.add_header('Content-Type', 'text/plain; charset=utf-8')
@@ -294,12 +299,28 @@ def run(mode='normal'):
     else:
         log.warning(f'grid_analysis_auto.py bulunamadı: {analysis_script}')
 
+    # ── Adım 4b: Sermaye Danışmanı analizi ─────────────────────
+    advisor_script = Path(r'C:\Users\BioCSI\CLAUDE\Günlük Sermaye Yönetimi\advisor.py')
+    if advisor_script.exists():
+        log.info('Sermaye danışmanı analizi çalıştırılıyor...')
+        adv_result = subprocess.run(
+            [sys.executable, str(advisor_script), '--run'],
+            capture_output=True, text=True, encoding='utf-8', errors='replace',
+            cwd=str(advisor_script.parent)
+        )
+        if adv_result.returncode == 0:
+            log.info('advisor.py tamamlandı ✓')
+        else:
+            log.warning(f'advisor.py hatası: {adv_result.stderr[:300]}')
+    else:
+        log.warning(f'advisor.py bulunamadı: {advisor_script}')
+
     # ── Adım 5: GitHub Pages güncelle (analiz başarılıysa) ──────
     if analysis_ok:
         log.info('GitHub Pages güncelleniyor...')
         try:
             subprocess.run(
-                ['git', 'add', 'bist_tracker.html', 'grid_analysis_result.json'],
+                ['git', 'add', 'bist_tracker.html', 'grid_analysis_result.json', 'advisor_result.json'],
                 cwd=str(SCRIPT_DIR), capture_output=True
             )
             commit = subprocess.run(

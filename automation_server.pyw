@@ -260,7 +260,7 @@ def setup_autostart():
 
 # ── Web Push ──────────────────────────────────────────
 VAPID_KEYS_FILE = SCRIPT_DIR / 'vapid_keys.json'
-VAPID_CLAIMS    = {'sub': 'mailto:gridtracker@local'}
+VAPID_CLAIMS    = {'sub': 'mailto:admin@gridtracker.local'}
 
 def _load_vapid():
     try:
@@ -293,13 +293,15 @@ def send_push_to_all(title, body, tag='gridtracker'):
                     subscription_info=sub_data,
                     data=payload,
                     vapid_private_key=keys['privateKey'],
-                    vapid_claims=VAPID_CLAIMS
+                    vapid_claims=VAPID_CLAIMS,
+                    ttl=86400,
+                    headers={'urgency': 'high'}
                 )
                 sent += 1
             except WebPushException as e:
                 status = e.response.status_code if e.response else 0
-                if status in (404, 410):
-                    # Geçersiz subscription — sil
+                if status == 410:
+                    # Subscription kalıcı olarak silindi (410) — Firebase'den kaldır
                     try:
                         urllib.request.urlopen(urllib.request.Request(
                             f'{FIREBASE_URL}/gridtracker/pushSubscriptions/{sub_key}.json',
@@ -345,6 +347,12 @@ def _check_push_queue():
         ), timeout=5)
     except Exception:
         pass
+
+
+# ── /api/health endpoint ──────────────────────────────
+@app.route('/api/health', methods=['GET'])
+def api_health():
+    return _cors(jsonify({'ok': True, 'port': PORT}))
 
 
 # ── /api/notify endpoint ──────────────────────────────

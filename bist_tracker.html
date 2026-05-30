@@ -1233,6 +1233,119 @@ select.field-input option{background:var(--surface2);}
     </div>
   </div>
 
+  <!-- ── Danışman Akıllı Kart ── -->
+  <div class="card" id="advisor-card" style="margin-bottom:10px;border-left:4px solid var(--accent);display:none">
+    <div class="card-body">
+
+      <!-- Başlık satırı -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span style="font-size:11px;font-weight:800;color:var(--accent);letter-spacing:.5px">📊 SERMAYE DANIŞMANI</span>
+        <span style="font-size:9px;color:var(--text3)" id="adv-ts">—</span>
+      </div>
+
+      <!-- Sermaye satırı -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:6px 8px;background:var(--surface);border-radius:6px">
+        <span style="font-size:9px;color:var(--text3);flex:1">Sermaye</span>
+        <span style="font-size:12px;font-weight:700;color:var(--accent)" id="adv-capital-val">—</span>
+        <input id="adv-capital-inp" type="text" inputmode="numeric" placeholder="Yeni miktar..."
+          style="width:100px;font-size:10px;padding:3px 6px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text1)">
+        <button onclick="saveAdvCapital()"
+          style="font-size:10px;padding:3px 8px;background:var(--accent);color:#fff;border:none;border-radius:4px;cursor:pointer;white-space:nowrap">Kaydet</button>
+      </div>
+
+      <!-- ── AKTİF POZİSYON ── -->
+      <div id="adv-active" style="display:none">
+
+        <!-- Hisse + Sinyal -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:22px;font-weight:900;letter-spacing:-.5px" id="adv-symbol">—</span>
+          <div style="flex:1"></div>
+          <span id="adv-signal" style="font-size:10px;padding:4px 10px;border-radius:6px;font-weight:800">—</span>
+        </div>
+
+        <!-- KPI grid: Maliyet / Anlık / Lot / Skor -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:8px">
+          <div style="text-align:center;padding:5px 3px;background:var(--surface);border-radius:5px">
+            <div style="font-size:8px;color:var(--text3);margin-bottom:2px">MALİYET</div>
+            <div style="font-size:11px;font-weight:700" id="adv-cost">—</div>
+          </div>
+          <div style="text-align:center;padding:5px 3px;background:var(--surface);border-radius:5px">
+            <div style="font-size:8px;color:var(--text3);margin-bottom:2px">ANLIK</div>
+            <div style="font-size:11px;font-weight:700" id="adv-price">—</div>
+          </div>
+          <div style="text-align:center;padding:5px 3px;background:var(--surface);border-radius:5px">
+            <div style="font-size:8px;color:var(--text3);margin-bottom:2px">LOT</div>
+            <div style="font-size:11px;font-weight:700" id="adv-qty">—</div>
+          </div>
+          <div style="text-align:center;padding:5px 3px;background:var(--surface);border-radius:5px">
+            <div style="font-size:8px;color:var(--text3);margin-bottom:2px">SKOR</div>
+            <div style="font-size:11px;font-weight:700" id="adv-score-now">—</div>
+          </div>
+        </div>
+
+        <!-- K/Z satırı -->
+        <div style="display:flex;gap:12px;margin-bottom:8px;padding:6px 8px;background:var(--surface);border-radius:5px">
+          <div style="flex:1">
+            <div style="font-size:8px;color:var(--text3);margin-bottom:1px">AÇIK K/Z</div>
+            <div style="font-size:13px;font-weight:800" id="adv-pnl">—</div>
+          </div>
+          <div style="border-left:1px solid var(--border);padding-left:12px;flex:1">
+            <div style="font-size:8px;color:var(--text3);margin-bottom:1px">TOPLAM K/Z</div>
+            <div style="font-size:13px;font-weight:800" id="adv-total-pnl">—</div>
+          </div>
+        </div>
+
+        <!-- Stop / Hedefler -->
+        <div style="font-size:10px;color:var(--text3);margin-bottom:6px">
+          Stop: <span id="adv-stop" style="color:#f87171;font-weight:700">—</span>
+          &nbsp;•&nbsp; H1: <span id="adv-t1" style="color:#4ade80;font-weight:700">—</span>
+          &nbsp;•&nbsp; H2: <span id="adv-t2" style="color:#4ade80;font-weight:700">—</span>
+        </div>
+
+        <!-- Çıkış uyarı mesajı -->
+        <div id="adv-exit-msg" style="display:none;font-size:10px;color:#fbbf24;padding:5px 8px;background:rgba(251,191,36,.1);border-radius:5px;margin-bottom:6px"></div>
+
+        <!-- Gerekçe -->
+        <div style="font-size:9px;color:var(--text3);margin-bottom:6px" id="adv-reason"></div>
+
+        <!-- Skor çubukları -->
+        <div id="adv-bars" style="margin-bottom:4px"></div>
+      </div>
+
+      <!-- ── ÖNERI MODU (aktif pozisyon yok) ── -->
+      <div id="adv-suggest" style="display:none">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:6px">📌 Pozisyon yok — En iyi fırsat:</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:22px;font-weight:900" id="adv-top1">—</span>
+          <span id="adv-top1-tf" style="font-size:10px;background:var(--accent);color:#fff;padding:3px 8px;border-radius:5px">—</span>
+          <span style="font-size:14px;color:var(--accent);font-weight:800" id="adv-top1-score">—</span>
+        </div>
+        <div style="font-size:9px;color:var(--text3);margin-bottom:6px" id="adv-top1-reason">—</div>
+        <div style="font-size:10px;margin-bottom:4px">
+          Giriş: <span id="adv-top1-entry" style="color:var(--text1);font-weight:600">—</span>
+          &nbsp;•&nbsp; Stop: <span id="adv-top1-stop" style="color:#f87171;font-weight:700">—</span>
+          &nbsp;•&nbsp; H1: <span id="adv-top1-t1" style="color:#4ade80;font-weight:700">—</span>
+        </div>
+        <div id="adv-top1-lots" style="display:none;font-size:10px;color:#4ade80;font-weight:700;padding:4px 8px;background:rgba(74,222,128,.08);border-radius:5px;margin-bottom:6px"></div>
+        <!-- Skor çubukları (öneri modu) -->
+        <div id="adv-bars-suggest" style="margin-bottom:4px"></div>
+      </div>
+
+      <!-- Top 3 detay listesi -->
+      <div id="adv-top3" style="margin-top:6px;display:none"></div>
+
+      <!-- Alt buton satırı -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+        <button onclick="toggleAdvDetail()"
+          style="font-size:9px;background:none;border:none;color:var(--text3);cursor:pointer;padding:0"
+          id="adv-detail-btn">▼ Top 3 Göster</button>
+        <button onclick="renderAdvisor()"
+          style="font-size:9px;background:none;border:none;color:var(--text3);cursor:pointer;padding:0">↻ Yenile</button>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Form -->
   <div class="card" style="margin-bottom:10px">
     <div class="card-body">
@@ -29193,7 +29306,267 @@ function calcSr(){
   return{anaPara,totalIn,totalOut,botKar};
 }
 
+// ══ Danışman Akıllı Kart ══════════════════════════════════════════════════════
+let _advData=null;
+let _advShowDetail=false;
+let _advTimer=null;
+
+function _fmtTL(v){
+  if(v==null||isNaN(v)) return '—';
+  const abs=Math.abs(v);
+  const sign=v<0?'-':'+';
+  let s;
+  if(abs>=1000000) s=(abs/1000000).toFixed(2)+' M ₺';
+  else if(abs>=1000) s=(abs/1000).toFixed(1)+' K ₺';
+  else s=abs.toFixed(2)+' ₺';
+  return sign+s;
+}
+
+function _fmtNum(v){
+  if(v==null||isNaN(v)) return '—';
+  return new Intl.NumberFormat('tr-TR').format(Math.round(v))+' ₺';
+}
+
+function _signalCss(sig){
+  if(sig==='DEVAM')              return 'background:rgba(74,222,128,.18);color:#4ade80;border:1px solid rgba(74,222,128,.3)';
+  if(sig==='DİKKAT')            return 'background:rgba(251,191,36,.18);color:#fbbf24;border:1px solid rgba(251,191,36,.3)';
+  if(sig==='ÇIK'||sig==='ACİL_ÇIK') return 'background:rgba(248,113,113,.18);color:#f87171;border:1px solid rgba(248,113,113,.3)';
+  return 'background:rgba(99,102,241,.15);color:#818cf8;border:1px solid rgba(99,102,241,.2)';
+}
+
+function _borderColor(sig){
+  if(sig==='DEVAM')              return '#4ade80';
+  if(sig==='DİKKAT')            return '#fbbf24';
+  if(sig==='ÇIK'||sig==='ACİL_ÇIK') return '#f87171';
+  return 'var(--accent)';
+}
+
+function _tfLabel(tf){
+  return tf==='KISA_VADE'?'Kısa Vade':tf==='ORTA_VADE'?'Orta Vade':tf||'—';
+}
+
+function _scoreBar10(label,val,color){
+  // val zaten 0-10 arası
+  const pct=Math.round(_clamp10(val)*10);
+  const stars='●'.repeat(Math.round(_clamp10(val)))+'○'.repeat(10-Math.round(_clamp10(val)));
+  return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+    <span style="font-size:9px;color:var(--text3);width:74px;flex-shrink:0">${label}</span>
+    <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+      <div style="width:${pct}%;height:100%;background:${color};border-radius:2px"></div>
+    </div>
+    <span style="font-size:9px;font-weight:600;color:${color};width:22px;text-align:right">${val.toFixed(1)}</span>
+  </div>`;
+}
+
+function _clamp10(v){ return Math.max(0,Math.min(10,v||0)); }
+
+function _renderScoreBars(sc){
+  return _scoreBar10('Teknik',      sc.technical||0,    '#818cf8')+
+         _scoreBar10('Momentum',    sc.momentum||0,     '#22d3ee')+
+         _scoreBar10('Göreli Güç',  sc.rel_strength||0, '#4ade80')+
+         _scoreBar10('Hacim',       sc.volume||0,       '#fb923c')+
+         _scoreBar10('Risk',        sc.risk||0,         '#a78bfa')+
+         _scoreBar10('Zamanlama',   sc.timing||0,       '#f472b6');
+}
+
+function toggleAdvDetail(){
+  _advShowDetail=!_advShowDetail;
+  if(!_advData) return;
+  const btn=$('adv-detail-btn');
+  const top3=$('adv-top3');
+  if(_advShowDetail){
+    btn.textContent='▲ Gizle';
+    _renderAdvTop3(_advData.top_picks||[]);
+    top3.style.display='block';
+  } else {
+    btn.textContent='▼ Top 3 Göster';
+    top3.style.display='none';
+  }
+}
+
+function _renderAdvTop3(picks){
+  const el=$('adv-top3');
+  if(!el||!picks.length) return;
+  const cap=_advData?.capital||0;
+  el.innerHTML=picks.map((p,i)=>{
+    const li=_advData?.lot_info?.[p.symbol]||{};
+    const lotStr=li.lots>0?`<span style="color:#4ade80;font-size:9px">${li.lots.toLocaleString('tr-TR')} lot</span>`:'';
+    const bg=i===0?'background:rgba(99,102,241,.07);border-radius:6px;':'';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid var(--border);${bg}">
+      <span style="font-size:11px;color:var(--text3);width:14px">${i+1}.</span>
+      <span style="font-size:13px;font-weight:800;flex:1">${p.symbol}</span>
+      <span style="font-size:10px;font-weight:700;color:var(--accent)">${p.total_score.toFixed(1)}/10</span>
+      <span style="font-size:9px;color:var(--text3)">${_tfLabel(p.timeframe)}</span>
+      ${lotStr}
+    </div>`;
+  }).join('');
+}
+
+async function saveAdvCapital(){
+  const inp=$('adv-capital-inp');
+  if(!inp) return;
+  const raw=inp.value.replace(/[^\d]/g,'');
+  const val=parseInt(raw)||0;
+  if(val<=0){ toast('Geçerli bir sermaye girin','err'); return; }
+  try{
+    const r=await fetch('/api/advisor/capital',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({capital:val})
+    });
+    if(r.ok){
+      toast(`Sermaye ${val.toLocaleString('tr-TR')} ₺ kaydedildi`,'ok');
+      inp.value='';
+      renderAdvisor();
+    } else {
+      toast('Kaydedilemedi','err');
+    }
+  } catch(e){ toast('Bağlantı hatası','err'); }
+}
+
+async function renderAdvisor(){
+  const card=$('advisor-card');
+  if(!card) return;
+  try{
+    const resp=await fetch('/api/advisor');
+    if(!resp.ok){ card.style.display='none'; return; }
+    const d=await resp.json();
+    _advData=d;
+    card.style.display='block';
+
+    const ts=d.ts_str||'';
+    $('adv-ts').textContent=ts;
+
+    const tr=d.tracker||{};
+    const es=d.exit_signal||{};
+    const picks=d.top_picks||[];
+    const capital=d.capital||0;
+    const hasActive=!!(tr.active_symbol);
+
+    const sig=es.signal||'—';
+    card.style.borderLeftColor=_borderColor(sig);
+
+    // Sermaye satırı
+    const capEl=$('adv-capital-val');
+    if(capEl) capEl.textContent=capital>0?capital.toLocaleString('tr-TR')+' ₺':'—';
+
+    if(hasActive){
+      $('adv-active').style.display='block';
+      $('adv-suggest').style.display='none';
+
+      $('adv-symbol').textContent=tr.active_symbol;
+
+      // Sinyal badge
+      const sigEl=$('adv-signal');
+      sigEl.textContent=sig==='—'?'ANALİZ BEKLENİYOR':sig;
+      sigEl.style.cssText='font-size:10px;padding:3px 8px;border-radius:5px;font-weight:700;'+_signalCss(sig);
+
+      // P&L bilgileri
+      const cost  =tr.avg_cost||0;
+      const cprice=tr.current_price||0;
+      const qty   =tr.open_qty||tr.total_qty||0;
+      const pnl   =tr.unrealized_pnl||0;
+      const pnlPct=tr.unrealized_pct||0;
+      const histPnl=tr.history_pnl_total||0;
+      const totalPnl=pnl+histPnl;
+
+      $('adv-cost').textContent  = cost  ? cost.toFixed(4)+' ₺' : '—';
+      $('adv-price').textContent = cprice? cprice.toFixed(4)+' ₺': '—';
+      $('adv-qty').textContent   = qty   ? qty.toLocaleString('tr-TR')+' lot': '—';
+
+      const pnlEl=$('adv-pnl');
+      pnlEl.textContent=_fmtTL(pnl)+' ('+( pnlPct>=0?'+':'')+pnlPct.toFixed(2)+'%)';
+      pnlEl.style.color=pnl>=0?'#4ade80':'#f87171';
+
+      const totEl=$('adv-total-pnl');
+      totEl.textContent=_fmtTL(totalPnl);
+      totEl.style.color=totalPnl>=0?'#4ade80':'#f87171';
+
+      // Aktif hisse skoru (score_table'dan al)
+      const st=d.score_table||{};
+      const activeST=st[tr.active_symbol];
+      const activePick=picks.find(p=>p.symbol===tr.active_symbol);
+
+      const scoreEl=$('adv-score-now');
+      if(scoreEl){
+        const sc=activeST?.total||activePick?.total_score||0;
+        scoreEl.textContent=sc.toFixed(1)+'/10';
+        scoreEl.style.color=sc>=6.5?'#4ade80':sc>=5.0?'#fbbf24':'#f87171';
+      }
+
+      // Stop / hedef (state.json üzerinden ya da picks'tan)
+      const stopVal=$('adv-stop');
+      const t1Val  =$('adv-t1');
+      const t2Val  =$('adv-t2');
+      if(activePick){
+        if(stopVal) stopVal.textContent=activePick.stop_loss.toFixed(2)+' ₺';
+        if(t1Val)   t1Val.textContent  =activePick.target1.toFixed(2)+' ₺';
+        if(t2Val)   t2Val.textContent  =activePick.target2.toFixed(2)+' ₺';
+        $('adv-reason').textContent=activePick.reasoning||'';
+        $('adv-bars').innerHTML=_renderScoreBars(activePick.scores||{});
+      } else {
+        // Aktif hisse top_picks dışında — en azından son skoru göster
+        if(stopVal) stopVal.textContent='—';
+        if(t1Val)   t1Val.textContent='—';
+        if(t2Val)   t2Val.textContent='—';
+        $('adv-reason').textContent='';
+        $('adv-bars').innerHTML='';
+      }
+
+      // Çıkış mesajı
+      const msgEl=$('adv-exit-msg');
+      if(msgEl){
+        if(es.message){
+          msgEl.textContent=es.message;
+          msgEl.style.display='block';
+        } else {
+          msgEl.style.display='none';
+        }
+      }
+
+    } else {
+      // Aktif pozisyon yok — öneri modu
+      $('adv-active').style.display='none';
+      $('adv-suggest').style.display='block';
+
+      const top=picks[0];
+      if(top){
+        const li=d.lot_info?.[top.symbol]||{};
+        $('adv-top1').textContent=top.symbol;
+        $('adv-top1-tf').textContent=_tfLabel(top.timeframe);
+        $('adv-top1-score').textContent=top.total_score.toFixed(1)+'/10';
+        $('adv-top1-reason').textContent=top.reasoning||'';
+        $('adv-top1-entry').textContent=
+          (top.entry_zone?.low?.toFixed(2)||'—')+' – '+(top.entry_zone?.high?.toFixed(2)||'—')+' ₺';
+        $('adv-top1-stop').textContent=(top.stop_loss?.toFixed(2)||'—')+' ₺';
+        $('adv-top1-t1').textContent  =(top.target1?.toFixed(2)||'—')+' ₺';
+
+        const lotEl=$('adv-top1-lots');
+        if(lotEl && li.lots>0){
+          lotEl.textContent=`${li.lots.toLocaleString('tr-TR')} lot alabilirsiniz (≈${_fmtNum(li.cost)})`;
+          lotEl.style.display='block';
+        } else if(lotEl){ lotEl.style.display='none'; }
+
+        $('adv-bars-suggest').innerHTML=_renderScoreBars(top.scores||{});
+      }
+    }
+
+    if(_advShowDetail) _renderAdvTop3(picks);
+
+  } catch(e){
+    console.warn('[Advisor] Kart yüklenemedi:',e);
+    card.style.display='none';
+  }
+}
+
+function startAdvTimer(){
+  if(_advTimer) clearInterval(_advTimer);
+  _advTimer=setInterval(()=>{ if(document.getElementById('pg-sermaye')?.style.display!=='none') renderAdvisor(); }, 90000);
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function renderSermaye(){
+  renderAdvisor();
   const{anaPara,totalIn,totalOut,botKar}=calcSr();
 
   $('sr-ana').textContent=fxSr(anaPara);
@@ -29496,6 +29869,7 @@ function clearAll(){
 // ════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded',async()=>{
   load();
+  startAdvTimer();
   if(loadCache()){ syncSettings(); renderAll(false); }
   // Son açık sekmeyi geri yükle
   try{
