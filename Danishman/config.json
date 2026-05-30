@@ -1,0 +1,40 @@
+{
+  "capital": 0,
+  "ntfy_topic": "GridTracker-bkpl-07",
+  "excel_path": "C:/Users/BioCSI/CLAUDE/GridTracker/1.xlsx",
+  "commission_rate": 0.0001,
+  "result_path": "C:/Users/BioCSI/CLAUDE/GridTracker/advisor_result.json",
+  "bist100": [
+    "AKBNK","AKSEN","ALARK","ARCLK","ASELS","BIMAS","CCOLA","CIMSA","DOHOL","EKGYO",
+    "ENJSA","ENKAI","EREGL","FROTO","GARAN","GUBRF","HALKB","HEKTS","ISCTR","KCHOL",
+    "KRDMD","MGROS","ODAS","OTKAR","OYAKC","PETKM","PGSUS","SAHOL","SASA","SISE",
+    "SKBNK","SOKM","TAVHL","TCELL","THYAO","TKFEN","TOASO","TTKOM","TTRAK","TUPRS",
+    "ULKER","VAKBN","VESTL","YKBNK","ZOREN","LOGO","KORDS","BRSAN","DOAS","TRALT",
+    "AEFES","AGESA","AGHOL","AGYO","AKGRT","AKSA","ALFAS","ALGYO","ALKIM","ARASE",
+    "ARSAN","ASUZU","ATLAS","BERA","BFREN","BRISA","DEVA","DYOBY","ECZYT","EGEEN",
+    "EPLAS","FENER","GLYHO","GOLTS","GSRAY","HATEK","HLGYO","IHLGM","INDES",
+    "ISGYO","KARSN","KONTR","KZBGY","MAVI","MIATK","NETAS","NTHOL",
+    "ORGE","OZRDN","PAPIL","PRKME","QUAGR","REEDR","RGYAS","SARKY","SELEC","TRGYO"
+  ],
+  "sectors": {
+    "Bankacılık": ["AKBNK","GARAN","HALKB","ISCTR","SKBNK","VAKBN","YKBNK"],
+    "Sigorta": ["AGESA","AKGRT"],
+    "Holding": ["AGHOL","DOHOL","KCHOL","SAHOL","GLYHO","NTHOL"],
+    "Enerji": ["AKSEN","ENJSA","ODAS","ZOREN","ORGE"],
+    "Otomotiv": ["ARCLK","FROTO","OTKAR","TOASO","TTRAK","DOAS","ASUZU","BRISA"],
+    "Teknoloji": ["ASELS","LOGO","NETAS","INDES","SELEC"],
+    "Perakende": ["BIMAS","MGROS","SOKM","MAVI"],
+    "İnşaat": ["EKGYO","ALGYO","HLGYO","ISGYO","TRGYO","AGYO","KZBGY"],
+    "Demir-Çelik": ["EREGL","KRDMD","SARKY"],
+    "Kimya-Petrokimya": ["PETKM","SASA","GUBRF","AKSA","ALKIM","EPLAS"],
+    "Cam-Seramik": ["SISE","CIMSA"],
+    "Ulaşım": ["PGSUS","TAVHL","THYAO"],
+    "Telekomünikasyon": ["TCELL","TTKOM"],
+    "Gıda-İçecek": ["CCOLA","ULKER","AEFES","DEVA"],
+    "Tekstil": ["KORDS","ARSAN","HATEK"],
+    "Diğer": ["ALARK","ENKAI","HEKTS","TKFEN","TUPRS","VESTL","BRSAN","BFREN",
+               "BERA","DYOBY","ECZYT","EGEEN","FENER","GOLTS","GSRAY","IHLGM",
+               "KARSN","KONTR","LOGO","NTHOL","OZRDN","PAPIL","PRKME",
+               "QUAGR","REEDR","RGYAS","TRALT","ALFAS","ARASE","ATLAS"]
+  }
+}

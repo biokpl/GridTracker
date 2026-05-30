@@ -1,0 +1,5 @@
+# Hassas veriler — repo'ya alınmaz
+state.json
+monitor.log
+__pycache__/
+*.pyc

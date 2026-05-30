@@ -300,13 +300,13 @@ def run(mode='normal'):
         log.warning(f'grid_analysis_auto.py bulunamadı: {analysis_script}')
 
     # ── Adım 4b: Sermaye Danışmanı analizi ─────────────────────
-    advisor_script = Path(r'C:\Users\BioCSI\CLAUDE\Günlük Sermaye Yönetimi\advisor.py')
+    advisor_script = SCRIPT_DIR / 'Danishman' / 'advisor.py'
     if advisor_script.exists():
         log.info('Sermaye danışmanı analizi çalıştırılıyor...')
         adv_result = subprocess.run(
             [sys.executable, str(advisor_script), '--run'],
             capture_output=True, text=True, encoding='utf-8', errors='replace',
-            cwd=str(advisor_script.parent)
+            cwd=str(SCRIPT_DIR / 'Danishman')
         )
         if adv_result.returncode == 0:
             log.info('advisor.py tamamlandı ✓')
