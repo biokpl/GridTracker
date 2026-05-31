@@ -153,7 +153,7 @@ def _check_once():
             pass
 
         # Push — sadece aksiyon gerektiren sinyallerde, tekrar gönderme önleme
-        if signal in ("DİKKAT", "ÇIK", "ACİL_ÇIK") and _should_send(sym, signal):
+        if signal in ("DİKKAT", "ÇIK", "ACİL_ÇIK", "DEĞİŞTİR") and _should_send(sym, signal):
             # Çıkış için alternatif öner — hızlı: mevcut result.json top_picks'tan al
             new_pick = None
             lot_info = {}

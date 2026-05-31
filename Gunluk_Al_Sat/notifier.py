@@ -34,6 +34,40 @@ def _send(title: str, body: str, priority: str = "default", tags: str = "") -> b
         return False
 
 
+def _new_pick_lines(new_pick, lot_info, baslik="✅ YENİ HİSSE"):
+    """Yeni hisse öneri satırlarını oluşturur."""
+    li        = (lot_info or {}).get(new_pick["symbol"], {})
+    lots      = li.get("lots", 0)
+    rr        = new_pick.get("rr_ratio", 0)
+    escore    = new_pick.get("entry_score", new_pick.get("total_score", 0))
+    price     = new_pick["price"]
+    stop      = new_pick["stop_loss"]
+    hedef     = new_pick["target1"]
+    risk_tl   = round(price - stop, 2)
+    kazanc_tl = round(hedef - price, 2)
+
+    lines = [
+        "",
+        f"{baslik}: {new_pick['symbol']}",
+    ]
+    # Lot üste, altı çizili görünüm
+    if lots:
+        lines.append(f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+        lines.append(f"Giriş Lot Miktarı : {lots:,} lot".replace(",", "."))
+        lines.append(f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+    lines += [
+        f"Giriş Skoru : {escore:.1f} / 10",
+        f"Fiyat       : {price:.2f} TL",
+        f"Stop        : {stop:.2f} TL",
+        f"1. Hedef    : {hedef:.2f} TL",
+    ]
+    if rr >= 1.5:
+        lines.append(
+            f"Risk/Kazanç : {risk_tl:.2f} TL kayıp → {kazanc_tl:.2f} TL kazanç ({rr:.1f}x)"
+        )
+    return lines
+
+
 def send_exit_signal(signal, symbol, score_prev, score_now, message, new_pick, lot_info):
     if signal == "DİKKAT":
         title = f"⚠️ {symbol} — Dikkat"
@@ -41,39 +75,24 @@ def send_exit_signal(signal, symbol, score_prev, score_now, message, new_pick, l
                  f"Sebep: {message}")
         return _send(title, body, priority="high", tags="warning")
 
+    if signal == "DEĞİŞTİR":
+        title = f"🔄 GEÇİŞ ÖNERİSİ — {symbol}"
+        lines = [
+            f"Mevcut hisse DEVAM ediyor ancak daha iyi fırsat var.",
+            f"Sebep: {message}",
+        ]
+        if new_pick:
+            lines += _new_pick_lines(new_pick, lot_info, baslik="💡 ÖNERİLEN HİSSE")
+        return _send(title, "\n".join(lines), priority="default", tags="arrows_counterclockwise")
+
     if signal in ("ÇIK", "ACİL_ÇIK"):
         title = f"ÇIKIŞ YAP — {symbol}"
         lines = [
             f"Skor  : {score_now:.1f}/10  (önceki: {score_prev:.1f})",
             f"Sebep : {message}",
         ]
-
         if new_pick:
-            li     = (lot_info or {}).get(new_pick["symbol"], {})
-            lots   = li.get("lots", 0)
-            rr     = new_pick.get("rr_ratio", 0)
-            escore = new_pick.get("entry_score", new_pick.get("total_score", 0))
-            price  = new_pick["price"]
-            stop   = new_pick["stop_loss"]
-            hedef  = new_pick["target1"]
-            risk_tl   = round(price - stop, 2)
-            kazanc_tl = round(hedef - price, 2)
-
-            lines += [
-                "",
-                f"✅ YENİ HİSSE: {new_pick['symbol']}",
-                f"Giriş Skoru : {escore:.1f} / 10",
-                f"Fiyat       : {price:.2f} TL",
-                f"Stop        : {stop:.2f} TL",
-                f"1. Hedef    : {hedef:.2f} TL",
-            ]
-            if rr >= 1.5:
-                lines.append(
-                    f"Risk/Kazanç : {risk_tl:.2f} TL kayıp → {kazanc_tl:.2f} TL kazanç ({rr:.1f}x)"
-                )
-            if lots:
-                lines.append(f"Lot         : {lots:,} lot".replace(",", "."))
-
+            lines += _new_pick_lines(new_pick, lot_info)
         return _send(title, "\n".join(lines), priority="urgent", tags="rotating_light")
 
     return False

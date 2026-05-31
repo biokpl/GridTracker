@@ -516,15 +516,27 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
                 "score_prev": active.get("last_score", active_score_data["total_score"]),
                 "message":    msg,
             }
-            # ÇIK sinyalinde → giriş kalitesine (entry_score) göre sırala
-            # Normal sıralamada değil, şu an en iyi giriş noktasındaki hisse seçilsin
+            # Alternatif sırala
             alts = [s for s in eligible if s["symbol"] != sym]
             if alts:
                 if signal in ("ÇIK", "ACİL_ÇIK"):
+                    # ÇIK → giriş kalitesine göre sırala
                     alts_sorted = sorted(alts, key=lambda x: x.get("entry_score", 0), reverse=True)
                 else:
-                    alts_sorted = alts  # DEVAM/DİKKAT → normal total_score sırası
+                    alts_sorted = sorted(alts, key=lambda x: x.get("entry_score", 0), reverse=True)
                 new_pick_for_exit = alts_sorted[0]
+
+                # DEĞİŞTİR kontrolü: aktif hisse DEVAM'dayken çok daha iyi alternatif var mı?
+                if signal == "DEVAM" and active_score_data:
+                    best_alt   = alts_sorted[0]
+                    active_es  = active_score_data.get("entry_score", active_score_data["total_score"])
+                    best_es    = best_alt.get("entry_score", best_alt["total_score"])
+                    if best_es - active_es >= 2.5 and best_alt.get("rr_ratio", 0) >= 2.0:
+                        signal = "DEĞİŞTİR"
+                        msg    = (f"{best_alt['symbol']} daha iyi fırsat "
+                                  f"(Giriş: {best_es:.1f}/10 vs aktif: {active_es:.1f}/10)")
+                        exit_signal["signal"]  = signal
+                        exit_signal["message"] = msg
 
     # Lot hesapları (önerilen hisseler için)
     lot_info = {}
