@@ -16,7 +16,10 @@ TOPIC = _cfg.get("ntfy_topic", "GridTracker-bkpl-07")
 URL   = f"https://ntfy.sh/{TOPIC}"
 
 _TR = str.maketrans("ğĞşŞıİçÇöÖüÜ", "gGsSiIcCooUU")
-def _h(s): return s.translate(_TR)
+def _h(s):
+    s = s.translate(_TR)
+    s = "".join(c for c in s if ord(c) < 128)
+    return " ".join(s.split())
 
 
 def _send(title: str, body: str, priority: str = "default", tags: str = "") -> bool:
