@@ -327,6 +327,7 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
         "target2":    target2,
         "reasoning":  reasoning,
         "rsi":        round(rsi, 1),
+        "bb_pos":     round(bb_pos, 3),
         "atr_pct":    round(atr_pct, 2),
         "beta":       round(beta_val, 2),
         "mdd_60":     round(mdd * 100, 1),
@@ -337,28 +338,90 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
     }
 
 
-# ─── Çıkış Sinyali ───────────────────────────────────────────────────────────
+# ─── Çıkış Sinyali (Çok Katmanlı Puanlama) ──────────────────────────────────
 
-def check_exit(active: dict, score_now: dict) -> tuple[str, str]:
-    """(sinyal, türkçe_açıklama) döndürür."""
-    total = score_now["total_score"]
-    rsi   = score_now["rsi"]
-    price = score_now["price"]
+def check_exit(active: dict, score_now: dict) -> tuple[str, str, int]:
+    """
+    Çoklu sinyal harmanlayarak çıkış kararı verir.
+    Her sinyal puanlanır → toplam puan eşiği geçince ÇIK.
+
+    Döndürür: (sinyal, açıklama, çıkış_puanı)
+    Sinyaller: DEVAM | DİKKAT | ÇIK | ACİL_ÇIK
+    """
+    price     = score_now["price"]
+    rsi       = score_now["rsi"]
+    total     = score_now["total_score"]
+    bb_pos    = score_now.get("bb_pos", 0.5)
+    vol_ratio = score_now.get("vol_ratio", 1.0)
+    r5        = score_now.get("r5", 0.0)
+
     stop  = active.get("stop_loss", 0)
+    h1    = active.get("target1", 0)
+    h2    = active.get("target2", 0)
+    entry = active.get("entry_price", 0)
 
+    # ── ACİL: Stop Loss kırıldı (puan sistemini atla) ─────────────────────
     if stop and price < stop:
-        return "ACİL_ÇIK", f"Stop seviyesi kırıldı! Fiyat {price:.2f} ₺ < Stop {stop:.2f} ₺"
+        return "ACİL_ÇIK", f"Stop kırıldı! {price:.2f} < {stop:.2f} ₺", 10
 
-    if rsi > 75:
-        return "ÇIK", f"RSI {rsi:.0f} — aşırı alım bölgesinde, kar al."
+    exit_pts = 0
+    signals  = []
 
+    # ── 1. HEDEF FİYAT (3p / 4p) ─────────────────────────────────────────
+    if h2 and price >= h2:
+        exit_pts += 4
+        gain_pct = _pct(price, entry) if entry else 0
+        signals.append(f"2. Hedef aşıldı ({price:.2f} ₺, %+{gain_pct:.1f})")
+    elif h1 and price >= h1:
+        exit_pts += 3
+        gain_pct = _pct(price, entry) if entry else 0
+        signals.append(f"1. Hedef aşıldı ({price:.2f} ₺, %+{gain_pct:.1f})")
+
+    # ── 2. RSI AŞIRI ALIM (2p / 3p) ──────────────────────────────────────
+    if rsi >= 78:
+        exit_pts += 3
+        signals.append(f"RSI {rsi:.0f} (aşırı alım bölgesi)")
+    elif rsi >= 72:
+        exit_pts += 2
+        signals.append(f"RSI {rsi:.0f} (yükselmiş)")
+
+    # ── 3. BOLLİNGER ÜST BANT (1p / 2p) ──────────────────────────────────
+    if bb_pos >= 0.90:
+        exit_pts += 2
+        signals.append("Bollinger üst bandın üzerinde")
+    elif bb_pos >= 0.80:
+        exit_pts += 1
+        signals.append("Bollinger üst banda yakın")
+
+    # ── 4. MOMENTUM UYUŞMAZLIĞI (2p) ──────────────────────────────────────
+    # Fiyat 5 günde %4+ çıktı ama RSI hâlâ zayıf → kırılgan yükseliş
+    if r5 >= 4.0 and rsi < 58:
+        exit_pts += 2
+        signals.append(f"Fiyat %{r5:.1f} yükseldi ama RSI zayıf")
+
+    # ── 5. HACİM AZALIYOR (1p) ────────────────────────────────────────────
+    # Fiyat giriş üzerindeyken hacim erimesi → ilgi kaybı
+    if entry and price > entry and vol_ratio < 0.70:
+        exit_pts += 1
+        signals.append("Hacim zayıflıyor")
+
+    # ── 6. SKOR DÜŞÜŞÜ (2p / 3p) ─────────────────────────────────────────
     if total < 5.0:
-        return "ÇIK", f"Skor {total:.1f}/10 — kritik seviyenin altına düştü."
+        exit_pts += 3
+        signals.append(f"Teknik skor {total:.1f}/10")
+    elif total < 6.5:
+        exit_pts += 2
+        signals.append(f"Skor zayıflıyor ({total:.1f}/10)")
 
-    if total < 6.5:
-        return "DİKKAT", f"Skor {total:.1f}/10 — zayıflıyor, takip et."
+    # ── KARAR ─────────────────────────────────────────────────────────────
+    msg = " | ".join(signals)
 
-    return "DEVAM", ""
+    if exit_pts >= 5:
+        return "ÇIK", msg, exit_pts
+    elif exit_pts >= 3:
+        return "DİKKAT", msg, exit_pts
+    else:
+        return "DEVAM", "", exit_pts
 
 
 # ─── Ana Analiz ──────────────────────────────────────────────────────────────
@@ -407,10 +470,11 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
         sym = active["symbol"]
         active_score_data = next((s for s in scores if s["symbol"] == sym), None)
         if active_score_data:
-            signal, msg = check_exit(active, active_score_data)
+            signal, msg, exit_pts = check_exit(active, active_score_data)
             exit_signal = {
                 "symbol":     sym,
                 "signal":     signal,
+                "exit_pts":   exit_pts,
                 "score_now":  active_score_data["total_score"],
                 "score_prev": active.get("last_score", active_score_data["total_score"]),
                 "message":    msg,
@@ -470,8 +534,15 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
         _firebase_push(result)
 
         # State güncelle
-        if active and exit_signal["signal"] != "—":
+        if active:
             state["active"]["last_score"] = exit_signal["score_now"]
+            # Hedef fiyatlar yoksa aktif hisse için otomatik doldur
+            if not state["active"].get("target1"):
+                active_pick = next((s for s in scores if s["symbol"] == active["symbol"]), None)
+                if active_pick:
+                    state["active"]["target1"]  = active_pick["target1"]
+                    state["active"]["target2"]  = active_pick["target2"]
+                    state["active"]["stop_loss"] = state["active"].get("stop_loss") or active_pick["stop_loss"]
             _save_state(state)
 
         # Push bildirimleri
@@ -540,8 +611,8 @@ def main():
             print(f"[Advisor] {sym} veri alınamadı."); return
         all_returns = {"r5": {sym: 0}, "r20": {sym: 0}, "r60": {sym: 0}}
         score  = score_stock(sym, df, data.get("XU100"), all_returns, CFG["sectors"])
-        signal, msg = check_exit(active, score)
-        print(f"\n[{sym}] Skor: {score['total_score']:.1f}/10 | RSI: {score['rsi']:.0f} | Sinyal: {signal}")
+        signal, msg, exit_pts = check_exit(active, score)
+        print(f"\n[{sym}] Skor: {score['total_score']:.1f}/10 | RSI: {score['rsi']:.0f} | Çıkış Puanı: {exit_pts} | Sinyal: {signal}")
         if msg: print(f"Mesaj: {msg}")
 
         # Çıkış sinyalinde push gönder

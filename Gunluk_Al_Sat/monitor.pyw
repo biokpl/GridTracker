@@ -118,9 +118,9 @@ def _check_once():
         }
 
         score  = advisor.score_stock(sym, df, xu100, all_returns, cfg["sectors"])
-        signal, msg = advisor.check_exit(active, score)
+        signal, msg, exit_pts = advisor.check_exit(active, score)
 
-        log.info(f"{sym}: Skor={score['total_score']:.1f}/10  RSI={score['rsi']:.0f}  Sinyal={signal}")
+        log.info(f"{sym}: Skor={score['total_score']:.1f}/10  RSI={score['rsi']:.0f}  Çıkış={exit_pts}p  Sinyal={signal}")
 
         # State güncelle
         state["active"]["last_score"] = score["total_score"]
