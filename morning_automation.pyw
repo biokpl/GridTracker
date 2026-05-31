@@ -824,20 +824,21 @@ def run():
     wait_for_window('Vivaldi')
     time.sleep(1)
 
-    # ── Adım 6: BIST100 DDE fiyat dosyasını aç ─────────────
-    # MatriksIQ açıldıktan 2 dk sonra DDE bağlantısı hazır olur.
-    # Excel dosyası arka planda açılır, Task Scheduler her dakika günceller.
-    log.info('BIST100 fiyat Excel dosyası açılıyor...')
+    # ── Adım 6: BIST100 DDE fiyat dosyasını aç (popup yok) ─────────────
+    log.info('BIST100 fiyat Excel dosyası açılıyor (DDE)...')
     bist_excel = SCRIPT_DIR / 'Bist100 - Anlık Fiyat.xlsx'
     if bist_excel.exists():
         try:
-            subprocess.Popen(
-                ['cmd', '/c', 'start', '', str(bist_excel)],
-                shell=False
-            )
-            log.info(f'Excel açıldı: {bist_excel}')
+            import win32com.client as _win32
+            _xl = _win32.Dispatch("Excel.Application")
+            _xl.Visible = False          # arka planda
+            _xl.DisplayAlerts = False    # popup yok
+            _xl.AskToUpdateLinks = False # DDE uyarısı yok
+            _wb = _xl.Workbooks.Open(str(bist_excel), UpdateLinks=1)
+            _xl.Visible = False
+            log.info(f'Excel DDE bağlantısı kuruldu: {bist_excel.name}')
         except Exception as e:
-            log.warning(f'Excel açılamadı: {e}')
+            log.warning(f'Excel win32com ile açılamadı: {e}')
     else:
         log.warning(f'Fiyat Excel dosyası bulunamadı: {bist_excel}')
 
