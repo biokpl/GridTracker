@@ -41,6 +41,15 @@ _sent_lock = threading.Lock()
 
 # ── Yardımcılar ───────────────────────────────────────────────────────────────
 
+def _fp(v) -> str:
+    """Fiyatı gereksiz sıfır olmadan biçimler: 2.5 → '2.5', 2.73 → '2.73', 64.0 → '64'."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return str(v)
+    s = f"{f:.4f}".rstrip("0").rstrip(".")
+    return s if s else "0"
+
 def _load_state() -> dict:
     return json.loads((BASE / "state.json").read_text(encoding="utf-8"))
 
@@ -107,14 +116,14 @@ def _fast_price_check():
         # ── ACİL: Stop kırıldı ────────────────────────────────────────────
         if stop and price <= stop:
             if _should_send(sym, "ACİL_ÇIK"):
-                log.warning(f"STOP KIRILDI! {sym} {price:.4f} <= {stop:.4f}")
+                log.warning(f"STOP KIRILDI! {sym} {_fp(price)} <= {_fp(stop)}")
                 # Anlık alternatif: son result.json'dan al
                 new_pick, lot_info = _get_last_alternative(sym)
                 notifier.send_exit_signal(
                     "ACİL_ÇIK", sym,
                     active.get("last_score", 0),
                     active.get("last_score", 0),
-                    f"Stop kırıldı! {price:.4f} ₺ ≤ {stop:.4f} ₺  ({pnl_pct:+.1f}%)",
+                    f"Stop kırıldı! {_fp(price)} ₺ ≤ {_fp(stop)} ₺  ({pnl_pct:+.1f}%)",
                     new_pick, lot_info
                 )
             return
@@ -123,13 +132,13 @@ def _fast_price_check():
         if h2 and price >= h2:
             if _should_send(sym, "H2"):
                 gain_tl = (h2 - entry) * qty if (entry and qty) else 0
-                log.info(f"2. HEDEF AŞILDI! {sym} {price:.4f} >= {h2:.4f}")
+                log.info(f"2. HEDEF AŞILDI! {sym} {_fp(price)} >= {_fp(h2)}")
                 new_pick, lot_info = _get_last_alternative(sym)
                 notifier.send_exit_signal(
                     "ÇIK", sym,
                     active.get("last_score", 0),
                     active.get("last_score", 0),
-                    f"2. Hedef aşıldı! {price:.4f} ₺  ({pnl_pct:+.1f}%,  +{gain_tl:,.0f} ₺)",
+                    f"2. Hedef aşıldı! {_fp(price)} ₺  ({pnl_pct:+.1f}%,  +{gain_tl:,.0f} ₺)",
                     new_pick, lot_info
                 )
             return
@@ -138,19 +147,19 @@ def _fast_price_check():
         if h1 and price >= h1:
             if _should_send(sym, "H1"):
                 gain_tl = (h1 - entry) * qty if (entry and qty) else 0
-                log.info(f"1. HEDEF AŞILDI! {sym} {price:.4f} >= {h1:.4f}")
+                log.info(f"1. HEDEF AŞILDI! {sym} {_fp(price)} >= {_fp(h1)}")
                 new_pick, lot_info = _get_last_alternative(sym)
                 notifier.send_exit_signal(
                     "ÇIK", sym,
                     active.get("last_score", 0),
                     active.get("last_score", 0),
-                    f"1. Hedef aşıldı! {price:.4f} ₺  ({pnl_pct:+.1f}%,  +{gain_tl:,.0f} ₺)",
+                    f"1. Hedef aşıldı! {_fp(price)} ₺  ({pnl_pct:+.1f}%,  +{gain_tl:,.0f} ₺)",
                     new_pick, lot_info
                 )
             return
 
         # ── Her şey normal: sadece log ─────────────────────────────────────
-        log.debug(f"{sym} {price:.4f} ₺  {pnl_pct:+.2f}%  (stop:{stop}  h1:{h1}  h2:{h2})  [{kaynak}]")
+        log.debug(f"{sym} {_fp(price)} ₺  {pnl_pct:+.2f}%  (stop:{_fp(stop)}  h1:{_fp(h1)}  h2:{_fp(h2)})  [{kaynak}]")
 
     except Exception as e:
         log.error(f"Hızlı kontrol hatası: {e}")

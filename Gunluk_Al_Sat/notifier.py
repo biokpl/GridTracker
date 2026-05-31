@@ -18,6 +18,16 @@ URL   = f"https://ntfy.sh/{TOPIC}"
 from urllib.parse import quote as _quote
 
 
+def _fp(v) -> str:
+    """Fiyatı gereksiz sıfır olmadan biçimler: 64.0 → '64', 2.73 → '2.73'."""
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return str(v)
+    s = f"{f:.4f}".rstrip("0").rstrip(".")
+    return s if s else "0"
+
+
 def _send(title: str, body: str, priority: str = "default", tags: str = "") -> bool:
     try:
         # Başlık URL parametresi olarak geçiliyor — Türkçe karakter + emoji destekli
@@ -57,13 +67,13 @@ def _new_pick_lines(new_pick, lot_info, baslik="✅ YENİ HİSSE"):
         lines.append(f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
     lines += [
         f"Giriş Skoru : {escore:.1f} / 10",
-        f"Fiyat       : {price:.2f} TL",
-        f"Stop        : {stop:.2f} TL",
-        f"1. Hedef    : {hedef:.2f} TL",
+        f"Fiyat       : {_fp(price)} TL",
+        f"Stop        : {_fp(stop)} TL",
+        f"1. Hedef    : {_fp(hedef)} TL",
     ]
     if rr >= 1.5:
         lines.append(
-            f"Risk/Kazanç : {risk_tl:.2f} TL kayıp → {kazanc_tl:.2f} TL kazanç ({rr:.1f}x)"
+            f"Risk/Kazanç : {_fp(risk_tl)} TL kayıp → {_fp(kazanc_tl)} TL kazanç ({rr:.1f}x)"
         )
     return lines
 
@@ -105,9 +115,9 @@ def send_daily_pick(pick, lot=None):
     lines = [
         f"Skor  : {pick['total_score']:.1f} / 10",
         f"Vade  : {'Kısa (3-7 gün)' if pick['timeframe']=='KISA_VADE' else 'Orta (2-4 hafta)'}",
-        f"Giriş : {pick['entry_zone']['low']:.2f} – {pick['entry_zone']['high']:.2f} TL",
-        f"Stop  : {pick['stop_loss']:.2f} TL",
-        f"Hedef : {pick['target1']:.2f} → {pick['target2']:.2f} TL",
+        f"Giriş : {_fp(pick['entry_zone']['low'])} – {_fp(pick['entry_zone']['high'])} TL",
+        f"Stop  : {_fp(pick['stop_loss'])} TL",
+        f"Hedef : {_fp(pick['target1'])} → {_fp(pick['target2'])} TL",
     ]
     if lots:
         lines.append(f"Lot   : {lots:,} lot".replace(",", "."))
