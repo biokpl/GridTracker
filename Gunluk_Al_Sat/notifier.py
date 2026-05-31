@@ -44,7 +44,6 @@ def send_exit_signal(signal, symbol, score_prev, score_now, message, new_pick, l
     if signal in ("ÇIK", "ACİL_ÇIK"):
         title = f"ÇIKIŞ YAP — {symbol}"
         lines = [
-            f"Hisse : {symbol}",
             f"Skor  : {score_now:.1f}/10  (önceki: {score_prev:.1f})",
             f"Sebep : {message}",
         ]
