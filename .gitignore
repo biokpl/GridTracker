@@ -3,6 +3,7 @@ morning_config.ini
 *.log
 data.json
 vapid_keys.json
+last_prices.json
 
 # İşlem ve piyasa verileri - her gün değişir, kod değil
 *.xlsx
