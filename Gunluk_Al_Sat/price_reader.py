@@ -12,6 +12,21 @@ EXCEL_PATH = Path(r"C:\Users\BioCSI\CLAUDE\GridTracker\Bist100 - Anlık Fiyat.xl
 MAX_AGE_SECONDS = 90  # Excel dosyası bu kadar saniyeden eskiyse Yahoo'ya geç
 
 
+def _valid_price(val) -> float | None:
+    """
+    Geçerli fiyat mı kontrol eder.
+    DDE hata kodları (negatif/büyük sayılar) ve None'ı eler.
+    Makul BIST fiyat aralığı: 0.01 – 100000 TL.
+    """
+    try:
+        p = float(val)
+    except (TypeError, ValueError):
+        return None
+    if 0.01 <= p <= 100000:
+        return round(p, 4)
+    return None  # DDE hatası (-2146826265 gibi) veya saçma değer
+
+
 def get_price_from_excel(symbol: str) -> float | None:
     """
     Açık Excel uygulamasından DDE verisini ANINDA okur.
@@ -34,9 +49,10 @@ def get_price_from_excel(symbol: str) -> float | None:
                         break
                     if str(cell_val).upper() == sym:
                         price = ws.Cells(row, 3).Value  # C = SON
-                        if price:
-                            return float(price)
-                        break
+                        p = _valid_price(price)
+                        if p:
+                            return p
+                        break  # geçersiz/DDE hatası → fallback'e geç
                     row += 1
     except:
         pass
@@ -53,9 +69,9 @@ def get_price_from_excel(symbol: str) -> float | None:
         ws = wb.active
         for row in ws.iter_rows(min_row=2, values_only=True):
             if row[0] and str(row[0]).upper() == sym:
-                val = row[2]
+                p = _valid_price(row[2])
                 wb.close()
-                return float(val) if val else None
+                return p
         wb.close()
     except:
         pass
