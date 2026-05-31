@@ -60,7 +60,7 @@ def send_exit_signal(signal, symbol, score_prev, score_now, message, new_pick, l
             if lots:
                 lines.append(f"Lot   : {lots:,} lot".replace(",", "."))
 
-        return _send(title, "\n".join(lines), priority="urgent", tags="rotating_light")
+        return _send(title, "\n".join(lines), priority="urgent")
 
     return False
 
