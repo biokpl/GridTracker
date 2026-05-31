@@ -824,6 +824,23 @@ def run():
     wait_for_window('Vivaldi')
     time.sleep(1)
 
+    # ── Adım 6: BIST100 DDE fiyat dosyasını aç ─────────────
+    # MatriksIQ açıldıktan 2 dk sonra DDE bağlantısı hazır olur.
+    # Excel dosyası arka planda açılır, Task Scheduler her dakika günceller.
+    log.info('BIST100 fiyat Excel dosyası açılıyor...')
+    bist_excel = SCRIPT_DIR / 'Bist100 - Anlık Fiyat.xlsx'
+    if bist_excel.exists():
+        try:
+            subprocess.Popen(
+                ['cmd', '/c', 'start', '', str(bist_excel)],
+                shell=False
+            )
+            log.info(f'Excel açıldı: {bist_excel}')
+        except Exception as e:
+            log.warning(f'Excel açılamadı: {e}')
+    else:
+        log.warning(f'Fiyat Excel dosyası bulunamadı: {bist_excel}')
+
     # ── Adım 6: CepTel_Mesajlar sayfasına git ──────────────
     navigate_to_ceptel()
 

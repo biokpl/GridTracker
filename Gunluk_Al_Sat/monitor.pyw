@@ -80,17 +80,40 @@ def _check_once():
         sym = active["symbol"]
         log.info(f"{sym} kontrol ediliyor...")
 
-        # Sadece aktif sembol + top 3 alternatif indir (hızlı)
-        cfg     = _load_cfg()
-        symbols = cfg["bist100"]
+        cfg = _load_cfg()
+
+        # ── Hızlı fiyat kontrolü: Excel (MatriksIQ DDE) → Yahoo fallback ──
+        import sys as _sys
+        _sys.path.insert(0, str(BASE))
+        from price_reader import get_price
+
+        live_price, kaynak = get_price(sym)
+        log.info(f"{sym} anlık fiyat: {live_price} TL (kaynak: {kaynak})")
+
+        # Stop/Hedef hızlı kontrolü — tam analiz öncesi
+        stop  = active.get("stop_loss", 0)
+        h1    = active.get("target1", 0)
+        h2    = active.get("target2", 0)
+        if live_price:
+            if stop and live_price < stop:
+                log.warning(f"{sym} STOP KIRILDI! {live_price} < {stop}")
+                import notifier
+                if _should_send(sym, "ACİL_ÇIK"):
+                    notifier.send_exit_signal("ACİL_ÇIK", sym,
+                        active.get("last_score", 0), active.get("last_score", 0),
+                        f"Stop kırıldı! {live_price:.2f} < {stop:.2f} TL", None, {})
+                return
+            if h2 and live_price >= h2:
+                log.info(f"{sym} 2. HEDEF AŞILDI! {live_price} >= {h2}")
+            elif h1 and live_price >= h1:
+                log.info(f"{sym} 1. HEDEF AŞILDI! {live_price} >= {h1}")
 
         import yfinance as yf
         import pandas as pd
         import numpy as np
 
-        # Aktif sembol + XU100 indir
-        check_syms = [sym]
-        raw = yf.download([f"{s}.IS" for s in check_syms] + ["XU100.IS"],
+        # Tam teknik analiz için Yahoo (15 dk gecikmeli ama RSI/Bollinger için yeterli)
+        raw = yf.download([f"{sym}.IS", "XU100.IS"],
                           period="90d", auto_adjust=True, progress=False, threads=True)
 
         def _get_df(s):
@@ -104,8 +127,12 @@ def _check_once():
             except:
                 return None
 
-        df   = _get_df(sym)
-        xu100= _get_df("XU100")
+        df    = _get_df(sym)
+        xu100 = _get_df("XU100")
+
+        # Anlık fiyatı DataFrame'e yansıt (Yahoo gecikmeli olabilir)
+        if df is not None and live_price and kaynak == "excel":
+            df.iloc[-1, df.columns.get_loc("Close")] = live_price
 
         if df is None:
             log.warning(f"{sym} için veri alınamadı.")
