@@ -26,10 +26,36 @@ import yfinance as yf
 
 warnings.filterwarnings("ignore")
 
-BASE        = Path(__file__).parent
-CFG         = json.loads((BASE / "config.json").read_text(encoding="utf-8"))
-STATE_PATH  = BASE / "state.json"
-RESULT_PATH = Path(CFG["result_path"])
+BASE         = Path(__file__).parent
+CFG          = json.loads((BASE / "config.json").read_text(encoding="utf-8"))
+STATE_PATH   = BASE / "state.json"
+RESULT_PATH  = Path(CFG["result_path"])
+FIREBASE_URL = "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app"
+
+
+def _firebase_push(result: dict):
+    """Özet veriyi Firebase'e yazar (telefon erişimi için)."""
+    import requests as _req
+
+    # Firebase'e gönderilecek özet (score_table hariç — çok büyük)
+    payload = {
+        "ts":          result["ts"],
+        "ts_str":      result["ts_str"],
+        "capital":     result["capital"],
+        "top_picks":   result["top_picks"],
+        "exit_signal": result["exit_signal"],
+        "lot_info":    result["lot_info"],
+        "tracker":     result["tracker"],
+    }
+    try:
+        url = f"{FIREBASE_URL}/gridtracker/advisor.json"
+        r = _req.put(url, json=payload, timeout=10)
+        if r.status_code == 200:
+            print("[Advisor] Firebase güncellendi.")
+        else:
+            print(f"[Advisor] Firebase hatası: {r.status_code}")
+    except Exception as e:
+        print(f"[Advisor] Firebase bağlantı hatası: {e}")
 
 # Puan tavanları (ham, 100 üzerinden — sonra /10 ile normalize)
 _RAW_MAX = 100.0
@@ -439,6 +465,9 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
         RESULT_PATH.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
         if not quiet:
             print(f"[Advisor] Sonuç yazıldı: {RESULT_PATH}")
+
+        # Firebase'e yaz (telefon erişimi için)
+        _firebase_push(result)
 
         # State güncelle
         if active and exit_signal["signal"] != "—":

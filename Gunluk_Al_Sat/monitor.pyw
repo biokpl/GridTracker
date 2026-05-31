@@ -128,18 +128,27 @@ def _check_once():
         import advisor as adv_mod
         adv_mod._save_state(state)
 
-        # Minimal result.json güncelle (UI için)
+        # Minimal result.json + Firebase güncelle (UI + telefon için)
+        exit_data = {
+            "symbol":     sym,
+            "signal":     signal,
+            "score_now":  score["total_score"],
+            "score_prev": active.get("last_score", score["total_score"]),
+            "message":    msg,
+        }
         try:
             old = json.loads(RESULT_PATH.read_text(encoding="utf-8")) if RESULT_PATH.exists() else {}
-            old["exit_signal"] = {
-                "symbol":     sym,
-                "signal":     signal,
-                "score_now":  score["total_score"],
-                "score_prev": active.get("last_score", score["total_score"]),
-                "message":    msg,
-            }
+            old["exit_signal"] = exit_data
             old["ts_str"] = datetime.now().strftime("%d.%m.%Y %H:%M")
             RESULT_PATH.write_text(json.dumps(old, ensure_ascii=False), encoding="utf-8")
+        except:
+            pass
+        try:
+            import requests as _req
+            _req.patch(
+                "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app/gridtracker/advisor.json",
+                json={"exit_signal": exit_data, "ts_str": datetime.now().strftime("%d.%m.%Y %H:%M")},
+                timeout=8)
         except:
             pass
 

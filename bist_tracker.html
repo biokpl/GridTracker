@@ -29428,9 +29428,17 @@ async function renderAdvisor(){
   const card=$('advisor-card');
   if(!card) return;
   try{
-    const resp=await fetch('/api/advisor');
-    if(!resp.ok){ card.style.display='none'; return; }
-    const d=await resp.json();
+    // Önce yerel server dene, olmazsa Firebase'den oku
+    let d=null;
+    try{
+      const resp=await fetch('/api/advisor',{signal:AbortSignal.timeout(2000)});
+      if(resp.ok) d=await resp.json();
+    }catch(_){}
+    if(!d){
+      const fbResp=await fetch(FIREBASE_URL+'/gridtracker/advisor.json',{signal:AbortSignal.timeout(5000)});
+      if(fbResp.ok) d=await fbResp.json();
+    }
+    if(!d){ card.style.display='none'; return; }
     _advData=d;
     card.style.display='block';
 
