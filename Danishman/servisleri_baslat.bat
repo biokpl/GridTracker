@@ -4,7 +4,7 @@ echo Sermaye Danismani Servisleri Baslatiliyor...
 
 set PY=C:\Users\BioCSI\AppData\Local\Programs\Python\Python313\pythonw.exe
 set GRIDTRACKER=C:\Users\BioCSI\CLAUDE\GridTracker
-set ADVISOR=C:\Users\BioCSI\CLAUDE\Günlük Sermaye Yönetimi
+set ADVISOR=%GRIDTRACKER%\Danishman
 
 REM ── 1. server.py — eski süreci PID ile durdur, yenisini başlat ────────────
 echo [1/3] server.py yeniden baslatiliyor...
