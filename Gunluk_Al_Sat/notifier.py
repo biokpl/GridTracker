@@ -19,13 +19,11 @@ from urllib.parse import quote as _quote
 
 
 def _fp(v) -> str:
-    """Fiyatı gereksiz sıfır olmadan biçimler: 64.0 → '64', 2.73 → '2.73'."""
+    """Fiyatı 2 ondalık (kuruş) biçimler: 2.5 → '2.50', 64 → '64.00'."""
     try:
-        f = float(v)
+        return f"{float(v):.2f}"
     except (TypeError, ValueError):
         return str(v)
-    s = f"{f:.4f}".rstrip("0").rstrip(".")
-    return s if s else "0"
 
 
 def _send(title: str, body: str, priority: str = "default", tags: str = "") -> bool:

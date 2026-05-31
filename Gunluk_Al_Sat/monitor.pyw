@@ -42,13 +42,11 @@ _sent_lock = threading.Lock()
 # ── Yardımcılar ───────────────────────────────────────────────────────────────
 
 def _fp(v) -> str:
-    """Fiyatı gereksiz sıfır olmadan biçimler: 2.5 → '2.5', 2.73 → '2.73', 64.0 → '64'."""
+    """Fiyatı 2 ondalık (kuruş) biçimler: 2.5 → '2.50', 64 → '64.00'."""
     try:
-        f = float(v)
+        return f"{float(v):.2f}"
     except (TypeError, ValueError):
         return str(v)
-    s = f"{f:.4f}".rstrip("0").rstrip(".")
-    return s if s else "0"
 
 def _load_state() -> dict:
     return json.loads((BASE / "state.json").read_text(encoding="utf-8"))
