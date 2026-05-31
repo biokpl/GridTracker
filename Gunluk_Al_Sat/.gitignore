@@ -1,5 +1,6 @@
 # Hassas veriler — repo'ya alınmaz
 state.json
 monitor.log
+last_prices.json
 __pycache__/
 *.pyc
