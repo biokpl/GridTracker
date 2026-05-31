@@ -523,7 +523,7 @@ class Handler(SimpleHTTPRequestHandler):
                 capital = float(data.get('capital', 0))
                 if capital < 0:
                     self.send_json(400, {'error': 'Geçersiz sermaye'}); return
-                state_path = os.path.join(BASE_DIR, 'Danishman', 'state.json')
+                state_path = os.path.join(BASE_DIR, 'Gunluk_Al_Sat', 'state.json')
                 if os.path.exists(state_path):
                     with open(state_path, 'r', encoding='utf-8') as f:
                         st = json.load(f)
