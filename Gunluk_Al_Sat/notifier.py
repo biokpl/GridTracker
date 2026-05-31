@@ -41,7 +41,7 @@ def send_exit_signal(signal, symbol, score_prev, score_now, message, new_pick, l
         return _send(title, body, priority="high", tags="warning")
 
     if signal in ("ÇIK", "ACİL_ÇIK"):
-        title = f"🔴 ÇIKIŞ YAP — {symbol}"
+        title = f"ÇIKIŞ YAP — {symbol}"
         lines = [
             f"Hisse : {symbol}",
             f"Skor  : {score_prev:.1f} → {score_now:.1f} / 10",
@@ -60,7 +60,7 @@ def send_exit_signal(signal, symbol, score_prev, score_now, message, new_pick, l
             if lots:
                 lines.append(f"Lot   : {lots:,} lot".replace(",", "."))
 
-        return _send(title, "\n".join(lines), priority="urgent")
+        return _send(title, "\n".join(lines), priority="urgent", tags="rotating_light")
 
     return False
 
