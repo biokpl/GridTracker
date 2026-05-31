@@ -379,14 +379,28 @@ def fb_write(path, data):
 
 
 def fetch_price(symbol):
-    """Yahoo Finance'ten anlık kapanış fiyatını çeker."""
-    ticker = symbol.upper() + '.IS'
-    url = f'https://query2.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=1d'
-    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    with urllib.request.urlopen(req, timeout=8) as resp:
-        data = json.loads(resp.read())
-    closes = [v for v in data['chart']['result'][0]['indicators']['quote'][0]['close'] if v is not None]
-    return round(closes[-1], 2) if closes else None
+    """
+    Anlık fiyat çeker.
+    Önce Excel (MatriksIQ DDE - anlık), yoksa Yahoo Finance (15dk gecikmeli).
+    """
+    try:
+        from price_reader import get_price
+        price, _ = get_price(symbol.upper())
+        if price and price > 0:
+            return round(price, 2)
+    except Exception:
+        pass
+    # Yahoo fallback
+    try:
+        ticker = symbol.upper() + '.IS'
+        url = f'https://query2.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=1d'
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read())
+        closes = [v for v in data['chart']['result'][0]['indicators']['quote'][0]['close'] if v is not None]
+        return round(closes[-1], 2) if closes else None
+    except Exception:
+        return None
 
 
 def _watcher_loop():
