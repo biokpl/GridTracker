@@ -15,20 +15,17 @@ _cfg  = json.loads((Path(__file__).parent / "config.json").read_text(encoding="u
 TOPIC = _cfg.get("ntfy_topic", "GridTracker-bkpl-07")
 URL   = f"https://ntfy.sh/{TOPIC}"
 
-_TR = str.maketrans("ğĞşŞıİçÇöÖüÜ", "gGsSiIcCooUU")
-def _h(s):
-    s = s.translate(_TR)
-    s = "".join(c for c in s if ord(c) < 128)
-    return " ".join(s.split())
+from urllib.parse import quote as _quote
 
 
 def _send(title: str, body: str, priority: str = "default", tags: str = "") -> bool:
     try:
-        headers = {"Title": _h(title), "Priority": priority,
-                   "Content-Type": "text/plain; charset=utf-8"}
+        # Başlık URL parametresi olarak geçiliyor — Türkçe karakter + emoji destekli
+        url = f"{URL}?title={_quote(title)}"
+        headers = {"Priority": priority, "Content-Type": "text/plain; charset=utf-8"}
         if tags:
             headers["Tags"] = tags
-        r = requests.post(URL, data=body.encode("utf-8"), headers=headers, timeout=10)
+        r = requests.post(url, data=body.encode("utf-8"), headers=headers, timeout=10)
         ok = r.status_code == 200
         print(f"[Push] {'OK' if ok else 'HATA'}: {title}")
         return ok
@@ -45,7 +42,11 @@ def send_exit_signal(signal, symbol, score_prev, score_now, message, new_pick, l
 
     if signal in ("ÇIK", "ACİL_ÇIK"):
         title = f"🔴 ÇIKIŞ YAP — {symbol}"
-        lines = [f"Skor: {score_prev:.1f} → {score_now:.1f} / 10", message]
+        lines = [
+            f"Hisse : {symbol}",
+            f"Skor  : {score_prev:.1f} → {score_now:.1f} / 10",
+            f"Sebep : {message}",
+        ]
 
         if new_pick:
             li   = (lot_info or {}).get(new_pick["symbol"], {})
