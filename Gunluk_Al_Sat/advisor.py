@@ -308,12 +308,49 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
     if bb_pos < 0.35:    reasons.append("Bollinger alt bant")
     reasoning = ", ".join(reasons) if reasons else "Dengeli teknik tablo"
 
+    # ── Giriş Kalitesi Skoru (ÇIK sonrası geçiş için) ──────────────────────
+    # Yüksek total_score ama kötü giriş noktası → ceza
+    # Düşük r5 + RSI ısınma bölgesi + destek yakını → bonus
+    entry_bonus = 0.0
+
+    # RSI ısınma bölgesi (40-58): en ideal giriş — ne soğuk ne sıcak
+    if   40 <= rsi <= 58:  entry_bonus += 1.5
+    elif 35 <= rsi < 40:   entry_bonus += 0.5   # biraz soğuk ama toparlanabilir
+    elif 58 < rsi <= 65:   entry_bonus += 0.0
+    elif rsi > 70:         entry_bonus -= 2.0   # zaten pompalanmış
+    elif rsi < 30:         entry_bonus -= 0.5   # aşırı satım = hâlâ düşüyor olabilir
+
+    # Bollinger konumu: alt banda yakın = erken giriş fırsatı
+    if   bb_pos < 0.30:    entry_bonus += 1.5
+    elif bb_pos < 0.45:    entry_bonus += 0.8
+    elif bb_pos > 0.75:    entry_bonus -= 1.5   # üst banta yakın = geç kalmış
+    elif bb_pos > 0.60:    entry_bonus -= 0.5
+
+    # 5 günlük hareket: hafif pozitif ideal, zaten fırlamamış
+    if   1.0 <= r5 <= 4.0: entry_bonus += 1.0   # başlıyor
+    elif r5 > 6.0:         entry_bonus -= 2.0   # zaten fırlamış
+    elif r5 < -3.0:        entry_bonus -= 1.0   # düşüyor
+
+    # Risk/Kazanç oranı: (H1-fiyat) / (fiyat-stop)
+    rr_ratio = 0.0
+    if stop_loss < price and target1 > price:
+        rr_ratio = (target1 - price) / (price - stop_loss)
+        if   rr_ratio >= 3.0: entry_bonus += 1.5
+        elif rr_ratio >= 2.0: entry_bonus += 1.0
+        elif rr_ratio >= 1.5: entry_bonus += 0.0
+        else:                 entry_bonus -= 1.5   # kazanç potansiyeli düşük
+
+    # Giriş skoru = toplam skor + giriş bonusu (max 10 ile sınırla)
+    entry_score = round(min(10.0, max(0.0, total_10 + entry_bonus)), 1)
+
     return {
-        "symbol":      sym,
-        "price":       round(price, 4),
-        "total_score": total_10,
+        "symbol":       sym,
+        "price":        round(price, 4),
+        "total_score":  total_10,
+        "entry_score":  entry_score,   # ÇIK sonrası geçiş için giriş kalitesi
+        "rr_ratio":     round(rr_ratio, 2),
         "scores": {
-            "technical":    round(tech_score / 25 * 10, 1),   # 0-10
+            "technical":    round(tech_score / 25 * 10, 1),
             "momentum":     round(mom_score  / 20 * 10, 1),
             "rel_strength": round(rs_score   / 15 * 10, 1),
             "volume":       round(volume_score/ 15 * 10, 1),
@@ -479,9 +516,15 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
                 "score_prev": active.get("last_score", active_score_data["total_score"]),
                 "message":    msg,
             }
+            # ÇIK sinyalinde → giriş kalitesine (entry_score) göre sırala
+            # Normal sıralamada değil, şu an en iyi giriş noktasındaki hisse seçilsin
             alts = [s for s in eligible if s["symbol"] != sym]
             if alts:
-                new_pick_for_exit = alts[0]
+                if signal in ("ÇIK", "ACİL_ÇIK"):
+                    alts_sorted = sorted(alts, key=lambda x: x.get("entry_score", 0), reverse=True)
+                else:
+                    alts_sorted = alts  # DEVAM/DİKKAT → normal total_score sırası
+                new_pick_for_exit = alts_sorted[0]
 
     # Lot hesapları (önerilen hisseler için)
     lot_info = {}

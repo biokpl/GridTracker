@@ -49,16 +49,22 @@ def send_exit_signal(signal, symbol, score_prev, score_now, message, new_pick, l
         ]
 
         if new_pick:
-            li   = (lot_info or {}).get(new_pick["symbol"], {})
-            lots = li.get("lots", 0)
+            li      = (lot_info or {}).get(new_pick["symbol"], {})
+            lots    = li.get("lots", 0)
+            rr      = new_pick.get("rr_ratio", 0)
+            escore  = new_pick.get("entry_score", new_pick.get("total_score", 0))
             lines += [
                 "",
                 f"✅ YENİ HİSSE: {new_pick['symbol']}",
-                f"Fiyat : {new_pick['price']:.2f} TL",
-                f"Skor  : {new_pick['total_score']:.1f} / 10",
+                f"Giriş Skoru : {escore:.1f} / 10",
+                f"Fiyat       : {new_pick['price']:.2f} TL",
+                f"Stop        : {new_pick['stop_loss']:.2f} TL",
+                f"1. Hedef    : {new_pick['target1']:.2f} TL",
             ]
+            if rr >= 1.5:
+                lines.append(f"Risk/Kazanç : 1 / {rr:.1f}")
             if lots:
-                lines.append(f"Lot   : {lots:,} lot".replace(",", "."))
+                lines.append(f"Lot         : {lots:,} lot".replace(",", "."))
 
         return _send(title, "\n".join(lines), priority="urgent", tags="rotating_light")
 
