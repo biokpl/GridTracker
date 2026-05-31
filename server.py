@@ -124,6 +124,24 @@ def read_excel():
             entry['price'] = entry['price2']
         entry.pop('price2', None)
         result[sym] = entry
+
+    # ── DDE Excel (MatriksIQ) anlık fiyat override ──────────────────────────
+    # ATR_Sonuc.xlsx günde bir üretilir; DDE Excel ise canlı.
+    # Piyasa saatlerinde tüm sembollerin price alanını anlık değerle güncelle.
+    try:
+        from price_reader import get_all_prices
+        live = get_all_prices()
+        for sym, lp in live.items():
+            if lp and lp > 0:
+                if sym in result:
+                    result[sym]['price'] = round(lp, 4)
+                    result[sym]['live'] = True
+                else:
+                    result[sym] = {'price': round(lp, 4), 'live': True,
+                                   'ts': int(time.time())}
+    except Exception as e:
+        slog.debug(f'[DDE] anlık fiyat override atlandı: {e}')
+
     return result
 
 def _safe(v):
@@ -553,8 +571,18 @@ class Handler(SimpleHTTPRequestHandler):
         if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'stock':
             sym = parts[2].upper()
             with _lock:
-                data = _stocks.get(sym)
+                data = dict(_stocks.get(sym) or {})
             if data:
+                # Sorgu anında DDE Excel'den taze anlık fiyat çek
+                try:
+                    from price_reader import get_price
+                    lp, src = get_price(sym)
+                    if lp and lp > 0:
+                        data['price'] = round(lp, 4)
+                        data['live']  = (src == 'excel')
+                        data['ts']    = int(time.time())
+                except Exception:
+                    pass
                 self.send_json(200, data)
             else:
                 self.send_json(404, {'error': f'{sym} bulunamadı'})

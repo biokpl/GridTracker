@@ -12,6 +12,23 @@ EXCEL_PATH = Path(r"C:\Users\BioCSI\CLAUDE\GridTracker\Bist100 - Anlık Fiyat.xl
 MAX_AGE_SECONDS = 90  # Excel dosyası bu kadar saniyeden eskiyse Yahoo'ya geç
 
 
+def _com_init():
+    """Arka plan thread'lerinde win32com erişimi için COM apartment başlat."""
+    try:
+        import pythoncom
+        pythoncom.CoInitialize()
+    except Exception:
+        pass
+
+
+def _com_uninit():
+    try:
+        import pythoncom
+        pythoncom.CoUninitialize()
+    except Exception:
+        pass
+
+
 def _valid_price(val) -> float | None:
     """
     Geçerli fiyat mı kontrol eder.
@@ -36,6 +53,7 @@ def get_price_from_excel(symbol: str) -> float | None:
     sym = symbol.upper().replace(".IS", "")
 
     # ── Yöntem 1: Açık Excel'den canlı oku (anlık) ──────────
+    _com_init()
     try:
         import win32com.client as win32
         xl = win32.GetActiveObject("Excel.Application")
@@ -113,6 +131,7 @@ def get_all_prices() -> dict[str, float]:
     prices = {}
 
     # ── Açık Excel'den canlı oku ─────────────────────────────
+    _com_init()
     try:
         import win32com.client as win32
         xl = win32.GetActiveObject("Excel.Application")
