@@ -37,32 +37,41 @@ def _send(title: str, body: str, priority: str = "default", tags: str = "") -> b
 def send_exit_signal(signal, symbol, score_prev, score_now, message, new_pick, lot_info):
     if signal == "DİKKAT":
         title = f"⚠️ {symbol} — Dikkat"
-        body  = f"Skor: {score_prev:.1f} → {score_now:.1f} / 10\n{message}"
+        body  = (f"Skor: {score_now:.1f}/10  (önceki: {score_prev:.1f})\n"
+                 f"Sebep: {message}")
         return _send(title, body, priority="high", tags="warning")
 
     if signal in ("ÇIK", "ACİL_ÇIK"):
         title = f"ÇIKIŞ YAP — {symbol}"
         lines = [
             f"Hisse : {symbol}",
-            f"Skor  : {score_prev:.1f} → {score_now:.1f} / 10",
+            f"Skor  : {score_now:.1f}/10  (önceki: {score_prev:.1f})",
             f"Sebep : {message}",
         ]
 
         if new_pick:
-            li      = (lot_info or {}).get(new_pick["symbol"], {})
-            lots    = li.get("lots", 0)
-            rr      = new_pick.get("rr_ratio", 0)
-            escore  = new_pick.get("entry_score", new_pick.get("total_score", 0))
+            li     = (lot_info or {}).get(new_pick["symbol"], {})
+            lots   = li.get("lots", 0)
+            rr     = new_pick.get("rr_ratio", 0)
+            escore = new_pick.get("entry_score", new_pick.get("total_score", 0))
+            price  = new_pick["price"]
+            stop   = new_pick["stop_loss"]
+            hedef  = new_pick["target1"]
+            risk_tl   = round(price - stop, 2)
+            kazanc_tl = round(hedef - price, 2)
+
             lines += [
                 "",
                 f"✅ YENİ HİSSE: {new_pick['symbol']}",
                 f"Giriş Skoru : {escore:.1f} / 10",
-                f"Fiyat       : {new_pick['price']:.2f} TL",
-                f"Stop        : {new_pick['stop_loss']:.2f} TL",
-                f"1. Hedef    : {new_pick['target1']:.2f} TL",
+                f"Fiyat       : {price:.2f} TL",
+                f"Stop        : {stop:.2f} TL",
+                f"1. Hedef    : {hedef:.2f} TL",
             ]
             if rr >= 1.5:
-                lines.append(f"Risk/Kazanç : 1 / {rr:.1f}")
+                lines.append(
+                    f"Risk/Kazanç : {risk_tl:.2f} TL kayıp → {kazanc_tl:.2f} TL kazanç ({rr:.1f}x)"
+                )
             if lots:
                 lines.append(f"Lot         : {lots:,} lot".replace(",", "."))
 
