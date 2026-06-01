@@ -248,11 +248,27 @@ def _recompute_grid_live(data, price):
 
         data['price'] = round(price, 4)
         if best:
+            # Al/Sat dağılımı: web renderGridResults EKRAN mantığıyla birebir.
+            # N+1 seviye, dExact=range/N (yuvarlanmamış), her seviye tick'e
+            # yuvarlanıp ref'e göre al/sat/mevcut sınıflandırılır.
+            N = best['N']
+            d_exact = rng / N
+            buy_cnt = 0
+            sell_cnt = 0
+            for i in range(N + 1):
+                p_lvl = round((support + i * d_exact) / tick) * tick
+                if abs(p_lvl - ref) < tick / 2:
+                    continue  # mevcut fiyat seviyesi ('at')
+                elif p_lvl > ref:
+                    sell_cnt += 1
+                else:
+                    buy_cnt += 1
+
             data['grid_interval'] = round(best['d'], 2)
             data['lots']          = best['lots']
-            data['sell_grids']    = best['sell']
-            data['buy_grids']     = best['buy']
-            data['total_grids']   = best['sell'] + best['buy']
+            data['sell_grids']    = sell_cnt
+            data['buy_grids']     = buy_cnt
+            data['total_grids']   = buy_cnt + sell_cnt
             data['daily_profit']  = round(best['daily'], 0)
             data['capital_used']  = round(best['used'], 0)
             data['pct_up']        = round((resistance - ref) / ref * 100, 2)
