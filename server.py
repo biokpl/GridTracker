@@ -701,20 +701,22 @@ class Handler(SimpleHTTPRequestHandler):
             sym = parts[2].upper()
             with _lock:
                 data = dict(_stocks.get(sym) or {})
-            if data:
-                # Sorgu anında DDE Excel'den taze anlık fiyat çek
-                try:
-                    from price_reader import get_price
-                    lp, src = get_price(sym)
-                    if lp and lp > 0:
-                        data['price'] = round(lp, 4)
-                        data['live']  = (src == 'excel')
-                        data['ts']    = int(time.time())
-                except Exception:
-                    pass
+            # Anlık fiyatı her durumda price_reader'dan çek (DDE/cache/Yahoo).
+            # Sembol ATR_Sonuc.xlsx'te (bot sembolleri) olmasa bile (ör. ALARK
+            # gibi BIST50 grid adayları) en azından fiyat döndürülür.
+            try:
+                from price_reader import get_price
+                lp, src = get_price(sym)
+                if lp and lp > 0:
+                    data['price'] = round(lp, 4)
+                    data['live']  = (src == 'excel')
+                    data['ts']    = int(time.time())
+            except Exception:
+                pass
+            if data.get('price'):
                 self.send_json(200, data)
             else:
-                self.send_json(404, {'error': f'{sym} bulunamadı'})
+                self.send_json(404, {'error': f'{sym} fiyatı alınamadı'})
             return
 
         # /api/all
