@@ -799,6 +799,49 @@ def _send_notify(title, body, tag='gridtracker', priority='default'):
         log.warning(f'[Push] ntfy hatası: {e}')
 
 
+def wait_and_click_sms(timeout=60, poll=2.0):
+    """
+    2FA ekranındaki 'SMS Doğrulama Kodu ile Devam Et' butonunu GÖRENE KADAR
+    bekler, sonra gerçek konumuna tıklar. Sabit gecikme YOK — buton ne zaman
+    belirirse (şifre sunucuda doğrulanınca) o an tıklanır. Yavaş sabahlarda
+    bile erken tıklama sorunu olmaz.
+
+    sms_gonder_btn.png şablonu gerekir. Yoksa/bulunamazsa False döner ve
+    çağıran koordinat fallback'ine düşer.
+
+    Döner: True (bulundu ve tıklandı) / False (görünmedi).
+    """
+    if DRY_RUN:
+        log.info('[DRY] SMS butonu tıklandı (varsayım)')
+        return True
+    tmpl = SCRIPT_DIR / 'sms_gonder_btn.png'
+    if not tmpl.exists():
+        log.warning('sms_gonder_btn.png şablonu yok — koordinat fallback kullanılacak.')
+        return False
+    start = time.time()
+    deadline = start + timeout
+    attempt = 0
+    while time.time() < deadline:
+        attempt += 1
+        center = _locate_template('sms_gonder_btn.png', confidence=0.70)
+        if center:
+            pyautogui.click(center)
+            log.info(f'SMS butonu şablonla bulundu ve tıklandı @ {center} '
+                     f'(deneme #{attempt}, +{int(time.time()-start)}s)')
+            # Tıklama gerçekten işledi mi? Buton kaybolduysa ekran ilerlemiştir.
+            time.sleep(2.0)
+            if not _locate_template('sms_gonder_btn.png', confidence=0.70):
+                log.info('SMS butonu kayboldu → SMS isteği gönderildi.')
+            else:
+                log.warning('SMS butonu hala görünüyor — bir kez daha tıklanıyor.')
+                pyautogui.click(center)
+            return True
+        log.info(f'SMS butonu (2FA ekranı) bekleniyor... (deneme #{attempt}, +{int(time.time()-start)}s)')
+        time.sleep(poll)
+    log.warning(f'SMS butonu {timeout}s içinde şablonla görünmedi.')
+    return False
+
+
 def run():
     log.info('══════════════════════════════════════════')
     log.info('  SABAH OTOMASYONU BAŞLIYOR')
@@ -837,11 +880,19 @@ def run():
     hotkey('ctrl', 'v')         # şifreyi yapıştır
     time.sleep(0.2)
     press('enter',  wait=2.0)
-    log.info('Şifre girildi ve Enter basıldı')
+    log.info('Şifre girildi ve Enter basıldı — 2FA ekranı (SMS butonu) bekleniyor')
 
-    # SMS gönder butonu — tıklama zamanını kaydet (yeni kod tespiti için)
+    # ── SMS butonu: EKRANDA GÖRENE KADAR BEKLE, sonra tıkla ───────────
+    # Sabit gecikme yerine 2FA ekranındaki turuncu "SMS Doğrulama Kodu ile
+    # Devam Et" butonunu şablonla bekler. Şifre doğrulaması gecikse bile
+    # erken tıklama olmaz. Şablon yok/bulunamazsa koordinat fallback.
+    clicked = wait_and_click_sms(timeout=60)
+    if not clicked:
+        log.warning('SMS şablonla bulunamadı — koordinat fallback @ (2556,808), 10s bekleme.')
+        time.sleep(10)   # 2FA ekranının gelmesi için makul süre (erken tıklamayı önler)
+        click(2556, 808, wait=3)
+    # Gerçek SMS tetikleme anı — yeni B001 tespiti bu andan sonrasını bekler
     sms_sent_at = time.time()
-    click(2556, 808, wait=3)
     log.info(f'SMS tetiklendi @ {time.strftime("%H:%M:%S")} — yeni B001 bekleniyor')
 
     # ── Adım 5: Vivaldi'yi aç (zorunlu) ────────────────────
