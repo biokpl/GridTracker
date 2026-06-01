@@ -77,6 +77,15 @@ def _read_excel(symbol: str) -> tuple[list, list]:
 
 
 def _current_price(symbol: str) -> float:
+    """Anlık fiyat: DDE Excel → Yahoo → cache (price_reader üzerinden)."""
+    try:
+        from price_reader import get_price
+        p, _src = get_price(symbol)
+        if p and p > 0:
+            return float(p)
+    except Exception:
+        pass
+    # Son çare: doğrudan Yahoo
     try:
         t = yf.Ticker(f"{symbol}.IS")
         hist = t.history(period="2d")

@@ -159,8 +159,45 @@ def _fast_price_check():
         # ── Her şey normal: sadece log ─────────────────────────────────────
         log.debug(f"{sym} {_fp(price)} ₺  {pnl_pct:+.2f}%  (stop:{_fp(stop)}  h1:{_fp(h1)}  h2:{_fp(h2)})  [{kaynak}]")
 
+        # ── Sermaye kartı için anlık fiyat + K/Z güncelle (result.json) ──
+        # Her 5 sn'de bist_tracker.html Sermaye kartı güncel kalsın.
+        _update_tracker_price(price, entry, qty)
+
     except Exception as e:
         log.error(f"Hızlı kontrol hatası: {e}")
+
+
+def _update_tracker_price(price, entry, qty):
+    """result.json'daki tracker bloğunu anlık fiyat + K/Z ile günceller."""
+    try:
+        from advisor import RESULT_PATH
+        if not RESULT_PATH.exists():
+            return
+        d = json.loads(RESULT_PATH.read_text(encoding="utf-8"))
+        tr = d.get("tracker")
+        if not tr or not tr.get("active_symbol"):
+            return
+        avg = tr.get("avg_cost") or entry or 0
+        open_qty = tr.get("open_qty") or tr.get("total_qty") or qty or 0
+        tr["current_price"]  = round(price, 4)
+        if avg > 0 and open_qty > 0:
+            tr["unrealized_pnl"] = round((price - avg) * open_qty, 2)
+            tr["unrealized_pct"] = round((price - avg) / avg * 100, 2)
+        d["tracker"] = tr
+        RESULT_PATH.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+        # Firebase'e de yaz
+        try:
+            import requests as _req
+            _req.patch(
+                "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app/gridtracker/advisor/tracker.json",
+                json={"current_price": tr["current_price"],
+                      "unrealized_pnl": tr.get("unrealized_pnl", 0),
+                      "unrealized_pct": tr.get("unrealized_pct", 0)},
+                timeout=6)
+        except:
+            pass
+    except Exception:
+        pass
 
 
 def _get_last_alternative(exclude_sym: str):
