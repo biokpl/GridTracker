@@ -1022,11 +1022,11 @@ def run():
     log.info('══════════════════════════════════════════')
     if explorer_ok:
         _send_notify('☀️ Sabah Otomasyonu Tamamlandı',
-                     f'Yeni giriş kodu ({b001_value}) ile giriş yapıldı, Explorer çalıştı.',
+                     'Giriş başarılı, tüm adımlar tamamlandı.',
                      tag='morning-done', priority='default')
     else:
         _send_notify('⚠️ Sabah Otomasyonu — Sorun',
-                     f'Giriş kodu ({b001_value}) yapıştırıldı ancak Explorer adımı tamamlanamadı, kontrol edin.',
+                     'Giriş yapıldı ancak Explorer adımı tamamlanamadı, kontrol edin.',
                      tag='morning-warn', priority='high')
 
 
