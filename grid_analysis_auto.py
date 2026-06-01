@@ -896,14 +896,33 @@ def run(dry_run=False, force=False):
     # En iyi hissenin scoreHistory'sini guncelle
     update_score_history(best['symbol'], best['grid_score'], best['final_score'], best['price'])
 
-    # Aktif hisseyi Firebase'den oku
+    # Aktif hisse = en yüksek lotlu AÇIK POZİSYON (HTML Pozisyon Takip ile aynı mantık)
+    # Fallback: gridCalc.symbol (açık pozisyon yoksa)
+    # ÖNEMLİ: gridCalc.symbol kullanıcının hesaplayıcıya yazdığı semboldür (ör. ALARK),
+    # gerçek pozisyon değildir. Pozisyon Takip kartı açık pozisyonu analiz etmeli.
     active_sym = None
     try:
-        settings_data = fb_get('settings')
-        if settings_data and isinstance(settings_data, dict):
+        settings_data = fb_get('settings') or {}
+        bot_list = [str(s).upper() for s in (settings_data.get('botSymbols') or [])]
+        today_profit = fb_get('todayProfit') or {}
+        open_pos = today_profit.get('openPositions') or {}
+        max_qty = 0
+        for sym in bot_list:
+            pos_list = open_pos.get(sym)
+            if not pos_list or not isinstance(pos_list, list):
+                continue
+            qty = sum((p.get('execQty') or p.get('qty') or 0)
+                      for p in pos_list if isinstance(p, dict))
+            if qty > max_qty:
+                max_qty = qty
+                active_sym = sym
+        # Fallback: gridCalc.symbol
+        if not active_sym:
             gc = settings_data.get('gridCalc', {})
             if isinstance(gc, dict):
-                active_sym = (gc.get('symbol') or '').upper().strip()
+                active_sym = (gc.get('symbol') or '').upper().strip() or None
+        if active_sym:
+            log.info(f'Aktif hisse (açık pozisyon): {active_sym} (lot={max_qty})')
     except Exception as e:
         log.warning(f'Aktif hisse okunamadi: {e}')
 
