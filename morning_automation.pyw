@@ -644,6 +644,18 @@ def extract_b001(sms_sent_at=None, timeout=300, retry_interval=20):
     if DRY_RUN:
         return '123456'
 
+    # Bir önceki çalışmada kullanılan kodu oku — aynı kod yeniden gelirse
+    # bu, SMS'in GELMEDİĞİ (buton kaçtı) anlamına gelir → reddet, bekle.
+    last_code_file = SCRIPT_DIR / 'last_b001.txt'
+    previous_code = ''
+    try:
+        if last_code_file.exists():
+            previous_code = last_code_file.read_text(encoding='utf-8').strip()
+            if previous_code:
+                log.info(f'Önceki B001 kodu: {previous_code} (bu kod tekrar gelirse SMS gelmemiş demektir)')
+    except Exception as e:
+        log.warning(f'last_b001.txt okunamadı: {e}')
+
     wins = gw.getWindowsWithTitle('Vivaldi')
     if not wins:
         log.error('Vivaldi penceresi bulunamadı')
@@ -688,14 +700,29 @@ def extract_b001(sms_sent_at=None, timeout=300, retry_interval=20):
             matches = _re.findall(r'(\d{6})\s*B001', text)
             if matches:
                 value = matches[-1]
-                log.info(f'B001 bulundu: {value} ({len(matches)} eşleşme, deneme #{attempt})')
-                return value
+                # ── YENİ KOD DOĞRULAMASI ──────────────────────────────
+                # Bulunan kod öncekiyle AYNI ise yeni SMS gelmemiş demektir
+                # (buton kaçtı / SMS gönderilemedi). Eski kodu ASLA kullanma —
+                # geçersizdir, MatriksIQ girişi sessizce başarısız olur.
+                if sms_sent_at and previous_code and value == previous_code:
+                    log.warning(
+                        f'Deneme #{attempt}: Bulunan kod ({value}) öncekiyle AYNI '
+                        f'— yeni SMS gelmemiş. Beklenmeye devam ediliyor.')
+                else:
+                    log.info(f'B001 bulundu (YENİ): {value} ({len(matches)} eşleşme, deneme #{attempt})')
+                    # Kalıcı kaydet — bir sonraki çalışmada baseline olur
+                    try:
+                        last_code_file.write_text(value, encoding='utf-8')
+                    except Exception as e:
+                        log.warning(f'last_b001.txt yazılamadı: {e}')
+                    return value
             else:
                 log.warning(f'Deneme #{attempt}: B001 kodu bulunamadı')
 
         # Timeout kontrolü
         if time.time() >= deadline:
-            log.error(f'B001 {timeout}s içinde bulunamadı ({attempt} deneme)')
+            log.error(f'B001 {timeout}s içinde YENİ kod bulunamadı ({attempt} deneme) '
+                      f'— SMS gelmedi veya buton kaçtı.')
             return None
 
         kalan = int(deadline - time.time())
@@ -961,10 +988,12 @@ def run():
     log.info('  SABAH OTOMASYONU TAMAMLANDI')
     log.info('══════════════════════════════════════════')
     if explorer_ok:
-        _send_notify('☀️ Sabah Otomasyonu Tamamlandı', 'Tüm adımlar başarıyla tamamlandı.',
+        _send_notify('☀️ Sabah Otomasyonu Tamamlandı',
+                     f'Yeni giriş kodu ({b001_value}) ile giriş yapıldı, Explorer çalıştı.',
                      tag='morning-done', priority='default')
     else:
-        _send_notify('⚠️ Sabah Otomasyonu — Sorun', 'Explorer adımı tamamlanamadı, kontrol edin.',
+        _send_notify('⚠️ Sabah Otomasyonu — Sorun',
+                     f'Giriş kodu ({b001_value}) yapıştırıldı ancak Explorer adımı tamamlanamadı, kontrol edin.',
                      tag='morning-warn', priority='high')
 
 
