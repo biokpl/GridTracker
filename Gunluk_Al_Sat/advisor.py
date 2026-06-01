@@ -598,6 +598,18 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
                     state["active"]["target1"]  = active_pick["target1"]
                     state["active"]["target2"]  = active_pick["target2"]
                     state["active"]["stop_loss"] = state["active"].get("stop_loss") or active_pick["stop_loss"]
+            # ÇIK sinyalinde: önerilen yeni hisseyi pending_buy'a kaydet.
+            # Kullanıcı bu hisseyi alırsa monitor otomatik aktif pozisyon yapar.
+            if exit_signal["signal"] in ("ÇIK", "ACİL_ÇIK") and new_pick_for_exit:
+                np = new_pick_for_exit
+                state["pending_buy"] = {
+                    "symbol":    np["symbol"],
+                    "stop_loss": np.get("stop_loss", 0),
+                    "target1":   np.get("target1", 0),
+                    "target2":   np.get("target2", 0),
+                    "score":     np.get("total_score", 0),
+                    "timeframe": np.get("timeframe", ""),
+                }
             _save_state(state)
 
         # Push bildirimleri

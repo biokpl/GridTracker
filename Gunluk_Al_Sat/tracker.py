@@ -149,14 +149,17 @@ def track(state: dict) -> dict:
         open_qty    = total_qty - sold_qty
         data_source = "excel"
     else:
-        # ── Fallback: state.json'daki manuel giriş ─────────────────────────
-        total_qty    = active.get("qty", 0)
-        avg_cost     = active.get("entry_price", 0.0)
-        total_cost   = total_qty * avg_cost * (1 + COMM_RATE)
-        sold_qty     = 0
-        realized     = 0.0
-        open_qty     = total_qty
-        data_source  = "manual"
+        # ── Manuel giriş (SASA gibi) — alış state.json'dan, AMA satışlar
+        #    yine 1.xlsx'ten okunur (kullanıcı satarsa sistem görsün) ────────
+        total_qty   = active.get("qty", 0)
+        avg_cost    = active.get("entry_price", 0.0)
+        total_cost  = total_qty * avg_cost * (1 + COMM_RATE)
+        sold_qty    = sum(s["execQty"] for s in sells)
+        sell_amount = sum(s["execAmount"] - s["commission"] for s in sells)
+        cost_of_sold= avg_cost * sold_qty
+        realized    = sell_amount - cost_of_sold
+        open_qty    = total_qty - sold_qty
+        data_source = "manual"
 
     # Anlık fiyat
     cur_price = _current_price(symbol)

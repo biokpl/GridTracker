@@ -339,17 +339,125 @@ def _slow_analysis():
 
 # ── ANA DÖNGÜ ─────────────────────────────────────────────────────────────────
 
+def _sync_position():
+    """
+    OTOMATİK POZİSYON TAKİBİ — 1.xlsx'i izleyip pozisyon değişimini yakalar.
+      1. Aktif pozisyon tamamen satıldıysa → gerçekleşen karı history'ye ekle,
+         active=null yap, bildirim gönder.
+      2. Aktif pozisyon yokken bekleyen hisse (pending_buy) alındıysa →
+         active = yeni hisse (maliyet/lot 1.xlsx'ten), bildirim gönder.
+    """
+    try:
+        import notifier
+        from tracker import _read_excel, COMM_RATE
+        state = _load_state()
+        active = state.get("active")
+
+        # ── 1. AKTİF POZİSYON KAPANDI MI? ───────────────────────────────
+        if active:
+            sym = active["symbol"]
+            buys, sells = _read_excel(sym)
+            if buys:
+                total_qty = sum(b["execQty"] for b in buys)
+                avg_cost  = (sum(b["execAmount"] + b["commission"] for b in buys)
+                             / total_qty) if total_qty else 0
+            else:
+                total_qty = active.get("qty", 0)
+                avg_cost  = active.get("entry_price", 0.0)
+            sold_qty    = sum(s["execQty"] for s in sells)
+            open_qty    = total_qty - sold_qty
+
+            if total_qty > 0 and open_qty <= 0 and sold_qty > 0:
+                # Pozisyon tamamen kapandı → kar hesapla, history'ye ekle
+                sell_amount = sum(s["execAmount"] - s["commission"] for s in sells)
+                pnl_tl  = sell_amount - (avg_cost * sold_qty)
+                pnl_pct = (pnl_tl / (avg_cost * sold_qty) * 100) if avg_cost and sold_qty else 0
+                exit_px = sell_amount / sold_qty if sold_qty else 0
+
+                rec = {
+                    "symbol":     sym,
+                    "entry_date": active.get("entry_date", ""),
+                    "exit_date":  datetime.now().strftime("%Y-%m-%d"),
+                    "entry_price": round(avg_cost, 4),
+                    "exit_price":  round(exit_px, 4),
+                    "qty":        sold_qty,
+                    "pnl_tl":     round(pnl_tl, 2),
+                    "pnl_pct":    round(pnl_pct, 2),
+                    "exit_reason": "Manuel satış (sistem algıladı)",
+                }
+                state.setdefault("history", []).append(rec)
+                state["active"] = None
+                _save_state(state)
+                log.info(f"POZİSYON KAPANDI: {sym} | K/Z: {pnl_tl:+.0f} TL ({pnl_pct:+.1f}%)")
+                notifier._send(
+                    f"✅ {sym} SATILDI",
+                    f"Pozisyon kapandı.\n"
+                    f"Giriş: {avg_cost:.2f} → Çıkış: {exit_px:.2f} TL\n"
+                    f"Kâr/Zarar: {pnl_tl:+,.0f} TL ({pnl_pct:+.1f}%)".replace(",", "."),
+                    tags="white_check_mark",
+                )
+                # Kapanış sonrası: yeni hisse arama bir sonraki döngüde
+                return
+
+        # ── 2. YENİ POZİSYON AÇILDI MI? (pending_buy alındı mı) ─────────
+        if not state.get("active"):
+            pending = state.get("pending_buy")
+            if pending:
+                psym = pending.get("symbol", "")
+                pbuys, psells = _read_excel(psym)
+                # Bugün net alım var mı?
+                today = datetime.now().strftime("%Y-%m-%d")
+                today_buys = [b for b in pbuys if b.get("date", "").startswith(today)]
+                if today_buys:
+                    tot_qty  = sum(b["execQty"] for b in pbuys)
+                    sold     = sum(s["execQty"] for s in psells)
+                    net_qty  = tot_qty - sold
+                    if net_qty > 0:
+                        avg = (sum(b["execAmount"] + b["commission"] for b in pbuys)
+                               / tot_qty) if tot_qty else 0
+                        state["active"] = {
+                            "symbol":     psym,
+                            "entry_date": today,
+                            "entry_price": round(avg, 4),
+                            "qty":        net_qty,
+                            "stop_loss":  pending.get("stop_loss", 0),
+                            "target1":    pending.get("target1", 0),
+                            "target2":    pending.get("target2", 0),
+                            "last_score": pending.get("score", 0),
+                            "timeframe":  pending.get("timeframe", ""),
+                        }
+                        state["pending_buy"] = None
+                        _save_state(state)
+                        log.info(f"YENİ POZİSYON: {psym} | {net_qty} lot @ {avg:.2f}")
+                        notifier._send(
+                            f"🟢 {psym} ALINDI",
+                            f"Yeni pozisyon açıldı.\n"
+                            f"Maliyet: {avg:.2f} TL | {net_qty:,} lot\n"
+                            f"Stop: {pending.get('stop_loss',0):.2f} | "
+                            f"Hedef: {pending.get('target1',0):.2f}".replace(",", "."),
+                            tags="green_circle",
+                        )
+    except Exception as e:
+        log.error(f"Pozisyon senkron hatası: {e}", exc_info=True)
+
+
 def main():
-    log.info("Monitor başlatıldı. Hızlı:5sn | Yavaş:15dk")
+    log.info("Monitor başlatıldı. Hızlı:5sn | Yavaş:15dk | PozSenkron:1dk")
     print("[Monitor] Başlatıldı — Hızlı:5sn | Yavaş:15dk | Log:", log_path)
 
     last_slow = 0.0  # Son teknik analiz zamanı
+    last_sync = 0.0  # Son pozisyon senkronizasyonu
 
     while True:
         try:
             if _is_market_open():
                 # ── Hızlı kontrol: her 5 saniye ─────────────────────
                 _fast_price_check()
+
+                # ── Pozisyon senkronu: her 1 dakika (sat/al algıla) ──
+                if time.time() - last_sync >= 60:
+                    threading.Thread(target=_sync_position, daemon=True).start()
+                    last_sync = time.time()
 
                 # ── Yavaş kontrol: her 15 dakika ─────────────────────
                 if time.time() - last_slow >= SLOW_INTERVAL_MIN * 60:
