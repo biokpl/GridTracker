@@ -28414,10 +28414,14 @@ async function gcRecUpdateLivePrice(sym, support, resistance, fallbackPrice) {
   if (live > 0) window._gcRecLivePrice = live;
 }
 
-function gcRecApply() {
+async function gcRecApply() {
   if (!_gcRecData) { toast('Henüz öneri verisi yok','err'); return; }
   const d = _gcRecData;
   const sym = (d.symbol||'').replace('.IS','');
+
+  // Uygula anında güncel fiyatı GARANTİ et — async çekim tamamlanana kadar bekle.
+  // (Aksi halde anlık fiyat henüz gelmemişse eski kapanış fiyatıyla hesaplar.)
+  await gcRecUpdateLivePrice(sym, d.support||0, d.resistance||0, d.price||0);
 
   // Anlık fiyat öncelikli: canlı fiyat → karttaki güncel metin → d.price
   let livePrice = (window._gcRecLivePrice && window._gcRecLivePrice > 0) ? window._gcRecLivePrice : 0;
