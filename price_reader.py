@@ -220,7 +220,9 @@ def get_all_prices() -> dict[str, float]:
         except:
             pass
 
-    # ── Geçerli fiyatları kalıcı cache'e yaz ─────────────────
+    # ── Geçerli (GERÇEK canlı DDE) fiyatları kalıcı cache'e yaz ──────────
+    # Cache'ten DOLDURMUYORUZ: bu fonksiyon yalnızca canlı DDE verisi döner.
+    # DDE bozuksa boş döner → çağıran (server.py) mevcut/ATR fiyatını korur.
     if prices:
         c = _load_cache()
         for sym, p in prices.items():
@@ -229,13 +231,6 @@ def get_all_prices() -> dict[str, float]:
             CACHE_PATH.write_text(json.dumps(c, ensure_ascii=False), encoding="utf-8")
         except:
             pass
-
-    # ── Eksikleri/boşları kalıcı cache'ten doldur ────────────
-    # (BIST kapalı → Excel hata → cache'teki son fiyatlar kullanılır)
-    c = _load_cache()
-    for sym, rec in c.items():
-        if sym not in prices and rec.get("price"):
-            prices[sym] = rec["price"]
 
     return prices
 
