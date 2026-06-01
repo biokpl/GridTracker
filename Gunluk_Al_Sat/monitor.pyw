@@ -35,8 +35,12 @@ MARKET_OPEN         = dtime(10, 0)
 MARKET_CLOSE        = dtime(18, 20)
 WEEKDAYS            = range(0, 5)
 
-# Spam koruması: aynı sinyal 60 dk içinde tekrar gönderilmez
+# Spam koruması:
+#  _sent          → olay bazlı (stop/hedef): 60 dk içinde tekrar yok
+#  _last_state_sig → durum sinyali (DİKKAT/ÇIK/DEĞİŞTİR): SADECE sinyal
+#                    değiştiğinde gönderilir. Aynı sinyal sürerse tekrar yok.
 _sent = {}
+_last_state_sig = {}   # {sym: en son gönderilen durum sinyali}
 _sent_lock = threading.Lock()
 
 # ── Yardımcılar ───────────────────────────────────────────────────────────────
@@ -64,6 +68,7 @@ def _is_market_open() -> bool:
     return MARKET_OPEN <= now.time() <= MARKET_CLOSE
 
 def _should_send(sym: str, signal: str) -> bool:
+    """Olay bazlı (stop/hedef): aynı olay 60 dk içinde tekrar gönderilmez."""
     key = f"{sym}:{signal}"
     with _sent_lock:
         last = _sent.get(key, 0)
@@ -72,11 +77,22 @@ def _should_send(sym: str, signal: str) -> bool:
         _sent[key] = time.time()
     return True
 
-def _reset_signal(sym: str, signal: str):
-    """Sinyal değişince eski kaydı sil ki yeni sinyal gönderilsin."""
-    key = f"{sym}:{signal}"
+def _should_send_state(sym: str, signal: str) -> bool:
+    """
+    Durum sinyali (DİKKAT/ÇIK/DEĞİŞTİR): SADECE sinyal bir öncekinden
+    farklıysa gönder. Aynı sinyal sürdükçe tekrar bildirim gelmez.
+    (Örn: DİKKAT→DİKKAT susar, DİKKAT→ÇIK bildirir.)
+    """
     with _sent_lock:
-        _sent.pop(key, None)
+        if _last_state_sig.get(sym) == signal:
+            return False
+        _last_state_sig[sym] = signal
+    return True
+
+def _reset_state(sym: str):
+    """Durum DEVAM'a döndüğünde — sonraki kötüleşme yeniden bildirilsin."""
+    with _sent_lock:
+        _last_state_sig.pop(sym, None)
 
 
 # ── HIZLI DÖNGÜ: Anlık fiyat → Stop / Hedef kontrolü ────────────────────────
@@ -304,8 +320,9 @@ def _slow_analysis():
             except: pass
         except: pass
 
-        # Push: DİKKAT / ÇIK / DEĞİŞTİR
-        if signal in ("DİKKAT", "ÇIK", "ACİL_ÇIK", "DEĞİŞTİR") and _should_send(sym, signal):
+        # Push: DİKKAT / ÇIK / DEĞİŞTİR — SADECE sinyal değiştiğinde
+        # (aynı sinyal sürdükçe saat başı tekrar bildirim GÖNDERİLMEZ)
+        if signal in ("DİKKAT", "ÇIK", "ACİL_ÇIK", "DEĞİŞTİR") and _should_send_state(sym, signal):
             new_pick, lot_info = _get_last_alternative(sym)
             notifier.send_exit_signal(
                 signal, sym,
@@ -313,9 +330,8 @@ def _slow_analysis():
                 score["total_score"], msg, new_pick, lot_info
             )
         elif signal == "DEVAM":
-            # Sinyal düzeldiyse eski kayıtları temizle
-            for s in ("DİKKAT", "ÇIK"):
-                _reset_signal(sym, s)
+            # Durum düzeldi — sonraki kötüleşme yeniden bildirilsin
+            _reset_state(sym)
 
     except Exception as e:
         log.error(f"Teknik analiz hatası: {e}", exc_info=True)
