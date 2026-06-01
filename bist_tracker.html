@@ -304,7 +304,7 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .gc-rec-res-lbl{color:#4ade80!important;}
 .gc-rec-range-bar{flex:1;}
 .gc-rec-range-track{height:6px;background:linear-gradient(90deg,rgba(248,113,113,.3),rgba(251,191,36,.18),rgba(74,222,128,.3));border-radius:3px;position:relative;margin-bottom:4px;}
-.gc-rec-price-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:11px;height:11px;background:#22d3ee;border-radius:50%;box-shadow:0 0 7px 2px rgba(34,211,238,.65);border:1.5px solid rgba(255,255,255,.8);transition:left .35s ease;}
+.gc-rec-price-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:11px;height:11px;background:#22d3ee;border-radius:50%;box-shadow:0 0 7px 2px rgba(34,211,238,.65);border:1.5px solid rgba(255,255,255,.8);opacity:0;transition:opacity .25s ease;}
 .gc-rec-range-labels{display:flex;justify-content:space-between;}
 .gc-rec-range-labels span{font-size:8px;color:#4e6080;}
 .gc-rec-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px;}
@@ -28298,10 +28298,7 @@ function gcRecRender(d) {
   const st = (id,v) => { const e=$(id); if(e) e.textContent=v; };
 
   st('gc-rec-sym', sym);
-  st('gc-rec-price', fx(price) + ' ₺');
   st('gc-rec-grid-score', (d.grid_score||0).toFixed(1));
-  // Anlık fiyatı DDE'den çek (gridRec fiyatı akşam üretildiği için eski olabilir)
-  if (sym) gcRecUpdateLivePrice(sym, support, resistance);
   st('gc-rec-final', (d.final_score||0).toFixed(2));
   st('gc-rec-rsi', Math.round(d.rsi||0));
   st('gc-rec-sup-lbl', fx(support));
@@ -28310,12 +28307,9 @@ function gcRecRender(d) {
   st('gc-rec-lots', d.lots||0);
   st('gc-rec-daily', fxi(d.daily_profit||0) + ' ₺');
 
-  // Fiyatın range içindeki pozisyonunu göster
-  const dot = $('gc-rec-price-dot');
-  if (dot && resistance > support) {
-    const pct = Math.max(2, Math.min(98, (price - support) / (resistance - support) * 100));
-    dot.style.left = pct + '%';
-  }
+  // Fiyat + dot: tek seferde anlık DDE fiyatıyla konumlanır (eski fiyat gösterilmez).
+  // DDE erişilemezse d.price fallback. Dot gizli başlar, konumlanınca görünür.
+  if (sym) gcRecUpdateLivePrice(sym, support, resistance, price);
 
   // signals: JSON'da string olarak kaydediliyor, split ederek dizi yap
   const signals = typeof d.signals === 'string'
@@ -28379,8 +28373,10 @@ function gcRecRender(d) {
   }
 }
 
-// En İyi Grid Adayı kartındaki fiyatı anlık DDE ile güncelle (PC + telefon)
-async function gcRecUpdateLivePrice(sym, support, resistance) {
+// En İyi Grid Adayı kartındaki fiyatı anlık DDE ile çek ve dot'u TEK SEFERDE konumla.
+// fallbackPrice: DDE erişilemezse kullanılacak değer (d.price). Eski fiyat asla
+// önce gösterilip sonra değiştirilmez — dot gizli başlar, doğru fiyatla görünür.
+async function gcRecUpdateLivePrice(sym, support, resistance, fallbackPrice) {
   let live = 0;
   // PC: server.py /api/stock → DDE anlık
   try {
@@ -28401,19 +28397,21 @@ async function gcRecUpdateLivePrice(sym, support, resistance) {
       if (r.ok) { const j = await r.json(); if (j && j.price) live = j.price; }
     } catch(e){}
   }
-  if (live > 0) {
+
+  // Anlık fiyat varsa onu, yoksa fallback (d.price) — tek seferlik konumlama
+  const shownPrice = live > 0 ? live : (fallbackPrice || 0);
+  if (shownPrice > 0) {
     const e = $('gc-rec-price');
-    if (e) e.textContent = fx(live) + ' ₺';
-    // Range dot'unu da güncel fiyata göre kaydır
+    if (e) e.textContent = fx(shownPrice) + ' ₺';
     const dot = $('gc-rec-price-dot');
     if (dot && resistance > support) {
-      const pct = Math.max(2, Math.min(98, (live - support) / (resistance - support) * 100));
+      const pct = Math.max(2, Math.min(98, (shownPrice - support) / (resistance - support) * 100));
       dot.style.left = pct + '%';
+      dot.style.opacity = '1';   // konumlandı, görünür yap
     }
-    // ÖNEMLİ: _gcRecData'ya yazma — Firebase SSE karşılaştırmasını bozar
-    // (JSON.stringify farklı çıkar → sürekli re-render → dot zıplar). Ayrı tut.
-    window._gcRecLivePrice = live;
   }
+  // Canlı fiyatı ayrı tut (_gcRecData'yı kirletme → SSE karşılaştırması bozulmasın)
+  if (live > 0) window._gcRecLivePrice = live;
 }
 
 function gcRecApply() {
