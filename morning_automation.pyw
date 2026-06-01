@@ -89,7 +89,7 @@ _JS_EXTRACT_B001 = (
 )
 
 # ── Güvenlik ayarları ───────────────────────────────────────────────────
-pyautogui.FAILSAFE = True   # Mouse'u sol üst köşeye çekince script durur
+pyautogui.FAILSAFE = False  # Devre dışı — otomasyon sırasında mouse köşeye gidebilir
 pyautogui.PAUSE    = 0.05   # Her pyautogui çağrısı arasında 50ms
 
 # ── Log ────────────────────────────────────────────────────────────────
@@ -523,7 +523,6 @@ def search_infoyatirim(win):
     time.sleep(0.5)
 
     # Arama simgesini bul — sol panelin başlık alanında farklı x'ler dene
-    # Google Messages: başlık yüksekliği ~64px, arama simgesi sağda
     opened = False
     for search_offset_x in [310, 330, 290, 350]:
         search_x = win.left + search_offset_x
@@ -531,15 +530,11 @@ def search_infoyatirim(win):
         pyautogui.click(search_x, search_y)
         log.info(f'Arama simgesi deneniyor: ({search_x}, {search_y})')
         time.sleep(2.0)
-        # Arama kutusu açıldıysa sayfanın bir şeyleri değişmiştir;
-        # kontrol için: odak kaybetmeden hemen yaz ve bak
         pyperclip.copy('')
         pyautogui.hotkey('ctrl', 'a')
         time.sleep(0.2)
         pyautogui.write('INFOYATIRIM', interval=0.06)
         time.sleep(0.5)
-        # Eğer yazdığımız metin clipboard'a gidebiliyorsa
-        # ya da en azından klavye odağı bir yerdeyse devam et
         opened = True
         break
 
@@ -548,23 +543,18 @@ def search_infoyatirim(win):
         return
 
     log.info('Arama metni yazıldı: INFOYATIRIM')
-    time.sleep(3.0)   # Sonuçlar yüklensin
+    time.sleep(3.0)
 
-    # Sonuç listesinin ilk öğesini tıkla — arama açıkken başlık kayar,
-    # ilk sonuç yaklaşık win.top + 120-140 arasında olur
     for result_y_offset in [130, 150, 110, 170]:
         result_x = win.left + 180
         result_y = win.top + result_y_offset
         pyautogui.click(result_x, result_y)
         log.info(f'Arama sonucu tıklandı: ({result_x}, {result_y})')
         time.sleep(3.5)
-        # Vivaldi başlığı değiştiyse konuşma açıldı
         wins2 = gw.getWindowsWithTitle('Vivaldi')
         if wins2 and 'INFOYATIRIM' in wins2[0].title.upper():
             log.info('INFOYATIRIM konuşması açıldı (başlık doğrulandı)')
             return
-        # İlk tıklamada konuşma açılmış olabilir bile başlık değişmeyebilir
-        # — tek deneme yeterli, döngüden çık
         break
 
 
@@ -657,13 +647,12 @@ def extract_b001(sms_sent_at=None, timeout=300, retry_interval=20):
 
     deadline = time.time() + (timeout if sms_sent_at else 0)
     attempt  = 0
-    live_baseline = None   # bu oturumda sayfadan okunan canlı baseline
 
     while True:
         attempt += 1
         log.info(f'B001 deneme #{attempt}...')
 
-        # Mesaj alanına tıkla, en alta in
+        # Mesaj alanına tıkla, en alta in (pencereye göre göreli — çalışan orijinal yöntem)
         msg_x = win.left + 700
         msg_y = win.top + 400
         pyautogui.click(msg_x, msg_y)
@@ -671,7 +660,7 @@ def extract_b001(sms_sent_at=None, timeout=300, retry_interval=20):
         pyautogui.hotkey('ctrl', 'end')
         time.sleep(1.0)
 
-        # Sayfayı F5 ile yenile (yeni mesaj gelmiş olabilir)
+        # Sayfayı yenile (2. denemeden itibaren)
         if attempt > 1:
             pyautogui.hotkey('ctrl', 'r')
             time.sleep(4.0)
@@ -680,39 +669,21 @@ def extract_b001(sms_sent_at=None, timeout=300, retry_interval=20):
             pyautogui.hotkey('ctrl', 'end')
             time.sleep(1.0)
 
-        # Metni kopyala
+        # Metni kopyala (orijinal çalışan yöntem)
         pyperclip.copy('')
         pyautogui.hotkey('ctrl', 'a')
         time.sleep(0.3)
         pyautogui.hotkey('ctrl', 'c')
         time.sleep(0.8)
-
         text = pyperclip.paste()
         if not text:
             log.warning(f'Deneme #{attempt}: Sayfa metni boş')
         else:
             matches = _re.findall(r'(\d{6})\s*B001', text)
-            current_count = len(matches) if matches else 0
-
-            # ── CANLI BASELINE: ilk okumada sayfadaki sayıyı kaydet ──
-            # Dosya yok, gün içi başka mesajlar baseline'ı bozmaz.
-            if live_baseline is None:
-                live_baseline = current_count
-                log.info(f'Canlı baseline belirlendi: {live_baseline} B001 eşleşmesi')
-
             if matches:
                 value = matches[-1]
-                # ── YENİ KOD DOĞRULAMASI: CANLI BASELINE ─────────────
-                # Sayı baseline'dan fazlaysa → yeni SMS bu oturumda geldi.
-                # Sayı aynıysa → SMS henüz gelmedi, reddet ve bekle.
-                if sms_sent_at and current_count <= live_baseline:
-                    log.warning(
-                        f'Deneme #{attempt}: Sayı {current_count} = baseline {live_baseline} '
-                        f'— yeni SMS henüz gelmemiş. Bekleniyor...')
-                else:
-                    log.info(f'B001 bulundu (YENİ): {value} '
-                             f'(baseline {live_baseline} → {current_count}, deneme #{attempt})')
-                    return value
+                log.info(f'B001 bulundu: {value} ({len(matches)} eşleşme, deneme #{attempt})')
+                return value
             else:
                 log.warning(f'Deneme #{attempt}: B001 kodu bulunamadı')
 
@@ -815,27 +786,44 @@ def wait_and_click_sms(timeout=60, poll=2.0):
     if not tmpl.exists():
         log.warning('sms_gonder_btn.png şablonu yok — koordinat fallback kullanılacak.')
         return False
+    # Strateji: template ile 2FA EKRANININ GELDİĞİNİ TESPİT ET,
+    # tıklamayı ise SABIT KOORDİNAT ile yap — konum hatası olmaz.
+    SMS_X, SMS_Y = 2556, 808
+    region = (SMS_X - 200, SMS_Y - 120, 400, 160)
+
     start = time.time()
     deadline = start + timeout
     attempt = 0
     while time.time() < deadline:
         attempt += 1
-        center = _locate_template('sms_gonder_btn.png', confidence=0.70)
-        if center:
-            pyautogui.click(center)
-            log.info(f'SMS butonu şablonla bulundu ve tıklandı @ {center} '
-                     f'(deneme #{attempt}, +{int(time.time()-start)}s)')
-            # Tıklama gerçekten işledi mi? Buton kaybolduysa ekran ilerlemiştir.
-            time.sleep(2.0)
-            if not _locate_template('sms_gonder_btn.png', confidence=0.70):
-                log.info('SMS butonu kayboldu → SMS isteği gönderildi.')
-            else:
-                log.warning('SMS butonu hala görünüyor — bir kez daha tıklanıyor.')
-                pyautogui.click(center)
+        found = _locate_template('sms_gonder_btn.png', confidence=0.55, region=region)
+        if not found:
+            log.info(f'2FA ekranı bekleniyor... (deneme #{attempt}, +{int(time.time()-start)}s)')
+            time.sleep(poll)
+            continue
+
+        log.info(f'2FA ekranı tespit edildi (deneme #{attempt}, +{int(time.time()-start)}s) '
+                 f'— sabit koordinata tıklanıyor: ({SMS_X}, {SMS_Y})')
+        pyautogui.moveTo(SMS_X, SMS_Y, duration=0.2)
+        time.sleep(0.2)
+        pyautogui.mouseDown(button='left')
+        time.sleep(0.4)
+        pyautogui.mouseUp(button='left')
+        log.info('SMS koordinatına uzun tıklama yapıldı.')
+        time.sleep(2.5)
+
+        if not _locate_template('sms_gonder_btn.png', confidence=0.55, region=region):
+            log.info('2FA ekranı kayboldu → SMS isteği gönderildi.')
             return True
-        log.info(f'SMS butonu (2FA ekranı) bekleniyor... (deneme #{attempt}, +{int(time.time()-start)}s)')
-        time.sleep(poll)
-    log.warning(f'SMS butonu {timeout}s içinde şablonla görünmedi.')
+
+        log.warning('2FA ekranı hala görünüyor — bir kez daha deniyor.')
+        pyautogui.mouseDown(button='left')
+        time.sleep(0.5)
+        pyautogui.mouseUp(button='left')
+        time.sleep(2.5)
+        return True
+
+    log.warning(f'SMS butonu {timeout}s içinde tespit edilemedi.')
     return False
 
 
@@ -880,9 +868,6 @@ def run():
     log.info('Şifre girildi ve Enter basıldı — 2FA ekranı (SMS butonu) bekleniyor')
 
     # ── SMS butonu: EKRANDA GÖRENE KADAR BEKLE, sonra tıkla ───────────
-    # Sabit gecikme yerine 2FA ekranındaki turuncu "SMS Doğrulama Kodu ile
-    # Devam Et" butonunu şablonla bekler. Şifre doğrulaması gecikse bile
-    # erken tıklama olmaz. Şablon yok/bulunamazsa koordinat fallback.
     clicked = wait_and_click_sms(timeout=60)
     if not clicked:
         log.warning('SMS şablonla bulunamadı — koordinat fallback @ (2556,808), 10s bekleme.')
