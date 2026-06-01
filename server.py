@@ -895,6 +895,18 @@ class Handler(SimpleHTTPRequestHandler):
                 try:
                     with open(result_file, 'r', encoding='utf-8') as f:
                         data = json.load(f)
+                    # En İyi Grid Adayı fiyatını anlık DDE ile güncelle
+                    # (grid_analysis_result.json akşam üretilir, fiyatı eskidir)
+                    try:
+                        sym = (data.get('symbol') or '').replace('.IS', '').upper()
+                        if sym:
+                            from price_reader import get_price
+                            lp, src = get_price(sym)
+                            if lp and lp > 0:
+                                data['price'] = round(lp, 4)
+                                data['price_live'] = (src == 'excel')
+                    except Exception:
+                        pass
                     self.send_json(200, data)
                 except Exception as e:
                     slog.warning(f'[GridAnaliz] okuma hatası: {e}')
