@@ -65,6 +65,20 @@ def _com_uninit():
         pass
 
 
+def _market_open() -> bool:
+    """
+    BIST açık mı? (Pzt-Cum, 09:55–18:25)
+    Piyasa kapalıyken Excel/DDE canlı veri vermez ve MatriksIQ kapanmışsa
+    Excel açık kalırsa win32com çağrısı DONABİLİR (server'ı kilitler).
+    Bu yüzden piyasa kapalıyken Excel COM hiç denenmez, cache/Yahoo kullanılır.
+    """
+    from datetime import datetime, time as _dt
+    now = datetime.now()
+    if now.weekday() >= 5:
+        return False
+    return _dt(9, 55) <= now.time() <= _dt(18, 25)
+
+
 def _valid_price(val) -> float | None:
     """
     Geçerli fiyat mı kontrol eder.
@@ -87,6 +101,10 @@ def get_price_from_excel(symbol: str) -> float | None:
     Fallback: Excel kapalıysa diskten okur (max 90 sn eski).
     """
     sym = symbol.upper().replace(".IS", "")
+
+    # Piyasa kapalıysa Excel COM'u hiç deneme (donma riski) → diskten/None
+    if not _market_open():
+        return _read_excel_from_disk(sym)
 
     # ── Yöntem 1: Açık Excel'den canlı oku (anlık) ──────────
     _com_init()
@@ -112,6 +130,11 @@ def get_price_from_excel(symbol: str) -> float | None:
         pass
 
     # ── Yöntem 2: Diskten oku (Excel kapalıysa fallback) ────
+    return _read_excel_from_disk(sym)
+
+
+def _read_excel_from_disk(sym: str) -> float | None:
+    """Excel dosyasını diskten okur (COM kullanmaz, donma riski yok)."""
     try:
         if not EXCEL_PATH.exists():
             return None
@@ -129,7 +152,6 @@ def get_price_from_excel(symbol: str) -> float | None:
         wb.close()
     except:
         pass
-
     return None
 
 
@@ -181,6 +203,10 @@ def get_all_prices() -> dict[str, float]:
     """
     prices = {}
 
+    # Piyasa kapalıysa Excel COM'u deneme (donma riski) → diskten oku
+    if not _market_open():
+        return _read_all_from_disk()
+
     # ── Açık Excel'den canlı oku ─────────────────────────────
     _com_init()
     try:
@@ -204,25 +230,9 @@ def get_all_prices() -> dict[str, float]:
 
     # ── Excel boş döndüyse diskten dene ──────────────────────
     if not prices:
-        try:
-            if EXCEL_PATH.exists():
-                age = time.time() - EXCEL_PATH.stat().st_mtime
-                if age <= MAX_AGE_SECONDS:
-                    import openpyxl
-                    wb = openpyxl.load_workbook(EXCEL_PATH, read_only=True, data_only=True)
-                    ws = wb.active
-                    for r in ws.iter_rows(min_row=2, values_only=True):
-                        if r[0]:
-                            p = _valid_price(r[2])
-                            if p:
-                                prices[str(r[0]).upper()] = p
-                    wb.close()
-        except:
-            pass
+        prices = _read_all_from_disk()
 
     # ── Geçerli (GERÇEK canlı DDE) fiyatları kalıcı cache'e yaz ──────────
-    # Cache'ten DOLDURMUYORUZ: bu fonksiyon yalnızca canlı DDE verisi döner.
-    # DDE bozuksa boş döner → çağıran (server.py) mevcut/ATR fiyatını korur.
     if prices:
         c = _load_cache()
         for sym, p in prices.items():
@@ -232,6 +242,27 @@ def get_all_prices() -> dict[str, float]:
         except:
             pass
 
+    return prices
+
+
+def _read_all_from_disk() -> dict[str, float]:
+    """Tüm fiyatları diskten okur (COM kullanmaz, donma riski yok)."""
+    prices = {}
+    try:
+        if EXCEL_PATH.exists():
+            age = time.time() - EXCEL_PATH.stat().st_mtime
+            if age <= MAX_AGE_SECONDS:
+                import openpyxl
+                wb = openpyxl.load_workbook(EXCEL_PATH, read_only=True, data_only=True)
+                ws = wb.active
+                for r in ws.iter_rows(min_row=2, values_only=True):
+                    if r[0]:
+                        p = _valid_price(r[2])
+                        if p:
+                            prices[str(r[0]).upper()] = p
+                wb.close()
+    except:
+        pass
     return prices
 
 

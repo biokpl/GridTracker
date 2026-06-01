@@ -149,6 +149,79 @@ def _safe(v):
     try: return round(float(v), 4)
     except: return None
 
+
+# Grid config (capital, safety_buffer, commission_rate) — bir kez oku, cache'le
+_GRID_CFG = None
+def _load_grid_cfg():
+    global _GRID_CFG
+    if _GRID_CFG is None:
+        try:
+            with open(os.path.join(BASE_DIR, 'grid_analysis_config.json'),
+                      'r', encoding='utf-8') as f:
+                _GRID_CFG = json.load(f)
+        except Exception:
+            _GRID_CFG = {'capital': 1400000, 'safety_buffer': 0.9,
+                         'commission_rate': 0.0001}
+    return _GRID_CFG
+
+
+def _recompute_grid_live(data, price):
+    """
+    Anlık fiyatla grid metriklerini yeniden hesaplar.
+    (grid_analysis_auto.analyze_stock ile birebir aynı formül)
+    Sabit kalanlar: support, resistance, atr, grid_interval (akşam analizi).
+    Değişenler: lots, buy/sell_grids, daily_profit, pct, capital_used.
+    Fiyat range dışına çıkarsa eski değerler korunur.
+    """
+    try:
+        support       = float(data.get('support', 0) or 0)
+        resistance    = float(data.get('resistance', 0) or 0)
+        atr           = float(data.get('atr', 0) or 0)
+        grid_interval = float(data.get('grid_interval', 0) or 0)
+        if price <= 0 or grid_interval <= 0 or resistance <= support:
+            data['price'] = round(price, 4)
+            return data
+
+        cfg     = _load_grid_cfg()
+        eff_cap = cfg.get('capital', 0) * cfg.get('safety_buffer', 0.9)
+        comm    = cfg.get('commission_rate', 0.0001)
+
+        # Fiyat range içinde mi? Değilse hesabı koru, sadece fiyatı güncelle
+        if price <= support or price >= resistance:
+            data['price'] = round(price, 4)
+            return data
+
+        sell_grids  = max(1, int((resistance - price) / grid_interval))
+        buy_grids   = max(1, int((price - support)    / grid_interval))
+        total_grids = sell_grids + buy_grids
+
+        avg_buy   = price - (buy_grids  / 2.0) * grid_interval
+        avg_sell  = price + (sell_grids / 2.0) * grid_interval
+        cap_lot   = (buy_grids * avg_buy) + (sell_grids * price)
+        if cap_lot <= 0:
+            data['price'] = round(price, 4)
+            return data
+        lots = max(1, int(eff_cap / cap_lot))
+
+        daily_trig   = atr / grid_interval
+        profit_trig  = lots * grid_interval
+        comm_trig    = lots * comm * (avg_buy + avg_sell)
+        daily_profit = daily_trig * (profit_trig - comm_trig)
+
+        data['price']        = round(price, 4)
+        data['lots']         = lots
+        data['buy_grids']    = buy_grids
+        data['sell_grids']   = sell_grids
+        data['total_grids']  = total_grids
+        data['pct_up']       = round((resistance - price) / price * 100, 2)
+        data['pct_down']     = round((price - support)    / price * 100, 2)
+        data['daily_profit'] = round(daily_profit, 0)
+        data['capital_used'] = round(cap_lot * lots, 0)
+        data['live_recalc']  = True
+    except Exception:
+        data['price'] = round(price, 4)
+    return data
+
 # ---------------------------------------------------------------------------
 # Firebase
 # ---------------------------------------------------------------------------
@@ -895,18 +968,19 @@ class Handler(SimpleHTTPRequestHandler):
                 try:
                     with open(result_file, 'r', encoding='utf-8') as f:
                         data = json.load(f)
-                    # En İyi Grid Adayı fiyatını anlık DDE ile güncelle
-                    # (grid_analysis_result.json akşam üretilir, fiyatı eskidir)
+                    # Anlık DDE fiyatıyla TÜM grid hesabını yeniden hesapla
+                    # (lot, grid sayısı, kar, emir% anlık fiyata göre güncellenir;
+                    #  destek/direnç/ATR/grid aralığı akşam analizinden sabit kalır)
                     try:
                         sym = (data.get('symbol') or '').replace('.IS', '').upper()
                         if sym:
                             from price_reader import get_price
                             lp, src = get_price(sym)
                             if lp and lp > 0:
-                                data['price'] = round(lp, 4)
+                                data = _recompute_grid_live(data, lp)
                                 data['price_live'] = (src == 'excel')
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        slog.debug(f'[GridAnaliz] anlık hesap atlandı: {e}')
                     self.send_json(200, data)
                 except Exception as e:
                     slog.warning(f'[GridAnaliz] okuma hatası: {e}')
