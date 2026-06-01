@@ -28446,27 +28446,10 @@ async function gcRecApply() {
     if (capVal > 0) cap.value = capVal.toLocaleString('tr-TR');
   }
 
-  // Kalıcı kaydet — yoksa sayfa yenilenince Firebase'deki eski hisse geri gelir
-  try {
-    const capVal = parseInt((cap && cap.value || '').replace(/[^\d]/g,'')) || (d.capital||0);
-    window._gcDirty = false;
-    S.settings.gridCalc = {
-      symbol: sym,
-      capital: capVal,
-      support: d.support || 0,
-      resistance: d.resistance || 0,
-      atr: d.atr || 0,
-      currentPrice: livePrice,
-      srMode: window._gcSRMode || '',
-      atrRow: window._gcAtrRow || null,
-      atrKey: window._gcAtrKey || ''
-    };
-    save();
-    fbWrite('gridtracker/settings/gridCalc', S.settings.gridCalc);
-  } catch(e){}
-
-  // Analizin kesin değerleriyle doğrudan render et — calculator formülü bypass
-  setTimeout(() => gcRecDirectRender(d), 50);
+  // Güncel fiyatla FORMÜLLE hesapla — "Hesapla" butonuyla birebir aynı sonuç.
+  // (Eski daily_profit gösteren gcRecDirectRender bypass'ı kullanılmıyor.)
+  // calcGridBot form alanlarını okur, hesaplar ve gridCalc'a kalıcı kaydeder.
+  setTimeout(() => calcGridBot(), 50);
   toast('🤖 ' + sym + ' uygulandı', 'ok');
   renderPositionMonitor();
 }
