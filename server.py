@@ -20,7 +20,7 @@ for _pkg in ['openpyxl', 'pywebpush']:
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 from openpyxl import load_workbook
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+from http.server import HTTPServer, ThreadingHTTPServer, SimpleHTTPRequestHandler
 import urllib.request, json, socket, threading, time, os, logging
 
 FIREBASE_URL = 'https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app'
@@ -1094,7 +1094,11 @@ if __name__ == '__main__':
     # Verdict değişiklik monitörü — push bildirimi gönderir
     threading.Thread(target=_verdict_monitor_loop, daemon=True).start()
     # Push queue → automation_server.pyw (port 5051) tarafından işleniyor
-    server = HTTPServer(('0.0.0.0', PORT), Handler)
+    # ThreadingHTTPServer: her istek ayrı thread'de işlenir. Bir istek (örn
+    # Excel COM) takılsa bile diğer istekler (health, all-data) çalışmaya devam
+    # eder → server tamamen donmaz, LCD/HTML veri almaya devam eder.
+    server = ThreadingHTTPServer(('0.0.0.0', PORT), Handler)
+    server.daemon_threads = True
     slog.info(f'[GridTracker] http://localhost:{PORT}/bist_tracker.html')
     try:
         server.serve_forever()
