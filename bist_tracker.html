@@ -218,6 +218,7 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .gc-lvl-tbl tr.gc-mid td{border-top:1px solid rgba(249,115,22,.2);border-bottom:1px solid rgba(249,115,22,.2);background:rgba(249,115,22,.04);}
 .gc-pill-buy{font-size:8px;background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.2);border-radius:3px;padding:1px 5px;font-weight:600;}
 .gc-pill-sell{font-size:8px;background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.2);border-radius:3px;padding:1px 5px;font-weight:600;}
+.gc-pill-at{font-size:8px;background:rgba(252,211,77,.12);color:#fcd34d;border:1px solid rgba(252,211,77,.25);border-radius:3px;padding:1px 5px;font-weight:600;}
 .gc-spin{display:inline-block;width:10px;height:10px;border:2px solid rgba(249,115,22,.3);border-top-color:#f97316;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:4px;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -29257,17 +29258,26 @@ function renderGridResults(b,support,resistance,atr,capital,commFrac,currentPric
     if(trigExact) trigExact.textContent='~'+triggers+' / Gün';
   }
 
-  // Al/Sat dağılımı — bar; her seviye tick'e hizalanır
+  // ── Al/Sat dağılımı — TEK KAYNAK ────────────────────────────────
+  // Tüm seviyeleri bir kez oluştur ve TEK SEFER sınıflandır (al/sat/mevcut).
+  // Hem bar sayacı hem tablo satırları AYNI diziden üretilir → ayrışma imkânsız.
   const tick=getBistTickSize(currentPrice>0?currentPrice:(support+resistance)/2);
+  const dExact=(resistance-support)/b.N;  // botun gerçek seviye aralığı (range/N)
   const levels=[];
-  for(let i=b.N;i>=0;i--) levels.push(roundToTick(support+i*b.d,tick));
-  // Sayaç için calcGridBot/gcRecDirectRender'dan gelen değerleri kullan (fiyat referanslı, doğru)
-  // renderGridResults'ın kendi filtresi tick yuvarlamasından dolayı hatalı sayabilir
-  const buyCount  = (b.buyLevels  != null) ? b.buyLevels  : levels.filter(p=>p<splitRef).length;
-  const sellCount = (b.sellLevels != null) ? b.sellLevels : levels.filter(p=>p>splitRef).length;
+  for(let i=b.N;i>=0;i--){
+    const price=roundToTick(support+i*dExact, tick);
+    // type: 'sell' fiyatın üstü, 'buy' altı, 'at' mevcut seviye
+    let type;
+    if(Math.abs(price-splitRef)<tick/2)      type='at';
+    else if(price>splitRef)                  type='sell';
+    else                                     type='buy';
+    levels.push({i, price, type});
+  }
+  const buyCount  = levels.filter(l=>l.type==='buy').length;
+  const sellCount = levels.filter(l=>l.type==='sell').length;
   const total=buyCount+sellCount;
-  const buyPct=Math.round(buyCount/total*100);
-  const sellPct=100-buyPct;
+  const buyPct=total>0?Math.round(buyCount/total*100):50;
+  const sellPct=total>0?(100-buyPct):50;
   $('gc-buy-pct').textContent='%'+buyPct;
   $('gc-buy-cnt').textContent=buyCount+' AL';
   $('gc-sell-pct').textContent='%'+sellPct;
@@ -29295,18 +29305,22 @@ function renderGridResults(b,support,resistance,atr,capital,commFrac,currentPric
     $('gc-bot-pct').style.display='none';
   }
 
-  // Grid seviyeleri tablosu
+  // Grid seviyeleri tablosu — bar ile AYNI 'levels' dizisinden, aynı 'type'
   const rows=[];
-  for(let i=b.N;i>=0;i--){
-    const price=support+i*b.d;
-    const isSell=i>=buyCount; // buyCount (fiyat-referanslı, bar ile tutarlı)
+  for(const lv of levels){
+    const {i, price, type}=lv;
+    const isSell = type==='sell';
+    const isAt   = type==='at';
     const pctDiff=hasCurrent?((price-currentPrice)/currentPrice*100):null;
     const pctStr=pctDiff!==null?(pctDiff>=0?'+':'')+pctDiff.toFixed(1)+'%':'—';
-    const pctColor=pctDiff===null?'#71717a':isSell?'#f87171':'#86efac';
+    const rowColor = isAt ? '#fcd34d' : (isSell ? '#f87171' : '#4ade80');
+    const pctColor = pctDiff===null?'#71717a': isAt?'#fcd34d': (isSell?'#f87171':'#86efac');
+    const pillCls  = isAt ? 'gc-pill-at' : (isSell ? 'gc-pill-sell' : 'gc-pill-buy');
+    const pillTxt  = isAt ? '≈' : (isSell ? 'SAT' : 'AL');
     rows.push(`<tr>
       <td style="color:#4e6080;font-family:var(--mono)">${i+1}</td>
-      <td style="font-family:var(--mono);font-weight:600;color:${isSell?'#f87171':'#4ade80'};text-shadow:none">${fx2(price)}</td>
-      <td><span class="${isSell?'gc-pill-sell':'gc-pill-buy'}">${isSell?'SAT':'AL'}</span></td>
+      <td style="font-family:var(--mono);font-weight:600;color:${rowColor};text-shadow:none">${fx2(price)}</td>
+      <td><span class="${pillCls}">${pillTxt}</span></td>
       <td style="font-family:var(--mono);font-size:11px;color:${pctColor}">${pctStr}</td>
       <td style="font-family:var(--mono);color:#a1a1aa">${b.lots.toLocaleString('tr-TR')}</td>
     </tr>`);
@@ -30159,6 +30173,14 @@ async function sendPushNotify(title, body, tag){
 }
 
 if('serviceWorker' in navigator){
+  // Yeni service worker devralınca sayfayı TEK SEFER otomatik yenile —
+  // böylece güncel HTML her zaman yüklenir, eski cache takılı kalmaz.
+  let _swReloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{
+    if(_swReloaded) return;
+    _swReloaded=true;
+    location.reload();
+  });
   navigator.serviceWorker.register('./sw.js')
     .then(reg=>reg.update())
     .catch(()=>{});

@@ -1,4 +1,4 @@
-const CACHE = 'gridtracker-v13';
+const CACHE = 'gridtracker-v15';
 const ASSETS = ['./bist_tracker.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -15,9 +15,24 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if(!e.request.url.startsWith(self.location.origin)) return;
-  e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
-  );
+  const url = e.request.url;
+  const isHTML = e.request.mode === 'navigate' ||
+                 url.endsWith('/') || url.includes('bist_tracker.html');
+  if(isHTML){
+    // HTML: network-first — her zaman taze sayfa, offline'da cache'e düş
+    e.respondWith(
+      fetch(e.request).then(resp => {
+        const copy = resp.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy)).catch(()=>{});
+        return resp;
+      }).catch(() => caches.match(e.request))
+    );
+  } else {
+    // Statik varlıklar: cache-first
+    e.respondWith(
+      caches.match(e.request).then(r => r || fetch(e.request))
+    );
+  }
 });
 
 // ── Push bildirimleri ──────────────────────────────────

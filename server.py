@@ -489,9 +489,9 @@ class Handler(SimpleHTTPRequestHandler):
     def log_message(self, fmt, *args): pass
 
     def end_headers(self):
-        # sw.js ve manifest.json asla cache'lenmesin
+        # sw.js, manifest.json ve .html asla cache'lenmesin (taze sayfa garantisi)
         path = self.path.split('?')[0]
-        if path in ('/sw.js', '/manifest.json'):
+        if path in ('/sw.js', '/manifest.json') or path.endswith('.html') or path in ('/', ''):
             self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate')
             self.send_header('Pragma', 'no-cache')
         super().end_headers()
