@@ -28419,11 +28419,20 @@ function gcRecApply() {
   const d = _gcRecData;
   const sym = (d.symbol||'').replace('.IS','');
 
+  // Anlık fiyat öncelikli: _livePrice → karttaki güncel metin → d.price
+  let livePrice = (d._livePrice && d._livePrice > 0) ? d._livePrice : 0;
+  if (!livePrice) {
+    const pe = $('gc-rec-price');
+    const pv = pe ? parseFloat((pe.textContent||'').replace(/[^\d.,]/g,'').replace(',','.')) : 0;
+    if (pv > 0) livePrice = pv;
+  }
+  if (!livePrice) livePrice = d.price || 0;
+
   // Tüm input alanlarını doldur
   const s=$('gc-sym'), p=$('gc-price'), cap=$('gc-cap'),
         sup=$('gc-sup'), res=$('gc-res'), at=$('gc-atr');
   if (s)   { s.value = sym; window._gcDirty = true; }
-  if (p)   p.value = (d.price||0).toFixed(2);
+  if (p)   p.value = livePrice.toFixed(2);
   if (sup) sup.value = (d.support||0).toFixed(2);
   if (res) res.value = (d.resistance||0).toFixed(2);
   if (at && d.atr) at.value = (d.atr||0).toFixed(4);
@@ -28443,7 +28452,7 @@ function gcRecApply() {
       support: d.support || 0,
       resistance: d.resistance || 0,
       atr: d.atr || 0,
-      currentPrice: d.price || 0,
+      currentPrice: livePrice,
       srMode: window._gcSRMode || '',
       atrRow: window._gcAtrRow || null,
       atrKey: window._gcAtrKey || ''
@@ -28679,7 +28688,7 @@ function gcRecDirectRender(d) {
     atr,
     capital,
     commFrac,
-    d.price       || 0
+    (d._livePrice && d._livePrice > 0) ? d._livePrice : (d.price || 0)
   );
 }
 
