@@ -945,8 +945,7 @@ def run():
         log.error('B001 kodu alınamadı — SMS gelmedi veya tıklama kaçtı. Otomasyon durduruluyor.')
         _send_notify(
             '🚨 Sabah Otomasyonu — SMS Hatası',
-            'MatriksIQ giriş kodu (B001) 5 dakika içinde gelmedi.\n'
-            'Koordinat kaçmış olabilir (2556, 808). Manuel müdahale gerekli.',
+            'Giriş onayı için SMS gelmedi. ACİL Manuel müdahale gerekli.',
             tag='morning-sms-fail',
             priority='urgent'
         )
