@@ -644,17 +644,17 @@ def extract_b001(sms_sent_at=None, timeout=300, retry_interval=20):
     if DRY_RUN:
         return '123456'
 
-    # Bir önceki çalışmada kullanılan kodu oku — aynı kod yeniden gelirse
-    # bu, SMS'in GELMEDİĞİ (buton kaçtı) anlamına gelir → reddet, bekle.
-    last_code_file = SCRIPT_DIR / 'last_b001.txt'
-    previous_code = ''
+    # Yeni SMS tespiti: kod karşılaştırması değil, MESAJ SAYISI karşılaştırması.
+    # SMS gelince konuşmadaki B001 eşleşme sayısı artar → güvenilir, kod çakışması riski yok.
+    # İlk tıklamadan önce sayıyı oku (baseline), SMS sonrası artmışsa YENİ kod kabul et.
+    last_count_file = SCRIPT_DIR / 'last_b001_count.txt'
+    baseline_count = None
     try:
-        if last_code_file.exists():
-            previous_code = last_code_file.read_text(encoding='utf-8').strip()
-            if previous_code:
-                log.info(f'Önceki B001 kodu: {previous_code} (bu kod tekrar gelirse SMS gelmemiş demektir)')
+        if last_count_file.exists():
+            baseline_count = int(last_count_file.read_text(encoding='utf-8').strip())
+            log.info(f'Önceki B001 eşleşme sayısı (baseline): {baseline_count}')
     except Exception as e:
-        log.warning(f'last_b001.txt okunamadı: {e}')
+        log.warning(f'last_b001_count.txt okunamadı: {e}')
 
     wins = gw.getWindowsWithTitle('Vivaldi')
     if not wins:
@@ -700,21 +700,24 @@ def extract_b001(sms_sent_at=None, timeout=300, retry_interval=20):
             matches = _re.findall(r'(\d{6})\s*B001', text)
             if matches:
                 value = matches[-1]
-                # ── YENİ KOD DOĞRULAMASI ──────────────────────────────
-                # Bulunan kod öncekiyle AYNI ise yeni SMS gelmemiş demektir
-                # (buton kaçtı / SMS gönderilemedi). Eski kodu ASLA kullanma —
-                # geçersizdir, MatriksIQ girişi sessizce başarısız olur.
-                if sms_sent_at and previous_code and value == previous_code:
+                current_count = len(matches)
+                # ── YENİ KOD DOĞRULAMASI: MESAJ SAYISI ───────────────
+                # Sayı baseline'dan fazlaysa → yeni SMS gelmiş, kodu kabul et.
+                # Sayı aynıysa → SMS gelmemiş (buton kaçtı), reddet ve bekle.
+                # Kod çakışması riski SIFIR — kod değil sayı karşılaştırılıyor.
+                if sms_sent_at and baseline_count is not None and current_count <= baseline_count:
                     log.warning(
-                        f'Deneme #{attempt}: Bulunan kod ({value}) öncekiyle AYNI '
-                        f'— yeni SMS gelmemiş. Beklenmeye devam ediliyor.')
+                        f'Deneme #{attempt}: Eşleşme sayısı {current_count} = baseline {baseline_count} '
+                        f'— yeni SMS henüz gelmemiş. Bekleniyor...')
                 else:
-                    log.info(f'B001 bulundu (YENİ): {value} ({len(matches)} eşleşme, deneme #{attempt})')
-                    # Kalıcı kaydet — bir sonraki çalışmada baseline olur
+                    reason = (f'sayı {baseline_count}→{current_count}'
+                              if baseline_count is not None else 'baseline yok (ilk çalışma)')
+                    log.info(f'B001 bulundu (YENİ): {value} ({reason}, deneme #{attempt})')
+                    # Güncel sayıyı kaydet — sonraki çalışmada baseline olur
                     try:
-                        last_code_file.write_text(value, encoding='utf-8')
+                        last_count_file.write_text(str(current_count), encoding='utf-8')
                     except Exception as e:
-                        log.warning(f'last_b001.txt yazılamadı: {e}')
+                        log.warning(f'last_b001_count.txt yazılamadı: {e}')
                     return value
             else:
                 log.warning(f'Deneme #{attempt}: B001 kodu bulunamadı')

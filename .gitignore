@@ -5,6 +5,7 @@ data.json
 vapid_keys.json
 last_prices.json
 last_b001.txt
+last_b001_count.txt
 
 # İşlem ve piyasa verileri - her gün değişir, kod değil
 *.xlsx
