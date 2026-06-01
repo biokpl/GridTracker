@@ -631,7 +631,109 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
         except Exception as e:
             print(f"[Advisor] Push hatası: {e}")
 
+        # ── OTOMATİK POZİSYON TAKİBİ ──────────────────────────────────────
+        # 1.xlsx bu noktada (akşam, grid_tracker_service sonrası) güncel.
+        # Satış/alış algılayıp pozisyonu otomatik günceller.
+        _sync_position()
+
     return result
+
+
+def _sync_position():
+    """
+    OTOMATİK POZİSYON TAKİBİ — 1.xlsx'i okuyup pozisyon değişimini yakalar.
+    1.xlsx akşam 18:35'te oluştuğu için bu fonksiyon advisor --run içinde
+    (evening_automation, 18:40) çağrılır.
+      1. Aktif pozisyon tamamen satıldıysa → karı history'ye ekle, active=null.
+      2. pending_buy (önerilen) alındıysa → active = yeni hisse.
+    """
+    try:
+        import notifier
+        from tracker import _read_excel
+        state  = _load_state()
+        active = state.get("active")
+
+        # ── 1. Aktif pozisyon kapandı mı? ──────────────────────────────
+        if active:
+            sym = active["symbol"]
+            buys, sells = _read_excel(sym)
+            if buys:
+                total_qty = sum(b["execQty"] for b in buys)
+                avg_cost  = (sum(b["execAmount"] + b["commission"] for b in buys)
+                             / total_qty) if total_qty else 0
+            else:
+                total_qty = active.get("qty", 0)
+                avg_cost  = active.get("entry_price", 0.0)
+            sold_qty = sum(s["execQty"] for s in sells)
+            open_qty = total_qty - sold_qty
+
+            if total_qty > 0 and open_qty <= 0 and sold_qty > 0:
+                sell_amount = sum(s["execAmount"] - s["commission"] for s in sells)
+                pnl_tl  = sell_amount - (avg_cost * sold_qty)
+                pnl_pct = (pnl_tl / (avg_cost * sold_qty) * 100) if avg_cost and sold_qty else 0
+                exit_px = sell_amount / sold_qty if sold_qty else 0
+                state.setdefault("history", []).append({
+                    "symbol": sym,
+                    "entry_date": active.get("entry_date", ""),
+                    "exit_date":  datetime.now().strftime("%Y-%m-%d"),
+                    "entry_price": round(avg_cost, 4),
+                    "exit_price":  round(exit_px, 4),
+                    "qty":  sold_qty,
+                    "pnl_tl":  round(pnl_tl, 2),
+                    "pnl_pct": round(pnl_pct, 2),
+                    "exit_reason": "Satış algılandı",
+                })
+                state["active"] = None
+                _save_state(state)
+                print(f"[Advisor] POZİSYON KAPANDI: {sym} K/Z: {pnl_tl:+.0f} TL")
+                try:
+                    notifier._send(
+                        f"✅ {sym} SATILDI",
+                        f"Pozisyon kapandı.\n"
+                        f"Giriş: {avg_cost:.2f} → Çıkış: {exit_px:.2f} TL\n"
+                        f"Kâr/Zarar: {pnl_tl:+,.0f} TL ({pnl_pct:+.1f}%)".replace(",", "."),
+                        tags="white_check_mark")
+                except: pass
+                return
+
+        # ── 2. pending_buy alındı mı? ──────────────────────────────────
+        if not state.get("active"):
+            pending = state.get("pending_buy")
+            if pending:
+                psym = pending.get("symbol", "")
+                pbuys, psells = _read_excel(psym)
+                if pbuys:
+                    tot = sum(b["execQty"] for b in pbuys)
+                    sold = sum(s["execQty"] for s in psells)
+                    net = tot - sold
+                    if net > 0:
+                        avg = (sum(b["execAmount"] + b["commission"] for b in pbuys)
+                               / tot) if tot else 0
+                        state["active"] = {
+                            "symbol": psym,
+                            "entry_date": datetime.now().strftime("%Y-%m-%d"),
+                            "entry_price": round(avg, 4),
+                            "qty": net,
+                            "stop_loss": pending.get("stop_loss", 0),
+                            "target1":   pending.get("target1", 0),
+                            "target2":   pending.get("target2", 0),
+                            "last_score": pending.get("score", 0),
+                            "timeframe":  pending.get("timeframe", ""),
+                        }
+                        state["pending_buy"] = None
+                        _save_state(state)
+                        print(f"[Advisor] YENİ POZİSYON: {psym} {net} lot @ {avg:.2f}")
+                        try:
+                            notifier._send(
+                                f"🟢 {psym} ALINDI",
+                                f"Yeni pozisyon açıldı.\n"
+                                f"Maliyet: {avg:.2f} TL | {net:,} lot\n"
+                                f"Stop: {pending.get('stop_loss',0):.2f} | "
+                                f"Hedef: {pending.get('target1',0):.2f}".replace(",", "."),
+                                tags="green_circle")
+                        except: pass
+    except Exception as e:
+        print(f"[Advisor] Pozisyon senkron hatası: {e}")
 
 
 # ─── Tek Hisse Detay ─────────────────────────────────────────────────────────

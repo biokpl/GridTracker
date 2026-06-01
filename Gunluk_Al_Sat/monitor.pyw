@@ -446,18 +446,15 @@ def main():
     print("[Monitor] Başlatıldı — Hızlı:5sn | Yavaş:15dk | Log:", log_path)
 
     last_slow = 0.0  # Son teknik analiz zamanı
-    last_sync = 0.0  # Son pozisyon senkronizasyonu
+    # NOT: Pozisyon senkronu (sat/al algılama) burada YAPILMAZ — 1.xlsx akşam
+    # 18:35'te oluşuyor, gün içi güncel değil. Senkron advisor.py --run içinde
+    # (evening_automation, 1.xlsx hazır olduktan sonra) yapılır.
 
     while True:
         try:
             if _is_market_open():
                 # ── Hızlı kontrol: her 5 saniye ─────────────────────
                 _fast_price_check()
-
-                # ── Pozisyon senkronu: her 1 dakika (sat/al algıla) ──
-                if time.time() - last_sync >= 60:
-                    threading.Thread(target=_sync_position, daemon=True).start()
-                    last_sync = time.time()
 
                 # ── Yavaş kontrol: her 15 dakika ─────────────────────
                 if time.time() - last_slow >= SLOW_INTERVAL_MIN * 60:
