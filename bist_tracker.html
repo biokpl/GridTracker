@@ -28300,6 +28300,8 @@ function gcRecRender(d) {
   st('gc-rec-sym', sym);
   st('gc-rec-price', fx(price) + ' ₺');
   st('gc-rec-grid-score', (d.grid_score||0).toFixed(1));
+  // Anlık fiyatı DDE'den çek (gridRec fiyatı akşam üretildiği için eski olabilir)
+  if (sym) gcRecUpdateLivePrice(sym, support, resistance);
   st('gc-rec-final', (d.final_score||0).toFixed(2));
   st('gc-rec-rsi', Math.round(d.rsi||0));
   st('gc-rec-sup-lbl', fx(support));
@@ -28377,6 +28379,41 @@ function gcRecRender(d) {
   }
 }
 
+// En İyi Grid Adayı kartındaki fiyatı anlık DDE ile güncelle (PC + telefon)
+async function gcRecUpdateLivePrice(sym, support, resistance) {
+  let live = 0;
+  // PC: server.py /api/stock → DDE anlık
+  try {
+    const r = await fetch(`${AUTO_API}/api/stock/${sym}`, {signal:AbortSignal.timeout(2500)});
+    if (r.ok) { const j = await r.json(); if (j && j.price) live = j.price; }
+  } catch(e){}
+  // Telefon/fallback 1: Firebase stocks → server.py 100 hisseyi DDE'den yazar
+  if (!live) {
+    try {
+      const r = await fetch(FIREBASE_URL+'/gridtracker/stocks/'+sym+'.json', {signal:AbortSignal.timeout(4000)});
+      if (r.ok) { const j = await r.json(); if (j && j.price) live = j.price; }
+    } catch(e){}
+  }
+  // Telefon/fallback 2: Firebase livePrices → automation_server besler
+  if (!live) {
+    try {
+      const r = await fetch(FIREBASE_URL+'/gridtracker/livePrices/'+sym+'.json', {signal:AbortSignal.timeout(4000)});
+      if (r.ok) { const j = await r.json(); if (j && j.price) live = j.price; }
+    } catch(e){}
+  }
+  if (live > 0) {
+    const e = $('gc-rec-price');
+    if (e) e.textContent = fx(live) + ' ₺';
+    // Range dot'unu da güncel fiyata göre kaydır
+    const dot = $('gc-rec-price-dot');
+    if (dot && resistance > support) {
+      const pct = Math.max(2, Math.min(98, (live - support) / (resistance - support) * 100));
+      dot.style.left = pct + '%';
+    }
+    if (_gcRecData) _gcRecData._livePrice = live;
+  }
+}
+
 function gcRecApply() {
   if (!_gcRecData) { toast('Henüz öneri verisi yok','err'); return; }
   const d = _gcRecData;
@@ -28395,6 +28432,25 @@ function gcRecApply() {
     const capVal = d.capital || 0;
     if (capVal > 0) cap.value = capVal.toLocaleString('tr-TR');
   }
+
+  // Kalıcı kaydet — yoksa sayfa yenilenince Firebase'deki eski hisse geri gelir
+  try {
+    const capVal = parseInt((cap && cap.value || '').replace(/[^\d]/g,'')) || (d.capital||0);
+    window._gcDirty = false;
+    S.settings.gridCalc = {
+      symbol: sym,
+      capital: capVal,
+      support: d.support || 0,
+      resistance: d.resistance || 0,
+      atr: d.atr || 0,
+      currentPrice: d.price || 0,
+      srMode: window._gcSRMode || '',
+      atrRow: window._gcAtrRow || null,
+      atrKey: window._gcAtrKey || ''
+    };
+    save();
+    fbWrite('gridtracker/settings/gridCalc', S.settings.gridCalc);
+  } catch(e){}
 
   // Analizin kesin değerleriyle doğrudan render et — calculator formülü bypass
   setTimeout(() => gcRecDirectRender(d), 50);
