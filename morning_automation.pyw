@@ -644,17 +644,10 @@ def extract_b001(sms_sent_at=None, timeout=300, retry_interval=20):
     if DRY_RUN:
         return '123456'
 
-    # Yeni SMS tespiti: kod karşılaştırması değil, MESAJ SAYISI karşılaştırması.
-    # SMS gelince konuşmadaki B001 eşleşme sayısı artar → güvenilir, kod çakışması riski yok.
-    # İlk tıklamadan önce sayıyı oku (baseline), SMS sonrası artmışsa YENİ kod kabul et.
-    last_count_file = SCRIPT_DIR / 'last_b001_count.txt'
-    baseline_count = None
-    try:
-        if last_count_file.exists():
-            baseline_count = int(last_count_file.read_text(encoding='utf-8').strip())
-            log.info(f'Önceki B001 eşleşme sayısı (baseline): {baseline_count}')
-    except Exception as e:
-        log.warning(f'last_b001_count.txt okunamadı: {e}')
+    # Yeni SMS tespiti: sayfa CANLI baseline — extract_b001 çağrıldığı anda
+    # sayfadaki mevcut B001 sayısını okur, SMS gelince bu sayı artar.
+    # Dosya yok, gün içi başka mesajlar baseline'ı bozmaz.
+    baseline_count = None   # extract_b001 ilk okumada canlı belirler
 
     wins = gw.getWindowsWithTitle('Vivaldi')
     if not wins:
@@ -664,6 +657,7 @@ def extract_b001(sms_sent_at=None, timeout=300, retry_interval=20):
 
     deadline = time.time() + (timeout if sms_sent_at else 0)
     attempt  = 0
+    live_baseline = None   # bu oturumda sayfadan okunan canlı baseline
 
     while True:
         attempt += 1
@@ -698,26 +692,26 @@ def extract_b001(sms_sent_at=None, timeout=300, retry_interval=20):
             log.warning(f'Deneme #{attempt}: Sayfa metni boş')
         else:
             matches = _re.findall(r'(\d{6})\s*B001', text)
+            current_count = len(matches) if matches else 0
+
+            # ── CANLI BASELINE: ilk okumada sayfadaki sayıyı kaydet ──
+            # Dosya yok, gün içi başka mesajlar baseline'ı bozmaz.
+            if live_baseline is None:
+                live_baseline = current_count
+                log.info(f'Canlı baseline belirlendi: {live_baseline} B001 eşleşmesi')
+
             if matches:
                 value = matches[-1]
-                current_count = len(matches)
-                # ── YENİ KOD DOĞRULAMASI: MESAJ SAYISI ───────────────
-                # Sayı baseline'dan fazlaysa → yeni SMS gelmiş, kodu kabul et.
-                # Sayı aynıysa → SMS gelmemiş (buton kaçtı), reddet ve bekle.
-                # Kod çakışması riski SIFIR — kod değil sayı karşılaştırılıyor.
-                if sms_sent_at and baseline_count is not None and current_count <= baseline_count:
+                # ── YENİ KOD DOĞRULAMASI: CANLI BASELINE ─────────────
+                # Sayı baseline'dan fazlaysa → yeni SMS bu oturumda geldi.
+                # Sayı aynıysa → SMS henüz gelmedi, reddet ve bekle.
+                if sms_sent_at and current_count <= live_baseline:
                     log.warning(
-                        f'Deneme #{attempt}: Eşleşme sayısı {current_count} = baseline {baseline_count} '
+                        f'Deneme #{attempt}: Sayı {current_count} = baseline {live_baseline} '
                         f'— yeni SMS henüz gelmemiş. Bekleniyor...')
                 else:
-                    reason = (f'sayı {baseline_count}→{current_count}'
-                              if baseline_count is not None else 'baseline yok (ilk çalışma)')
-                    log.info(f'B001 bulundu (YENİ): {value} ({reason}, deneme #{attempt})')
-                    # Güncel sayıyı kaydet — sonraki çalışmada baseline olur
-                    try:
-                        last_count_file.write_text(str(current_count), encoding='utf-8')
-                    except Exception as e:
-                        log.warning(f'last_b001_count.txt yazılamadı: {e}')
+                    log.info(f'B001 bulundu (YENİ): {value} '
+                             f'(baseline {live_baseline} → {current_count}, deneme #{attempt})')
                     return value
             else:
                 log.warning(f'Deneme #{attempt}: B001 kodu bulunamadı')
