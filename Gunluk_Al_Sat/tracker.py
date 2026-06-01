@@ -111,6 +111,9 @@ def track(state: dict) -> dict:
         "realized_pnl":    0.0,
         "history_pnl_total": 0.0,
         "trade_count":     0,
+        "stop_loss":       0.0,
+        "target1":         0.0,
+        "target2":         0.0,
         "error":           None,
     }
 
@@ -122,6 +125,12 @@ def track(state: dict) -> dict:
     active = state.get("active")
     if not active:
         return result
+
+    # Stop/Hedef seviyeleri (state.json'dan) — SASA gibi top_picks'te olmayan
+    # aktif pozisyonlar için kartta gösterilsin
+    result["stop_loss"] = active.get("stop_loss", 0) or 0
+    result["target1"]   = active.get("target1", 0) or 0
+    result["target2"]   = active.get("target2", 0) or 0
 
     symbol = active["symbol"]
     result["active_symbol"] = symbol

@@ -150,7 +150,7 @@ def _safe(v):
     except: return None
 
 
-# Grid config (capital, safety_buffer, commission_rate) — bir kez oku, cache'le
+# Grid config — bir kez oku, cache'le
 _GRID_CFG = None
 def _load_grid_cfg():
     global _GRID_CFG
@@ -165,59 +165,99 @@ def _load_grid_cfg():
     return _GRID_CFG
 
 
+def _bist_tick(price):
+    """BİST fiyat adımı (web getBistTickSize ile birebir)."""
+    if not price or price <= 0: return 0.01
+    if price < 20:   return 0.01
+    if price < 50:   return 0.02
+    if price < 100:  return 0.05
+    if price < 250:  return 0.10
+    if price < 500:  return 0.25
+    if price < 1000: return 0.50
+    if price < 2500: return 1.00
+    return 2.50
+
+
+def _user_grid_capital():
+    """Web hesaplayıcının (settings.gridCalc) sermayesi; yoksa config."""
+    try:
+        gc = firebase_get('settings/gridCalc')
+        if isinstance(gc, dict) and gc.get('capital'):
+            return float(gc['capital'])
+    except Exception:
+        pass
+    return _load_grid_cfg().get('capital', 1400000)
+
+
 def _recompute_grid_live(data, price):
     """
-    Anlık fiyatla grid metriklerini yeniden hesaplar.
-    (grid_analysis_auto.analyze_stock ile birebir aynı formül)
-    Sabit kalanlar: support, resistance, atr, grid_interval (akşam analizi).
-    Değişenler: lots, buy/sell_grids, daily_profit, pct, capital_used.
-    Fiyat range dışına çıkarsa eski değerler korunur.
+    Anlık fiyatla grid metriklerini WEB HESAPLAYICI (calcGridBot) algoritmasıyla
+    yeniden hesaplar — N optimizasyonu + tick hizalama. Böylece web ve LCD birebir
+    örtüşür. Sabit: support, resistance, atr (akşam analizi). Sermaye: gridCalc.
     """
+    import math
     try:
-        support       = float(data.get('support', 0) or 0)
-        resistance    = float(data.get('resistance', 0) or 0)
-        atr           = float(data.get('atr', 0) or 0)
-        grid_interval = float(data.get('grid_interval', 0) or 0)
-        if price <= 0 or grid_interval <= 0 or resistance <= support:
+        support    = float(data.get('support', 0) or 0)
+        resistance = float(data.get('resistance', 0) or 0)
+        atr        = float(data.get('atr', 0) or 0)
+        if price <= 0 or atr <= 0 or resistance <= support:
             data['price'] = round(price, 4)
             return data
 
         cfg     = _load_grid_cfg()
-        eff_cap = cfg.get('capital', 0) * cfg.get('safety_buffer', 0.9)
+        capital = _user_grid_capital()
         comm    = cfg.get('commission_rate', 0.0001)
 
-        # Fiyat range içinde mi? Değilse hesabı koru, sadece fiyatı güncelle
-        if price <= support or price >= resistance:
+        rng = resistance - support
+        mid = (support + resistance) / 2.0
+        tick = _bist_tick(price if price > 0 else mid)
+        ref  = price if (support < price < resistance) else mid
+        eff_cap = capital * 0.90
+        min_spacing = max(tick, mid * 0.005)
+        max_n = min(200, int(rng / min_spacing))
+        min_n_atr = math.ceil(rng / (atr * 0.15)) if atr > 0 else 2
+        narrow = min_n_atr > max_n
+        min_n = max(2, max_n) if narrow else max(2, min_n_atr)
+        if max_n < 2:
             data['price'] = round(price, 4)
             return data
 
-        sell_grids  = max(1, int((resistance - price) / grid_interval))
-        buy_grids   = max(1, int((price - support)    / grid_interval))
-        total_grids = sell_grids + buy_grids
+        best = None
+        for N in range(min_n, max_n + 1):
+            d_raw = rng / N
+            d = max(tick, math.ceil(d_raw / tick) * tick)
+            sell_lv  = max(1, int((resistance - ref) / d))
+            buy_lv   = max(1, int((ref - support) / d))
+            avg_down = (ref + support) / 2.0
+            cap_lot  = sell_lv * ref + buy_lv * avg_down
+            if cap_lot <= 0:
+                continue
+            lots = int(eff_cap / cap_lot)
+            if lots < 1:
+                continue
+            gross = lots * d
+            comm_c = lots * comm * (mid + (mid + d))
+            net = gross - comm_c
+            if net <= 0:
+                continue
+            daily = (atr / d) * net
+            used  = lots * cap_lot
+            if best is None or daily > best['daily']:
+                best = {'N': N, 'd': d, 'lots': lots, 'daily': daily,
+                        'used': used, 'sell': sell_lv, 'buy': buy_lv}
 
-        avg_buy   = price - (buy_grids  / 2.0) * grid_interval
-        avg_sell  = price + (sell_grids / 2.0) * grid_interval
-        cap_lot   = (buy_grids * avg_buy) + (sell_grids * price)
-        if cap_lot <= 0:
-            data['price'] = round(price, 4)
-            return data
-        lots = max(1, int(eff_cap / cap_lot))
-
-        daily_trig   = atr / grid_interval
-        profit_trig  = lots * grid_interval
-        comm_trig    = lots * comm * (avg_buy + avg_sell)
-        daily_profit = daily_trig * (profit_trig - comm_trig)
-
-        data['price']        = round(price, 4)
-        data['lots']         = lots
-        data['buy_grids']    = buy_grids
-        data['sell_grids']   = sell_grids
-        data['total_grids']  = total_grids
-        data['pct_up']       = round((resistance - price) / price * 100, 2)
-        data['pct_down']     = round((price - support)    / price * 100, 2)
-        data['daily_profit'] = round(daily_profit, 0)
-        data['capital_used'] = round(cap_lot * lots, 0)
-        data['live_recalc']  = True
+        data['price'] = round(price, 4)
+        if best:
+            data['grid_interval'] = round(best['d'], 2)
+            data['lots']          = best['lots']
+            data['sell_grids']    = best['sell']
+            data['buy_grids']     = best['buy']
+            data['total_grids']   = best['sell'] + best['buy']
+            data['daily_profit']  = round(best['daily'], 0)
+            data['capital_used']  = round(best['used'], 0)
+            data['pct_up']        = round((resistance - ref) / ref * 100, 2)
+            data['pct_down']      = round((ref - support)    / ref * 100, 2)
+            data['live_recalc']   = True
     except Exception:
         data['price'] = round(price, 4)
     return data
