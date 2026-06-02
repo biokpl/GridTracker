@@ -43,6 +43,7 @@ def _firebase_push(result: dict):
         "ts_str":      result["ts_str"],
         "capital":     result["capital"],
         "top_picks":   result["top_picks"],
+        "active_pick": result.get("active_pick"),
         "exit_signal": result["exit_signal"],
         "lot_info":    result["lot_info"],
         "tracker":     result["tracker"],
