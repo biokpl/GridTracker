@@ -4,5 +4,6 @@
   "safety_buffer": 0.90,
   "atr_period": 14,
   "grid_atr_ratio": 0.15,
-  "ntfy_topic": "GridTracker-bkpl-07"
+  "ntfy_topic": "GridTracker-bkpl-07",
+  "ntfy_topic_alert": "GridTracker-bkpl-07-acil"
 }

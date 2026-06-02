@@ -134,15 +134,22 @@ def _notify_verdict(cfg, active_r, best_r, active_sym):
             body_parts.append(f'Yeni öneri: {best_sym} ({score_diff:.1f} puan fark)')
         prio = 'urgent' if verdict == 'cik' else 'high'
         tags = 'rotating_light' if verdict == 'cik' else 'warning'
-        send_ntfy(cfg, title_map[verdict], '\n'.join(body_parts), prio, tags)
+        # Sadece ÇIK kritik → alarm topic; DİKKAT normal topic'te kalır
+        send_ntfy(cfg, title_map[verdict], '\n'.join(body_parts), prio, tags,
+                  alert=(verdict == 'cik'))
     else:
         log.info(f'[ntfy] Bildirim gerekmiyor ({prev_verdict} → {verdict})')
 
 
-def send_ntfy(cfg, title, body, priority='default', tags='chart_with_downwards_trend'):
-    """ntfy.sh üzerinden push bildirimi gönder."""
+def send_ntfy(cfg, title, body, priority='default', tags='chart_with_downwards_trend',
+              alert=False):
+    """ntfy.sh üzerinden push bildirimi gönder. alert=True → kritik topic (alarm sesi)."""
     import base64 as _b64
-    topic = (cfg.get('ntfy_topic') or '').strip()
+    if alert:
+        topic = (cfg.get('ntfy_topic_alert')
+                 or ((cfg.get('ntfy_topic') or '') + '-acil')).strip()
+    else:
+        topic = (cfg.get('ntfy_topic') or '').strip()
     if not topic:
         return  # topic ayarlanmamış, sessizce geç
     try:

@@ -1,6 +1,7 @@
 {
   "capital": 0,
   "ntfy_topic": "GridTracker-bkpl-07",
+  "ntfy_topic_alert": "GridTracker-bkpl-07-acil",
   "excel_path": "C:/Users/BioCSI/CLAUDE/GridTracker/1.xlsx",
   "commission_rate": 0.0001,
   "result_path": "C:/Users/BioCSI/CLAUDE/GridTracker/advisor_result.json",

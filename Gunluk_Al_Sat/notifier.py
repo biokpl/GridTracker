@@ -13,7 +13,10 @@ if hasattr(sys.stderr, "reconfigure"):
 
 _cfg  = json.loads((Path(__file__).parent / "config.json").read_text(encoding="utf-8"))
 TOPIC = _cfg.get("ntfy_topic", "GridTracker-bkpl-07")
-URL   = f"https://ntfy.sh/{TOPIC}"
+# Kritik (ÇIK / Felaket / ACİL) uyarıları ayrı topic'e → uygulamada alarm sesi atanır
+TOPIC_ALERT = _cfg.get("ntfy_topic_alert", TOPIC + "-acil")
+URL       = f"https://ntfy.sh/{TOPIC}"
+URL_ALERT = f"https://ntfy.sh/{TOPIC_ALERT}"
 
 from urllib.parse import quote as _quote
 
@@ -26,10 +29,13 @@ def _fp(v) -> str:
         return str(v)
 
 
-def _send(title: str, body: str, priority: str = "default", tags: str = "") -> bool:
+def _send(title: str, body: str, priority: str = "default", tags: str = "",
+          alert: bool = False) -> bool:
     try:
+        # alert=True → kritik topic (alarm sesi). Aksi halde normal topic.
+        base = URL_ALERT if alert else URL
         # Başlık URL parametresi olarak geçiliyor — Türkçe karakter + emoji destekli
-        url = f"{URL}?title={_quote(title)}"
+        url = f"{base}?title={_quote(title)}"
         headers = {"Priority": priority, "Content-Type": "text/plain; charset=utf-8"}
         if tags:
             headers["Tags"] = tags
@@ -107,7 +113,9 @@ def send_exit_signal(signal, symbol, score_prev, score_now, message, new_pick, l
         ]
         if new_pick:
             lines += _new_pick_lines(new_pick, lot_info)
-        return _send(title, "\n".join(lines), priority="urgent", tags="rotating_light")
+        # Kritik → alarm topic (ayrı ses)
+        return _send(title, "\n".join(lines), priority="urgent",
+                     tags="rotating_light", alert=True)
 
     return False
 
