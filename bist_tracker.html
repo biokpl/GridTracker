@@ -572,7 +572,8 @@ tr:hover td{background:rgba(255,255,255,.02);}
   #pg-overall .ttbl{table-layout:fixed;}
   #pg-overall .ttbl th{white-space:normal;}
   #pg-overall .ttbl th,#pg-overall .ttbl td{padding-left:2px;padding-right:2px;}
-  #pg-overall .ttbl th:nth-child(1),#pg-overall .ttbl td:nth-child(1){width:18%;}
+  #pg-overall .ttbl th:nth-child(1),#pg-overall .ttbl td:nth-child(1){width:15%;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   #pg-overall .ttbl th:nth-child(2),#pg-overall .ttbl td:nth-child(2){width:27%;}
   #pg-overall .ttbl th:nth-child(3),#pg-overall .ttbl td:nth-child(3){width:25%;}
   #pg-overall .ttbl th:nth-child(4),#pg-overall .ttbl td:nth-child(4){width:22%;
@@ -32395,7 +32396,8 @@ function renderOverall(){
         const dc=diff!==null?(diff>=0?'td-pos':'td-neg'):'';
         const diffTxt=diff!==null?(diff>=0?'+':'')+fxi(diff)+' ₺':'—';
         const dp=h.date.split('-').reverse();
-        const dateFmt=`${dp[0]}.${dp[1]}.<span style="color:#4e6890">${dp[2].slice(2)}</span>`;
+        // Yıl ay başlığında zaten var → satırda sadece gün.ay göster
+        const dateFmt=`${dp[0]}.${dp[1]}`;
         html+=`<tr>
           <td style="color:#7b92b5;font-weight:600">${dateFmt}</td>
           <td style="color:#c4cfe0;font-weight:600;font-family:var(--mono)">${fxi(h.amount)}₺</td>
