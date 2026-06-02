@@ -592,12 +592,21 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
     except Exception as e:
         tracker_data = {"error": str(e)}
 
+    # Aktif (elimizdeki) hissenin tam skor verisi — top_picks'ten elendiği
+    # için kart bunu ayrı alandan okur (bar/stop/hedef gösterimi).
+    active_pick_data = None
+    if active:
+        _ap = next((s for s in scores if s["symbol"] == active["symbol"]), None)
+        if _ap:
+            active_pick_data = {**_ap, "rank": 0}
+
     ts = time.time()
     result = {
         "ts":          ts,
         "ts_str":      _ts_str(ts),
         "capital":     capital,
         "top_picks":   top_picks,
+        "active_pick": active_pick_data,
         "exit_signal": exit_signal,
         "lot_info":    lot_info,
         "tracker":     tracker_data,

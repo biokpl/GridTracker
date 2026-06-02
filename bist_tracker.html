@@ -30297,7 +30297,8 @@ async function renderAdvisor(){
 
       // Skor
       const st=d.score_table||{};
-      const activePick=picks.find(p=>p.symbol===tr.active_symbol);
+      const activePick=picks.find(p=>p.symbol===tr.active_symbol)
+                       || (d.active_pick && d.active_pick.symbol===tr.active_symbol ? d.active_pick : null);
       const sc=(st[tr.active_symbol]?.total)||activePick?.total_score||0;
       const scoreEl=$('adv-score-now');
       if(scoreEl){
