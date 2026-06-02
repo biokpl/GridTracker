@@ -1376,17 +1376,19 @@ select.field-input option{background:var(--surface2);}
         </div>
       </div>
 
-      <!-- Kapanış stopu uyarısı -->
-      <div style="display:flex;align-items:center;justify-content:center;gap:6px;font-size:9px;color:#fbbf24;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.18);border-radius:6px;padding:5px 8px;margin-bottom:6px;text-align:center;line-height:1.35">
-        <span style="font-size:12px">⏳</span>
-        <span><b>Kapanış barını Bekle..!!</b> &nbsp;Fiyat stop'a değse de hemen çıkma — saatlik mum stop altında <u>kapanırsa</u> çık. Sert düşüşte (felaket stop <span id="adv-hardstop" style="color:#f87171">—</span>) anında çık.</span>
-      </div>
-
       <!-- Gerekçe -->
       <div class="adv-reason" id="adv-reason"></div>
 
       <!-- Skor çubukları -->
       <div id="adv-bars"></div>
+
+      <!-- Kapanış stopu uyarısı — barların altında, soluk -->
+      <div style="margin-top:8px;font-size:8.5px;color:#6b7280;line-height:1.4;text-align:center;opacity:.75">
+        <span style="opacity:.8">⏳ Stop'a değince hemen çıkma — saatlik mum stop altında <u>kapanırsa</u> çık (fitil avına takılma).</span>
+        <div style="margin-top:4px;display:inline-flex;align-items:center;gap:5px;font-size:9px;color:#f87171;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.3);border-radius:5px;padding:2px 8px;opacity:1">
+          🚨 <b>Felaket stop:</b> <span id="adv-hardstop" style="font-weight:800">—</span> <span style="color:#9ca3af;font-weight:400">(buraya inerse anında çık)</span>
+        </div>
+      </div>
     </div>
 
     <!-- ── ÖNERI MODU (aktif pozisyon yok) ── -->
