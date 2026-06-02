@@ -1404,8 +1404,9 @@ select.field-input option{background:var(--surface2);}
         </div>
       </div>
       <!-- Canlı GİRİLEBİLİRLİK göstergesi: güncel fiyat giriş bölgesinde mi? -->
-      <div id="adv-entry-status" style="display:none;font-size:11px;font-weight:700;padding:7px 10px;border-radius:7px;margin-bottom:8px;text-align:center"></div>
-      <div id="adv-top1-lots" style="display:none;font-size:11px;color:#4ade80;font-weight:700;padding:6px 10px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.18);border-radius:7px;margin-bottom:8px;text-align:center"></div>
+      <div id="adv-entry-status" style="display:none;font-size:12px;font-weight:700;padding:8px 10px;border-radius:8px;margin-bottom:8px;text-align:center"></div>
+      <!-- AKSİYON ALANI: kaç lot alınacak — dikkat çekici -->
+      <div id="adv-top1-lots" style="display:none;font-size:14px;color:#86efac;font-weight:800;padding:11px 12px;background:linear-gradient(135deg,rgba(74,222,128,.16),rgba(34,197,94,.08));border:1.5px solid rgba(74,222,128,.45);border-radius:10px;margin-bottom:9px;text-align:center;box-shadow:0 0 14px rgba(74,222,128,.18);letter-spacing:.3px"></div>
       <div id="adv-bars-suggest"></div>
     </div>
 
@@ -30147,10 +30148,11 @@ function _tfLabel(tf){
 
 function _scoreBar10(label,val,color){
   const pct=Math.round(_clamp10(val)*10);
+  // Soluk/sakin görünüm: dolgu yarı saydam, değer rengi soluk
   return `<div class="adv-bar-row">
     <span class="adv-bar-lbl">${label}</span>
-    <div class="adv-bar-track"><div class="adv-bar-fill" style="width:${pct}%;background:${color}"></div></div>
-    <span class="adv-bar-val" style="color:${color}">${val.toFixed(1)}</span>
+    <div class="adv-bar-track"><div class="adv-bar-fill" style="width:${pct}%;background:${color};opacity:.45"></div></div>
+    <span class="adv-bar-val" style="color:${color};opacity:.7">${val.toFixed(1)}</span>
   </div>`;
 }
 
@@ -30343,7 +30345,8 @@ async function renderAdvisor(){
 
         const lotEl=$('adv-top1-lots');
         if(lotEl && li.lots>0){
-          lotEl.textContent=li.lots.toLocaleString('tr-TR')+' lot alabilirsiniz  ≈ '+_fmtNum(li.cost);
+          lotEl.innerHTML='💰 <span style="font-size:19px;color:#4ade80">'+li.lots.toLocaleString('tr-TR')+'</span> LOT AL'
+            +'<div style="font-size:10px;font-weight:600;color:#6ee7b7;margin-top:2px;opacity:.85">≈ '+_fmtNum(li.cost)+' maliyet</div>';
           lotEl.style.display='block';
         } else if(lotEl){ lotEl.style.display='none'; }
 
