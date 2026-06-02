@@ -95,6 +95,46 @@ def _reset_state(sym: str):
         _last_state_sig.pop(sym, None)
 
 
+# Saatlik kapanış kontrolü için throttle (yfinance'ı 5 sn'de bir çağırmamak için)
+_hourly_cache = {}  # sym -> (timestamp, result)
+_HOURLY_TTL   = 180  # saniye
+
+def _hourly_closed_below(sym: str, level: float):
+    """
+    Son TAMAMLANMIŞ saatlik mumun kapanışı `level` altında mı?
+      True  → saatlik mum stop altında kapandı (gerçek kırılım)
+      False → kapanmadı (fitil olabilir, bekle)
+      None  → veri alınamadı (güvenli taraf: bekle)
+    Oluşmakta olan (yarım) saatlik mum hariç tutulur — fitil avını eler.
+    180 sn cache ile yfinance yükü sınırlanır.
+    """
+    try:
+        now = time.time()
+        cached = _hourly_cache.get(sym)
+        if cached and (now - cached[0]) < _HOURLY_TTL:
+            base_close = cached[1]
+        else:
+            import yfinance as yf
+            df = yf.Ticker(sym + ".IS").history(period="3d", interval="60m",
+                                                auto_adjust=True)
+            if df is None or len(df) < 2:
+                return None
+            last_ts = df.index[-1].to_pydatetime()
+            tznow   = datetime.now(last_ts.tzinfo) if last_ts.tzinfo else datetime.now()
+            # Son bar bu saat içindeyse henüz kapanmadı → bir önceki tamamlanmış mumu al
+            if last_ts.hour == tznow.hour and last_ts.date() == tznow.date():
+                if len(df) < 2:
+                    return None
+                base_close = float(df["Close"].iloc[-2])
+            else:
+                base_close = float(df["Close"].iloc[-1])
+            _hourly_cache[sym] = (now, base_close)
+        return base_close <= level
+    except Exception as e:
+        log.debug(f"_hourly_closed_below({sym}): {e}")
+        return None
+
+
 # ── HIZLI DÖNGÜ: Anlık fiyat → Stop / Hedef kontrolü ────────────────────────
 
 def _fast_price_check():
@@ -114,6 +154,8 @@ def _fast_price_check():
 
         sym   = active["symbol"]
         stop  = active.get("stop_loss", 0)
+        # Felaket stopu: yoksa stop'un ~%1.5 altını kullan (acil intraday çıkış)
+        hard  = active.get("hard_stop") or (round(stop * 0.985, 4) if stop else 0)
         h1    = active.get("target1", 0)
         h2    = active.get("target2", 0)
         entry = active.get("entry_price", 0)
@@ -127,19 +169,51 @@ def _fast_price_check():
         pnl_pct = ((price - entry) / entry * 100) if entry else 0
         pnl_tl  = (price - entry) * qty if (entry and qty) else 0
 
-        # ── ACİL: Stop kırıldı ────────────────────────────────────────────
-        if stop and price <= stop:
+        # ── FELAKET STOPU: stop'un belirgin altı → ANINDA ÇIK (kapanış bekleme) ──
+        if hard and price <= hard:
             if _should_send(sym, "ACİL_ÇIK"):
-                log.warning(f"STOP KIRILDI! {sym} {_fp(price)} <= {_fp(stop)}")
-                # Anlık alternatif: son result.json'dan al
+                log.warning(f"FELAKET STOP! {sym} {_fp(price)} <= {_fp(hard)}")
                 new_pick, lot_info = _get_last_alternative(sym)
                 notifier.send_exit_signal(
                     "ACİL_ÇIK", sym,
                     active.get("last_score", 0),
                     active.get("last_score", 0),
-                    f"Stop kırıldı! {_fp(price)} ₺ ≤ {_fp(stop)} ₺  ({pnl_pct:+.1f}%)",
+                    f"⚡ SERT DÜŞÜŞ! {_fp(price)} ₺ ≤ felaket stop {_fp(hard)} ₺ "
+                    f"({pnl_pct:+.1f}%) — KAPANIŞ BEKLEME, HEMEN ÇIK!",
                     new_pick, lot_info
                 )
+            return
+
+        # ── STOP BÖLGESİ: fiyat stop altında ama felaket değil → KAPANIŞ BARINI BEKLE ──
+        if stop and price <= stop:
+            closed_below = _hourly_closed_below(sym, stop)
+            if closed_below is True:
+                # Saatlik mum stop altında KAPANDI → gerçek kırılım, çık
+                if _should_send(sym, "ACİL_ÇIK"):
+                    log.warning(f"SAATLİK KAPANIŞ STOP ALTINDA! {sym} {_fp(price)} <= {_fp(stop)}")
+                    new_pick, lot_info = _get_last_alternative(sym)
+                    notifier.send_exit_signal(
+                        "ACİL_ÇIK", sym,
+                        active.get("last_score", 0),
+                        active.get("last_score", 0),
+                        f"Saatlik mum stop altında KAPANDI ({_fp(stop)} ₺) — "
+                        f"gerçek kırılım, ÇIK ({pnl_pct:+.1f}%)",
+                        new_pick, lot_info
+                    )
+            else:
+                # Henüz kapanış onayı yok → fitil olabilir, panik yok: BEKLE
+                if _should_send(sym, "STOP_TEST"):
+                    log.info(f"{sym} stop bölgesinde ({_fp(price)} <= {_fp(stop)}) — kapanış bekleniyor")
+                    notifier._send(
+                        f"⏳ {sym} — KAPANIŞ BARINI BEKLE..!!",
+                        f"Fiyat {_fp(price)} ₺, stop seviyesi {_fp(stop)} ₺ altında.\n"
+                        f"━━━━━━━━━━━━━━━━━━━━\n"
+                        f"⚠️ HENÜZ ÇIKMA — bu bir fitil olabilir.\n"
+                        f"Saatlik mum stop altında KAPANIRSA çıkış sinyali gelecek.\n"
+                        f"Felaket seviyesi: {_fp(hard)} ₺ (buraya inerse anında çık).\n"
+                        f"━━━━━━━━━━━━━━━━━━━━\n"
+                        f"Anlık K/Z: {pnl_pct:+.1f}%",
+                        priority="high", tags="hourglass")
             return
 
         # ── 2. HEDEF: kalan tüm lotları sat — TAM ÇIKIŞ ───────────────────
@@ -177,6 +251,8 @@ def _fast_price_check():
                         st["active"]["tier1_done"] = True
                         # Stop'u maliyete çek — kalan pozisyon risksiz
                         st["active"]["stop_loss"] = round(entry, 4)
+                        # Felaket stopunu da maliyetin hemen altına çek (%0.8)
+                        st["active"]["hard_stop"] = round(entry * 0.992, 4)
                         _save_state(st)
                 except: pass
                 notifier._send(
@@ -441,6 +517,7 @@ def _sync_position():
                             "entry_price": round(avg, 4),
                             "qty":        net_qty,
                             "stop_loss":  pending.get("stop_loss", 0),
+                            "hard_stop":  pending.get("hard_stop", 0),
                             "target1":    pending.get("target1", 0),
                             "target2":    pending.get("target2", 0),
                             "last_score": pending.get("score", 0),
@@ -517,6 +594,7 @@ def _check_pending_entry():
             state["pending_buy"] = {
                 "symbol":     new_pick["symbol"],
                 "stop_loss":  new_pick.get("stop_loss", 0),
+                "hard_stop":  new_pick.get("hard_stop", 0),
                 "target1":    new_pick.get("target1", 0),
                 "target2":    new_pick.get("target2", 0),
                 "score":      new_pick.get("total_score", 0),

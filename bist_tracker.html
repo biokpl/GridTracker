@@ -1376,6 +1376,12 @@ select.field-input option{background:var(--surface2);}
         </div>
       </div>
 
+      <!-- Kapanış stopu uyarısı -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:6px;font-size:9px;color:#fbbf24;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.18);border-radius:6px;padding:5px 8px;margin-bottom:6px;text-align:center;line-height:1.35">
+        <span style="font-size:12px">⏳</span>
+        <span><b>Kapanış barını Bekle..!!</b> &nbsp;Fiyat stop'a değse de hemen çıkma — saatlik mum stop altında <u>kapanırsa</u> çık. Sert düşüşte (felaket stop <span id="adv-hardstop" style="color:#f87171">—</span>) anında çık.</span>
+      </div>
+
       <!-- Gerekçe -->
       <div class="adv-reason" id="adv-reason"></div>
 
@@ -30319,12 +30325,14 @@ async function renderAdvisor(){
       }
 
       // Stop / Hedefler — gereksiz sıfır yok
+      const _hs=$('adv-hardstop');
       if(activePick){
         $('adv-stop').textContent=_fmtPrice(activePick.stop_loss);
         $('adv-t1').textContent  =_fmtPrice(activePick.target1);
         $('adv-t2').textContent  =_fmtPrice(activePick.target2);
         $('adv-reason').textContent=activePick.reasoning||'';
         $('adv-bars').innerHTML=_renderScoreBars(activePick.scores||{});
+        if(_hs) _hs.textContent = activePick.hard_stop ? _fmtPrice(activePick.hard_stop) : '—';
       } else {
         // Aktif hisse top_picks'te yok (ör. SASA) → stop/hedef'i tracker'dan al
         $('adv-stop').textContent = tr.stop_loss ? _fmtPrice(tr.stop_loss) : '—';
@@ -30332,6 +30340,7 @@ async function renderAdvisor(){
         $('adv-t2').textContent   = tr.target2   ? _fmtPrice(tr.target2)   : '—';
         $('adv-reason').textContent='';
         $('adv-bars').innerHTML='';
+        if(_hs) _hs.textContent = tr.hard_stop ? _fmtPrice(tr.hard_stop) : '—';
       }
 
       // Çıkış mesajı

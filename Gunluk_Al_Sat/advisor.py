@@ -292,8 +292,18 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
     elif total_10 >= 5.0:                     timeframe = "KISA_VADE"
     else:                                     timeframe = "ÖNERİLMEZ"
 
-    # Stop & Hedef
-    stop_loss = round(price * (1 - 0.5 * atr_pct / 100), 4)
+    # ── Stop & Hedef ──────────────────────────────────────────────────────
+    # Stop yerleşimi: YAKIN swing dibi + küçük ATR tamponu (fitil/stop avı için).
+    #   • Son 10 günün dibinin 0.3 ATR ALTINA koy → bariz dip seviyesinde değil
+    #   • Girişten 1.0–1.8 ATR bandında sınırla → R/K bozulmasın, kapanış onayı
+    #     zaten fitili elediği için stopun aşırı geniş olmasına gerek yok.
+    _swing_low   = float(close.iloc[-10:].min()) if len(close) >= 10 else float(close.min())
+    _struct_stop = _swing_low - 0.3 * atr_val   # swing dibinin hemen altı
+    _near_stop   = price - 1.0 * atr_val         # en yakın (min mesafe)
+    _far_stop    = price - 1.8 * atr_val         # en uzak (risk tavanı)
+    stop_loss    = round(min(max(_struct_stop, _far_stop), _near_stop), 4)
+    # Felaket stopu: kapanış beklemeden ANINDA çıkılacak seviye (stop'un ~0.8 ATR altı)
+    hard_stop    = round(stop_loss - 0.8 * atr_val, 4)
     target1   = round(price * (1 + 1.0 * atr_pct / 100), 4)
     target2   = round(price * (1 + 2.0 * atr_pct / 100), 4)
 
@@ -374,6 +384,7 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
         "timeframe":  timeframe,
         "entry_zone": {"low": round(price * 0.99, 4), "high": round(price * 1.005, 4)},
         "stop_loss":  stop_loss,
+        "hard_stop":  hard_stop,
         "target1":    target1,
         "target2":    target2,
         "reasoning":  reasoning,
@@ -634,6 +645,7 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
                     state["active"]["target1"]  = active_pick["target1"]
                     state["active"]["target2"]  = active_pick["target2"]
                     state["active"]["stop_loss"] = state["active"].get("stop_loss") or active_pick["stop_loss"]
+                    state["active"]["hard_stop"] = state["active"].get("hard_stop") or active_pick.get("hard_stop")
             # ÇIK sinyalinde: önerilen yeni hisseyi pending_buy'a kaydet.
             # Kullanıcı bu hisseyi alırsa monitor otomatik aktif pozisyon yapar.
             if exit_signal["signal"] in ("ÇIK", "ACİL_ÇIK") and new_pick_for_exit:
@@ -641,6 +653,7 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
                 state["pending_buy"] = {
                     "symbol":     np["symbol"],
                     "stop_loss":  np.get("stop_loss", 0),
+                    "hard_stop":  np.get("hard_stop", 0),
                     "target1":    np.get("target1", 0),
                     "target2":    np.get("target2", 0),
                     "score":      np.get("total_score", 0),
@@ -753,6 +766,7 @@ def _sync_position():
                             "entry_price": round(avg, 4),
                             "qty": net,
                             "stop_loss": pending.get("stop_loss", 0),
+                            "hard_stop": pending.get("hard_stop", 0),
                             "target1":   pending.get("target1", 0),
                             "target2":   pending.get("target2", 0),
                             "last_score": pending.get("score", 0),
