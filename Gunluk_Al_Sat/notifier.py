@@ -66,6 +66,12 @@ def _new_pick_lines(new_pick, lot_info, baslik="✅ YENİ HİSSE"):
     lines += [
         f"Giriş Skoru : {escore:.1f} / 10",
         f"Fiyat       : {_fp(price)} TL",
+    ]
+    # Giriş bölgesi — bu aralıkta girilmeli (kaçmadan)
+    ez = new_pick.get("entry_zone") or {}
+    if ez.get("low") and ez.get("high"):
+        lines.append(f"➤ Giriş Bölgesi: {_fp(ez['low'])} – {_fp(ez['high'])} TL")
+    lines += [
         f"Stop        : {_fp(stop)} TL",
         f"1. Hedef    : {_fp(hedef)} TL",
     ]

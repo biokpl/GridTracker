@@ -441,11 +441,96 @@ def _sync_position():
         log.error(f"Pozisyon senkron hatası: {e}", exc_info=True)
 
 
+def _check_pending_entry():
+    """
+    Bekleyen öneri (pending_buy) fiyat KAÇTI mı? Kaçtıysa HEMEN sıradaki
+    uygun öneriye geç (advisor_result.json top_picks'ten, giriş bölgesinde
+    olan ilk hisse). Kullanıcı yarını beklemez — anında yeni hedef alır.
+    """
+    try:
+        import notifier
+        sys.path.insert(0, str(BASE))
+        from price_reader import get_price
+
+        state = _load_state()
+        if state.get("active"):
+            return  # zaten pozisyon var, öneri takibi yok
+        pending = state.get("pending_buy")
+        if not pending:
+            return
+
+        psym = pending.get("symbol", "")
+        ehigh = pending.get("entry_high", 0)
+        if not psym or not ehigh:
+            return
+
+        price, _src = get_price(psym)
+        if not price:
+            return
+
+        # Fiyat giriş bölgesinin %1.5 üstüne çıktıysa "kaçtı" say
+        if price <= ehigh * 1.015:
+            return  # hâlâ girilebilir, dokunma
+
+        # ── KAÇTI → advisor_result.json'dan sıradaki uygun öneriyi bul ──
+        from advisor import RESULT_PATH
+        d = json.loads(RESULT_PATH.read_text(encoding="utf-8"))
+        picks = d.get("top_picks", [])
+        lot_info = d.get("lot_info", {})
+
+        new_pick = None
+        for p in picks:
+            if p["symbol"] == psym:
+                continue
+            ez = p.get("entry_zone", {})
+            cur, _ = get_price(p["symbol"])
+            # Fiyatı hâlâ giriş bölgesinde (veya altında) olan ilk aday
+            if cur and ez.get("high") and cur <= ez["high"] * 1.015:
+                new_pick = p
+                break
+
+        if not _should_send_state(psym, "KACTI"):
+            return  # bu sembol için zaten bildirildi
+
+        if new_pick:
+            # pending'i yeni öneriyle güncelle
+            state["pending_buy"] = {
+                "symbol":     new_pick["symbol"],
+                "stop_loss":  new_pick.get("stop_loss", 0),
+                "target1":    new_pick.get("target1", 0),
+                "target2":    new_pick.get("target2", 0),
+                "score":      new_pick.get("total_score", 0),
+                "timeframe":  new_pick.get("timeframe", ""),
+                "entry_low":  new_pick.get("entry_zone", {}).get("low", 0),
+                "entry_high": new_pick.get("entry_zone", {}).get("high", 0),
+            }
+            _save_state(state)
+            _reset_state(new_pick["symbol"])  # yeni sembol için kaçtı bildirimi açılsın
+            log.info(f"{psym} kaçtı ({price:.2f}>{ehigh:.2f}) → yeni öneri: {new_pick['symbol']}")
+            lines = notifier._new_pick_lines(new_pick, lot_info, baslik="✅ YENİ ÖNERİ")
+            notifier._send(
+                f"🔄 {psym} kaçtı — yeni hedef",
+                f"{psym} giriş bölgesini aştı ({_fp(price)} > {_fp(ehigh)}).\n"
+                + "\n".join(lines[1:]),
+                priority="high", tags="arrows_counterclockwise")
+        else:
+            # Hiçbir öneri uygun değil
+            log.info(f"{psym} kaçtı, sıradaki uygun öneri yok.")
+            notifier._send(
+                f"🔴 {psym} kaçtı",
+                f"{psym} giriş bölgesini aştı ({_fp(price)} > {_fp(ehigh)}).\n"
+                f"Şu an uygun fiyatta başka aday yok. Akşam yeni analiz yapılacak.",
+                priority="high", tags="warning")
+    except Exception as e:
+        log.error(f"Pending kontrol hatası: {e}")
+
+
 def main():
-    log.info("Monitor başlatıldı. Hızlı:5sn | Yavaş:15dk | PozSenkron:1dk")
+    log.info("Monitor başlatıldı. Hızlı:5sn | Yavaş:15dk | PendingKontrol:30sn")
     print("[Monitor] Başlatıldı — Hızlı:5sn | Yavaş:15dk | Log:", log_path)
 
-    last_slow = 0.0  # Son teknik analiz zamanı
+    last_slow    = 0.0  # Son teknik analiz zamanı
+    last_pending = 0.0  # Son pending (öneri kaçtı mı) kontrolü
     # NOT: Pozisyon senkronu (sat/al algılama) burada YAPILMAZ — 1.xlsx akşam
     # 18:35'te oluşuyor, gün içi güncel değil. Senkron advisor.py --run içinde
     # (evening_automation, 1.xlsx hazır olduktan sonra) yapılır.
@@ -455,6 +540,11 @@ def main():
             if _is_market_open():
                 # ── Hızlı kontrol: her 5 saniye ─────────────────────
                 _fast_price_check()
+
+                # ── Öneri kaçtı mı: her 30 saniye ───────────────────
+                if time.time() - last_pending >= 30:
+                    threading.Thread(target=_check_pending_entry, daemon=True).start()
+                    last_pending = time.time()
 
                 # ── Yavaş kontrol: her 15 dakika ─────────────────────
                 if time.time() - last_slow >= SLOW_INTERVAL_MIN * 60:
