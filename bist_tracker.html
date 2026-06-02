@@ -1403,6 +1403,8 @@ select.field-input option{background:var(--surface2);}
           <div class="adv-level-val" id="adv-top1-t1" style="color:#4ade80">—</div>
         </div>
       </div>
+      <!-- Canlı GİRİLEBİLİRLİK göstergesi: güncel fiyat giriş bölgesinde mi? -->
+      <div id="adv-entry-status" style="display:none;font-size:11px;font-weight:700;padding:7px 10px;border-radius:7px;margin-bottom:8px;text-align:center"></div>
       <div id="adv-top1-lots" style="display:none;font-size:11px;color:#4ade80;font-weight:700;padding:6px 10px;background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.18);border-radius:7px;margin-bottom:8px;text-align:center"></div>
       <div id="adv-bars-suggest"></div>
     </div>
@@ -30346,6 +30348,9 @@ async function renderAdvisor(){
         } else if(lotEl){ lotEl.style.display='none'; }
 
         $('adv-bars-suggest').innerHTML=_renderScoreBars(top.scores||{});
+
+        // Canlı GİRİLEBİLİRLİK — güncel fiyat giriş bölgesinde mi?
+        gcCheckEntryStatus(top.symbol, top.entry_zone?.low, top.entry_zone?.high);
       }
     }
 
@@ -30355,6 +30360,44 @@ async function renderAdvisor(){
     console.warn('[Advisor] Kart yüklenemedi:',e);
     card.style.display='none';
   }
+}
+
+// Önerilen hisse için canlı GİRİLEBİLİRLİK kontrolü.
+// Güncel fiyatı çeker, giriş bölgesiyle karşılaştırır:
+//   bölge içinde → 🟢 GİRİLEBİLİR | üstünde → 🔴 FİYAT KAÇTI | altında → 🟢 DAHA İYİ
+async function gcCheckEntryStatus(sym, low, high){
+  const el=$('adv-entry-status');
+  if(!el || !sym || !low || !high){ if(el) el.style.display='none'; return; }
+  let price=0;
+  try{
+    const r=await fetch(`${AUTO_API}/api/stock/${sym}`,{signal:AbortSignal.timeout(2500)});
+    if(r.ok){ const j=await r.json(); if(j&&j.price) price=j.price; }
+  }catch(_){}
+  if(!price){
+    try{
+      const r=await fetch(FIREBASE_URL+'/gridtracker/stocks/'+sym+'.json',{signal:AbortSignal.timeout(4000)});
+      if(r.ok){ const j=await r.json(); if(j&&j.price) price=j.price; }
+    }catch(_){}
+  }
+  if(!price){ el.style.display='none'; return; }
+
+  // Tolerans: giriş bölgesinin biraz üstü hâlâ kabul edilebilir (%1)
+  const upperOk=high*1.01;
+  let txt, bg, col, bd;
+  if(price < low){
+    txt=`🟢 ${_fmtPrice(price)} — DAHA UYGUN, girilebilir`;
+    bg='rgba(74,222,128,.10)'; col='#4ade80'; bd='rgba(74,222,128,.3)';
+  } else if(price <= upperOk){
+    txt=`🟢 ${_fmtPrice(price)} — GİRİLEBİLİR (öneri geçerli)`;
+    bg='rgba(74,222,128,.12)'; col='#4ade80'; bd='rgba(74,222,128,.35)';
+  } else {
+    const farPct=((price-high)/high*100).toFixed(1);
+    txt=`🔴 ${_fmtPrice(price)} — FİYAT KAÇTI (%${farPct} üstte), bekle`;
+    bg='rgba(248,113,113,.12)'; col='#f87171'; bd='rgba(248,113,113,.4)';
+  }
+  el.textContent=txt;
+  el.style.background=bg; el.style.color=col; el.style.border='1px solid '+bd;
+  el.style.display='block';
 }
 
 function startAdvTimer(){
