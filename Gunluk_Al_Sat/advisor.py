@@ -516,8 +516,13 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
     # Giriş skoru < 3.5 olanları öneriden ELE (tepe yapmış, hacimsiz,
     # üst bant üstü gibi kötü giriş noktaları — ne kadar yüksek total
     # skoru olursa olsun "şimdi girilmez")
+    # Halihazırda elimizde olan (aktif) hisse öneri listesinde gösterilmez —
+    # zaten alınmış, "şimdi gir" önerisi anlamsız.
+    _held = (active or {}).get("symbol")
     eligible = [s for s in scores
-                if s["timeframe"] != "ÖNERİLMEZ" and s.get("entry_score", 0) >= 3.5]
+                if s["timeframe"] != "ÖNERİLMEZ"
+                and s.get("entry_score", 0) >= 3.5
+                and s["symbol"] != _held]
     top_picks = [{**s, "rank": i+1} for i, s in enumerate(eligible[:3])]
 
     # Aktif pozisyon çıkış kontrolü
