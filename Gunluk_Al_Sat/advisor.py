@@ -508,8 +508,16 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
         except Exception as e:
             print(f"[Advisor] {sym} hata: {e}")
 
-    scores.sort(key=lambda x: x["total_score"], reverse=True)
-    eligible = [s for s in scores if s["timeframe"] != "ÖNERİLMEZ"]
+    # Günlük öneri = ŞİMDİ GİRİLECEK hisse → giriş kalitesi (entry_score)
+    # belirleyici. total_score genel kaliteyi zaten entry_score içeriyor
+    # (entry_score = total + giriş bonusu/cezası). Böylece tepe yapmış
+    # (yüksek total ama kötü giriş) hisseler öne çıkmaz.
+    scores.sort(key=lambda x: x.get("entry_score", x["total_score"]), reverse=True)
+    # Giriş skoru < 3.5 olanları öneriden ELE (tepe yapmış, hacimsiz,
+    # üst bant üstü gibi kötü giriş noktaları — ne kadar yüksek total
+    # skoru olursa olsun "şimdi girilmez")
+    eligible = [s for s in scores
+                if s["timeframe"] != "ÖNERİLMEZ" and s.get("entry_score", 0) >= 3.5]
     top_picks = [{**s, "rank": i+1} for i, s in enumerate(eligible[:3])]
 
     # Aktif pozisyon çıkış kontrolü
