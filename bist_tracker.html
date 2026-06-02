@@ -32548,21 +32548,31 @@ function toggleAdvDetail(){
 function _renderAdvTop3(picks){
   const el=$('adv-top3');
   if(!el||!picks.length) return;
-  const cap=_advData?.capital||0;
-  el.innerHTML=picks.map((p,i)=>{
+  // Başlık satırı (sütun etiketleri)
+  const head=`<div style="display:flex;align-items:center;gap:8px;padding:0 4px 5px;font-size:7.5px;color:var(--text3);letter-spacing:.5px;text-transform:uppercase">
+    <span style="width:16px"></span>
+    <span style="flex:1">Hisse</span>
+    <span style="width:46px;text-align:right">Giriş</span>
+    <span style="width:34px;text-align:center">Vade</span>
+    <span style="width:56px;text-align:right">Lot</span>
+  </div>`;
+  const rows=picks.map((p,i)=>{
     const li=_advData?.lot_info?.[p.symbol]||{};
-    const lotStr=li.lots>0?`<span style="color:#4ade80;font-size:9px">${li.lots.toLocaleString('tr-TR')} lot</span>`:'';
-    const bg=i===0?'background:rgba(99,102,241,.07);border-radius:6px;':'';
+    const lotStr=li.lots>0?li.lots.toLocaleString('tr-TR')+' lot':'—';
+    const bg=i===0?'background:rgba(99,102,241,.07);':'';
     // Sıralama giriş skoruna (entry_score) göre — listede onu göster ki sıra ile tutarlı olsun
     const es=(p.entry_score!=null?p.entry_score:p.total_score);
-    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid var(--border);${bg}">
-      <span style="font-size:11px;color:var(--text3);width:14px">${i+1}.</span>
+    const scColor=es>=6.5?'#4ade80':es>=5?'#fbbf24':'#f87171';
+    const vadeShort=p.timeframe==='KISA_VADE'?'Kısa':p.timeframe==='ORTA_VADE'?'Orta':'—';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border);border-radius:6px;${bg}">
+      <span style="font-size:11px;color:var(--text3);width:16px;text-align:center">${i+1}</span>
       <span style="font-size:13px;font-weight:800;flex:1">${p.symbol}</span>
-      <span title="Giriş skoru — sıralama bu skora göre yapılır (tepe/aşırı uzama cezalı)" style="font-size:10px;font-weight:700;color:var(--accent)">${es.toFixed(1)}<span style="font-size:8px;color:var(--text3);font-weight:400">/10 giriş</span></span>
-      <span style="font-size:9px;color:var(--text3)">${_tfLabel(p.timeframe)}</span>
-      ${lotStr}
+      <span title="Giriş skoru — sıralama bu skora göre (tepe/aşırı uzama cezalı)" style="width:46px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap"><b style="font-size:14px;color:${scColor}">${es.toFixed(1)}</b><span style="font-size:8px;color:var(--text3)">/10</span></span>
+      <span style="width:34px;text-align:center;font-size:9px;color:var(--text3)">${vadeShort}</span>
+      <span style="width:56px;text-align:right;font-size:9px;color:#4ade80;font-variant-numeric:tabular-nums;white-space:nowrap">${lotStr}</span>
     </div>`;
   }).join('');
+  el.innerHTML=head+rows;
 }
 
 async function saveAdvCapital(){
