@@ -152,6 +152,9 @@ def send_ntfy(cfg, title, body, priority='default', tags='chart_with_downwards_t
         topic = (cfg.get('ntfy_topic') or '').strip()
     if not topic:
         return  # topic ayarlanmamış, sessizce geç
+    # Kritik bildirimlere benzersiz [ACİL] etiketi (MacroDroid/Tasker filtresi için)
+    if alert and '[ACİL]' not in title:
+        title = f'[ACİL] {title}'
     try:
         # RFC 2047 base64 — emoji/Türkçe içeren başlıklar latin-1 ile encode edilemiyor
         encoded_title = ('=?utf-8?b?' +

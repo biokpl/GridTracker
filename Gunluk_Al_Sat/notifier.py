@@ -34,6 +34,10 @@ def _send(title: str, body: str, priority: str = "default", tags: str = "",
     try:
         # alert=True → kritik topic (alarm sesi). Aksi halde normal topic.
         base = URL_ALERT if alert else URL
+        # Kritik bildirimlerin başına benzersiz [ACİL] etiketi — MacroDroid/Tasker
+        # gibi araçlar tek kuralla (içinde "[ACİL]" geçenler) alarm sesi çalabilir.
+        if alert and "[ACİL]" not in title:
+            title = f"[ACİL] {title}"
         # Başlık URL parametresi olarak geçiliyor — Türkçe karakter + emoji destekli
         url = f"{base}?title={_quote(title)}"
         headers = {"Priority": priority, "Content-Type": "text/plain; charset=utf-8"}
