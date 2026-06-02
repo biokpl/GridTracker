@@ -234,7 +234,7 @@ def _fast_price_check():
                     f"Bu kademe kârı: +{kalan_kar:,.0f} TL\n".replace(",", ".") +
                     f"━━━━━━━━━━━━━━━━━━━━\n"
                     f"Pozisyonu tamamen kapat, kârı al." + ny,
-                    priority="urgent", tags="dart")
+                    priority="high", tags="dart")
             return
 
         # ── 1. HEDEF: yarısını sat — KISMI KÂR REALİZE ────────────────────
@@ -265,7 +265,7 @@ def _fast_price_check():
                     f"━━━━━━━━━━━━━━━━━━━━\n"
                     f"🛡 Stop maliyete çekildi ({_fp(entry)}) — kalan risksiz.\n"
                     f"Sonraki hedef: {_fp(h2)} TL",
-                    priority="urgent", tags="dart")
+                    priority="high", tags="dart")
             return
 
         # ── Her şey normal: sadece log ─────────────────────────────────────
