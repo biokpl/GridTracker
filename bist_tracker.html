@@ -329,6 +329,13 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 /* ── POZİSYON TAKİP KARTI ── */
 .pm-wrap{background:linear-gradient(145deg,rgba(59,130,246,.05) 0%,rgba(37,99,235,.02) 60%,transparent 100%);border:1px solid rgba(59,130,246,.22);border-radius:var(--r);padding:14px;position:relative;overflow:hidden;margin-bottom:10px;}
 .pm-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 5%,rgba(59,130,246,.4) 30%,rgba(96,165,250,.85) 50%,rgba(59,130,246,.4) 70%,transparent 95%);filter:drop-shadow(0 0 5px rgba(59,130,246,.5));}
+/* Dış çerçeve duruma göre renklenir */
+.pm-wrap.pm-st-devam{border-color:rgba(34,197,94,.45);background:linear-gradient(145deg,rgba(34,197,94,.06) 0%,rgba(22,163,74,.02) 60%,transparent 100%);box-shadow:0 0 16px rgba(34,197,94,.10);}
+.pm-wrap.pm-st-devam::before{background:linear-gradient(90deg,transparent 5%,rgba(34,197,94,.4) 30%,rgba(74,222,128,.9) 50%,rgba(34,197,94,.4) 70%,transparent 95%);filter:drop-shadow(0 0 5px rgba(74,222,128,.55));}
+.pm-wrap.pm-st-dikkat{border-color:rgba(251,191,36,.5);background:linear-gradient(145deg,rgba(251,191,36,.06) 0%,rgba(217,119,6,.02) 60%,transparent 100%);box-shadow:0 0 16px rgba(251,191,36,.10);}
+.pm-wrap.pm-st-dikkat::before{background:linear-gradient(90deg,transparent 5%,rgba(251,191,36,.4) 30%,rgba(253,224,71,.9) 50%,rgba(251,191,36,.4) 70%,transparent 95%);filter:drop-shadow(0 0 5px rgba(251,191,36,.55));}
+.pm-wrap.pm-st-cik{border-color:rgba(239,68,68,.55);background:linear-gradient(145deg,rgba(239,68,68,.07) 0%,rgba(220,38,38,.02) 60%,transparent 100%);box-shadow:0 0 18px rgba(239,68,68,.13);}
+.pm-wrap.pm-st-cik::before{background:linear-gradient(90deg,transparent 5%,rgba(239,68,68,.45) 30%,rgba(248,113,113,.95) 50%,rgba(239,68,68,.45) 70%,transparent 95%);filter:drop-shadow(0 0 5px rgba(248,113,113,.6));}
 .pm-header{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
 .pm-title{font-size:10px;font-weight:800;letter-spacing:2px;color:#93c5fd;text-transform:uppercase;flex:1;}
 .pm-sym-badge{font-family:var(--mono);font-size:15px;font-weight:800;padding:5px 13px;border-radius:8px;background:linear-gradient(135deg,rgba(59,130,246,.22),rgba(37,99,235,.12));color:#eff6ff;border:1px solid rgba(96,165,250,.45);letter-spacing:.8px;box-shadow:0 0 10px rgba(59,130,246,.18);}
@@ -29287,6 +29294,10 @@ function renderPositionMonitor() {
     st('pm-verdict-title', title);
     st('pm-verdict-reason', reason);
   }
+
+  // Kartın dış çerçevesini duruma göre renklendir
+  const wrapEl = document.querySelector('#pm-card .pm-wrap');
+  if (wrapEl) wrapEl.className = 'pm-wrap pm-st-' + verdict;
 
   // Yeni öneri — ÇIK veya DEĞİŞTİR durumunda göster
   if (newRecEl) {
