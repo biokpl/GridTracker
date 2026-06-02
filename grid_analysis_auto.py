@@ -889,8 +889,16 @@ def run(dry_run=False, force=False):
     def update_score_history(symbol, grid_sc, final_sc, price_val):
         """Firebase scoreHistory guncellemesi — sembol basina max SCORE_HIST_MAX kayit."""
         hist = fb_get(f'scoreHistory/{symbol}') or []
+        # Firebase bazen diziyi 'nesne' (dict: {"0":{...},"1":{...}}) olarak dondurur.
+        # Eskiden burada hist=[] yapiliyordu -> TUM GECMIS SILINIYORDU. Artik
+        # nesneyi tarihe gore siralayip listeye ceviriyoruz (veri kaybi yok).
+        if isinstance(hist, dict):
+            hist = [v for _, v in sorted(hist.items(), key=lambda kv: str(kv[0]))
+                    if isinstance(v, dict)]
         if not isinstance(hist, list):
             hist = []
+        # date alani olmayan/bozuk kayitlari ele
+        hist = [h for h in hist if isinstance(h, dict) and h.get('date')]
         # Bugunku kayit varsa guncelle, yoksa ekle
         if hist and hist[-1].get('date') == today_str:
             hist[-1] = {'date': today_str, 'gs': round(grid_sc, 2),

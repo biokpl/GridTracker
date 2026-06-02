@@ -1774,7 +1774,10 @@ select.field-input option{background:var(--surface2);}
       <div class="gc-rec-header">
         <span style="font-size:15px;line-height:1">🤖</span>
         <div class="gc-rec-title">En İyi Grid Adayı</div>
-        <div id="gc-rec-market" class="gc-rec-badge notr">— PİYASA</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+          <span style="font-size:7px;color:#6b7a92;letter-spacing:1.2px;opacity:.65;line-height:1">BİST100</span>
+          <div id="gc-rec-market" class="gc-rec-badge notr">— PİYASA</div>
+        </div>
       </div>
       <!-- Sembol + Skorlar -->
       <div class="gc-rec-top">
@@ -31310,9 +31313,9 @@ function gcRecRender(d) {
   st('gc-rec-rsi', Math.round(d.rsi||0));
   st('gc-rec-sup-lbl', fx(support));
   st('gc-rec-res-lbl', fx(resistance));
-  st('gc-rec-interval', fx(d.grid_interval||0) + ' ₺');
-  st('gc-rec-lots', d.lots||0);
-  st('gc-rec-daily', fxi(d.daily_profit||0) + ' ₺');
+  // Grid Aralık / Lot / Günlük Kar: Hesaplama ile BİREBİR aynı yöntemle (N-optimizasyon,
+  // kullanıcının sermayesi) hesaplanır — kart ile form artık tutarlı.
+  _gcRecRenderGrid(d, price);
 
   // Fiyat + dot: tek seferde anlık DDE fiyatıyla konumlanır (eski fiyat gösterilmez).
   // DDE erişilemezse d.price fallback. Dot gizli başlar, konumlanınca görünür.
@@ -31418,7 +31421,11 @@ async function gcRecUpdateLivePrice(sym, support, resistance, fallbackPrice) {
     }
   }
   // Canlı fiyatı ayrı tut (_gcRecData'yı kirletme → SSE karşılaştırması bozulmasın)
-  if (live > 0) window._gcRecLivePrice = live;
+  if (live > 0) {
+    window._gcRecLivePrice = live;
+    // Canlı fiyat geldi → kart grid değerlerini (Aralık/Lot/Günlük) anlık fiyatla tazele
+    if (_gcRecData) _gcRecRenderGrid(_gcRecData, shownPrice);
+  }
 }
 
 async function gcRecApply() {
@@ -32238,6 +32245,67 @@ function calcGridBotFixed(fixedD){
   const result={N,d,lots,net,daily,used,util,sellLevels,buyLevels};
   window._gcFixedMode=true;
   renderGridResults(result,support,resistance,atr,capital,commFrac,currentPrice);
+}
+
+// "En İyi Grid Adayı" kartı için: Hesaplama (calcGridBot) ile BİREBİR aynı
+// N-optimizasyon mantığı — saf hesap fonksiyonu (form alanlarına dokunmaz).
+function _gridBestCompute(support,resistance,atr,currentPrice,capital,commFrac){
+  if(support<=0||resistance<=support||atr<=0||capital<=0) return null;
+  const range=resistance-support;
+  const midPrice=(support+resistance)/2;
+  const refPriceForTick=currentPrice>0?currentPrice:midPrice;
+  const tick=getBistTickSize(refPriceForTick);
+  const minSpacing=Math.max(tick,midPrice*0.005);
+  const maxN=Math.min(200,Math.floor(range/minSpacing));
+  const minNfromATR=Math.ceil(range/(atr*0.15));
+  const _narrowRange=(minNfromATR>maxN);
+  const minN=_narrowRange?Math.max(2,maxN):Math.max(2,minNfromATR);
+  if(maxN<2) return null;
+  const refPrice=(currentPrice>support&&currentPrice<resistance)?currentPrice:midPrice;
+  const effectiveCapital=capital*0.90;
+  let best=null;
+  for(let N=minN;N<=maxN;N++){
+    const dRaw=range/N;
+    const d=Math.max(tick,Math.ceil(dRaw/tick)*tick);
+    const sellLevels=Math.max(1,Math.floor((resistance-refPrice)/d));
+    const buyLevels=Math.max(1,Math.floor((refPrice-support)/d));
+    const avgDownPrice=(refPrice+support)/2;
+    const capPerLot=sellLevels*refPrice+buyLevels*avgDownPrice;
+    const lots=Math.floor(effectiveCapital/capPerLot);
+    if(lots<1) continue;
+    const gross=lots*d;
+    const comm=lots*commFrac*(midPrice+(midPrice+d));
+    const net=gross-comm;
+    if(net<=0) continue;
+    const daily=(atr/d)*net;
+    const used=lots*capPerLot;
+    const util=used/capital*100;
+    if(!best||daily>best.daily) best={N,d,lots,net,daily,used,util,sellLevels,buyLevels};
+  }
+  return best;
+}
+
+// Kart grid satırlarını (Aralık/Lot/Günlük Kar) Hesaplama yöntemiyle doldur.
+function _gcRecRenderGrid(d,price){
+  const st=(id,v)=>{const e=$(id);if(e)e.textContent=v;};
+  const support=d.support||0, resistance=d.resistance||0, atr=d.atr||0;
+  // Kullanıcının gerçek sermayesi: gridCalc → form alanı → (son çare) gridRec.capital
+  const cap=(S.settings&&S.settings.gridCalc&&S.settings.gridCalc.capital)
+           ||parseInt(($('gc-cap').value||'').replace(/[^\d]/g,''))
+           ||d.capital||0;
+  const commFrac=(S.settings.commissionRate||1)/10000;
+  const useP=(window._gcRecLivePrice&&window._gcRecLivePrice>0)?window._gcRecLivePrice:(price||d.price||0);
+  const best=_gridBestCompute(support,resistance,atr,useP,cap,commFrac);
+  if(best){
+    st('gc-rec-interval', fx(best.d)+' ₺');
+    st('gc-rec-lots', best.lots);
+    st('gc-rec-daily', fxi(best.daily)+' ₺');
+  } else {
+    // Hesaplanamadıysa gridRec'in ham değerlerine düş
+    st('gc-rec-interval', fx(d.grid_interval||0)+' ₺');
+    st('gc-rec-lots', d.lots||0);
+    st('gc-rec-daily', fxi(d.daily_profit||0)+' ₺');
+  }
 }
 
 function renderGridResults(b,support,resistance,atr,capital,commFrac,currentPrice){
