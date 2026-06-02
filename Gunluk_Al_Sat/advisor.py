@@ -320,16 +320,29 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
     elif rsi > 70:         entry_bonus -= 2.0   # zaten pompalanmış
     elif rsi < 30:         entry_bonus -= 0.5   # aşırı satım = hâlâ düşüyor olabilir
 
-    # Bollinger konumu: alt banda yakın = erken giriş fırsatı
-    if   bb_pos < 0.30:    entry_bonus += 1.5
+    # Bollinger konumu: alt banda yakın = erken giriş; üst bant ÜSTÜ = tehlike
+    if   bb_pos > 1.00:    entry_bonus -= 3.0   # ÜST BANDIN ÜSTÜ — aşırı gergin, tepe riski
+    elif bb_pos > 0.85:    entry_bonus -= 2.0   # üst banda çok yakın
+    elif bb_pos > 0.70:    entry_bonus -= 1.0   # üst yarı
+    elif bb_pos < 0.30:    entry_bonus += 1.5   # alt banda yakın = fırsat
     elif bb_pos < 0.45:    entry_bonus += 0.8
-    elif bb_pos > 0.75:    entry_bonus -= 1.5   # üst banta yakın = geç kalmış
-    elif bb_pos > 0.60:    entry_bonus -= 0.5
 
     # 5 günlük hareket: hafif pozitif ideal, zaten fırlamamış
     if   1.0 <= r5 <= 4.0: entry_bonus += 1.0   # başlıyor
     elif r5 > 6.0:         entry_bonus -= 2.0   # zaten fırlamış
     elif r5 < -3.0:        entry_bonus -= 1.0   # düşüyor
+
+    # UZUN/ORTA VADELİ AŞIRI YÜKSELİŞ — "tepe" riski (önceden hiç bakılmıyordu!)
+    # Hisse zaten çok yükselmişse yeni giriş riskli (düzeltme ihtimali yüksek)
+    if   r60 > 60: entry_bonus -= 2.5   # 60 günde %60+ → aşırı, tepe riski
+    elif r60 > 40: entry_bonus -= 1.5
+    elif r60 > 25: entry_bonus -= 0.5
+    if   r20 > 25: entry_bonus -= 1.5   # 20 günde %25+ → kısa vadede fazla ısınmış
+    elif r20 > 15: entry_bonus -= 0.8
+
+    # HACİMSİZ YÜKSELİŞ — kırılgan (yükseliş hacimle desteklenmiyorsa güvenilmez)
+    if vol_ratio < 0.70 and r5 > 3.0:
+        entry_bonus -= 1.5   # fiyat çıkıyor ama hacim eriyor → sürdürülemez
 
     # Risk/Kazanç oranı: (H1-fiyat) / (fiyat-stop)
     rr_ratio = 0.0
