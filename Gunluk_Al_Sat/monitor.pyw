@@ -142,34 +142,54 @@ def _fast_price_check():
                 )
             return
 
-        # ── 2. Hedef aşıldı ───────────────────────────────────────────────
+        # ── 2. HEDEF: kalan tüm lotları sat — TAM ÇIKIŞ ───────────────────
         if h2 and price >= h2:
             if _should_send(sym, "H2"):
-                gain_tl = (h2 - entry) * qty if (entry and qty) else 0
-                log.info(f"2. HEDEF AŞILDI! {sym} {_fp(price)} >= {_fp(h2)}")
+                tier1 = active.get("tier1_done", False)
+                half  = qty // 2 if qty else 0
+                kalan = (qty - half) if tier1 else qty  # 1.hedefte yarı satıldıysa kalan, yoksa tümü
+                kalan_kar = (price - entry) * kalan if (entry and kalan) else 0
+                log.info(f"2. HEDEF! {sym} {_fp(price)} — kalan {kalan} lot SAT")
                 new_pick, lot_info = _get_last_alternative(sym)
-                notifier.send_exit_signal(
-                    "ÇIK", sym,
-                    active.get("last_score", 0),
-                    active.get("last_score", 0),
-                    f"2. Hedef aşıldı! {_fp(price)} ₺  ({pnl_pct:+.1f}%,  +{gain_tl:,.0f} ₺)",
-                    new_pick, lot_info
-                )
+                ny = ("\n✅ YENİ ÖNERİ: " + new_pick["symbol"]) if new_pick else ""
+                notifier._send(
+                    f"🎯 {sym} 2. HEDEF — KALANI SAT",
+                    f"Fiyat: {_fp(price)} TL  ({pnl_pct:+.1f}%)\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"➤ KALAN {kalan:,} LOT'U SAT (tam çıkış)\n".replace(",", ".") +
+                    f"Bu kademe kârı: +{kalan_kar:,.0f} TL\n".replace(",", ".") +
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"Pozisyonu tamamen kapat, kârı al." + ny,
+                    priority="urgent", tags="dart")
             return
 
-        # ── 1. Hedef aşıldı ───────────────────────────────────────────────
+        # ── 1. HEDEF: yarısını sat — KISMI KÂR REALİZE ────────────────────
         if h1 and price >= h1:
-            if _should_send(sym, "H1"):
-                gain_tl = (h1 - entry) * qty if (entry and qty) else 0
-                log.info(f"1. HEDEF AŞILDI! {sym} {_fp(price)} >= {_fp(h1)}")
-                new_pick, lot_info = _get_last_alternative(sym)
-                notifier.send_exit_signal(
-                    "ÇIK", sym,
-                    active.get("last_score", 0),
-                    active.get("last_score", 0),
-                    f"1. Hedef aşıldı! {_fp(price)} ₺  ({pnl_pct:+.1f}%,  +{gain_tl:,.0f} ₺)",
-                    new_pick, lot_info
-                )
+            if not active.get("tier1_done") and _should_send(sym, "H1"):
+                half  = qty // 2 if qty else 0
+                kalan = qty - half
+                half_kar = (price - entry) * half if (entry and half) else 0
+                log.info(f"1. HEDEF! {sym} {_fp(price)} — yarı ({half}) SAT, {kalan} tut")
+                # State'e işle: bir daha 1. hedef bildirimi gelmesin
+                try:
+                    st = _load_state()
+                    if st.get("active") and st["active"].get("symbol") == sym:
+                        st["active"]["tier1_done"] = True
+                        # Stop'u maliyete çek — kalan pozisyon risksiz
+                        st["active"]["stop_loss"] = round(entry, 4)
+                        _save_state(st)
+                except: pass
+                notifier._send(
+                    f"🎯 {sym} 1. HEDEF — YARISINI SAT",
+                    f"Fiyat: {_fp(price)} TL  ({pnl_pct:+.1f}%)\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"➤ {half:,} LOT SAT (yarısı)\n".replace(",", ".") +
+                    f"Realize kâr: +{half_kar:,.0f} TL  💰\n".replace(",", ".") +
+                    f"➤ {kalan:,} LOT TUT (2. hedefe taşı)\n".replace(",", ".") +
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"🛡 Stop maliyete çekildi ({_fp(entry)}) — kalan risksiz.\n"
+                    f"Sonraki hedef: {_fp(h2)} TL",
+                    priority="urgent", tags="dart")
             return
 
         # ── Her şey normal: sadece log ─────────────────────────────────────
