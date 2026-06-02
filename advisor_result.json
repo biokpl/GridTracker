@@ -1,178 +1,181 @@
 {
-  "ts": 1780394602.5320554,
-  "ts_str": "02.06.2026 17:14",
+  "ts": 1780414539.0806344,
+  "ts_str": "02.06.2026 18:35",
   "capital": 40950,
   "top_picks": [
     {
-      "symbol": "TRALT",
-      "price": 44.38,
-      "total_score": 5.8,
-      "entry_score": 9.3,
-      "rr_ratio": 2.0,
+      "symbol": "BIMAS",
+      "price": 380.75,
+      "total_score": 5.7,
+      "entry_score": 7.5,
+      "rr_ratio": 0.97,
       "scores": {
-        "technical": 5.6,
-        "momentum": 4.5,
-        "rel_strength": 10.0,
+        "technical": 5.2,
+        "momentum": 5.1,
+        "rel_strength": 5.7,
         "volume": 2.7,
-        "risk": 5.3,
-        "timing": 8.0
+        "risk": 10.0,
+        "timing": 6.0
       },
       "timeframe": "KISA_VADE",
       "entry_zone": {
-        "low": 43.9362,
-        "high": 44.6019
+        "low": 376.9425,
+        "high": 382.6537
       },
-      "stop_loss": 43.3936,
-      "target1": 46.3529,
-      "target2": 48.3257,
-      "reasoning": "Güçlü MA dizilimi, Endeks üstünde, Dip toparlanması",
-      "rsi": 44.0,
-      "bb_pos": 0.504,
-      "atr_pct": 4.45,
-      "beta": 1.57,
-      "mdd_60": 28.6,
-      "vol_ratio": 0.32,
-      "r5": 1.93,
-      "r20": 12.24,
-      "r60": -14.41,
+      "stop_loss": 367.3393,
+      "hard_stop": 356.9107,
+      "target1": 393.7857,
+      "target2": 406.8214,
+      "reasoning": "Dip toparlanması",
+      "rsi": 45.5,
+      "bb_pos": 0.385,
+      "atr_pct": 3.42,
+      "beta": 0.8,
+      "mdd_60": 10.3,
+      "vol_ratio": 0.52,
+      "r5": 2.08,
+      "r20": 4.32,
+      "r60": 22.62,
       "rank": 1
     },
     {
-      "symbol": "DOHOL",
-      "price": 22.82,
-      "total_score": 5.0,
-      "entry_score": 9.0,
-      "rr_ratio": 2.0,
-      "scores": {
-        "technical": 6.0,
-        "momentum": 3.8,
-        "rel_strength": 3.4,
-        "volume": 2.7,
-        "risk": 10.0,
-        "timing": 3.0
-      },
-      "timeframe": "KISA_VADE",
-      "entry_zone": {
-        "low": 22.5918,
-        "high": 22.9341
-      },
-      "stop_loss": 22.3579,
-      "target1": 23.7443,
-      "target2": 24.6686,
-      "reasoning": "Bollinger alt bant",
-      "rsi": 42.4,
-      "bb_pos": 0.284,
-      "atr_pct": 4.05,
-      "beta": 0.97,
-      "mdd_60": 12.6,
-      "vol_ratio": 0.27,
-      "r5": -2.98,
-      "r20": -2.56,
-      "r60": 14.79,
-      "rank": 2
-    },
-    {
       "symbol": "MGROS",
-      "price": 663.0,
-      "total_score": 5.6,
-      "entry_score": 8.9,
-      "rr_ratio": 2.0,
+      "price": 676.0,
+      "total_score": 6.2,
+      "entry_score": 7.2,
+      "rr_ratio": 0.94,
       "scores": {
-        "technical": 6.0,
-        "momentum": 4.6,
+        "technical": 6.4,
+        "momentum": 4.8,
         "rel_strength": 7.7,
         "volume": 2.7,
         "risk": 10.0,
-        "timing": 1.0
+        "timing": 6.0
       },
       "timeframe": "KISA_VADE",
       "entry_zone": {
-        "low": 656.37,
-        "high": 666.315
+        "low": 669.24,
+        "high": 679.38
       },
-      "stop_loss": 651.9801,
-      "target1": 685.0398,
-      "target2": 707.0795,
-      "reasoning": "Endeks üstünde, Bollinger alt bant",
-      "rsi": 47.5,
-      "bb_pos": 0.349,
-      "atr_pct": 3.32,
-      "beta": 0.88,
+      "stop_loss": 652.3131,
+      "hard_stop": 634.4813,
+      "target1": 698.2898,
+      "target2": 720.5795,
+      "reasoning": "Güçlü MA dizilimi, Endeks üstünde, Dip toparlanması",
+      "rsi": 50.4,
+      "bb_pos": 0.515,
+      "atr_pct": 3.3,
+      "beta": 0.87,
       "mdd_60": 9.0,
-      "vol_ratio": 0.27,
-      "r5": 0.61,
-      "r20": 4.21,
-      "r60": 7.49,
+      "vol_ratio": 0.44,
+      "r5": 2.58,
+      "r20": 6.26,
+      "r60": 9.59,
+      "rank": 2
+    },
+    {
+      "symbol": "TOASO",
+      "price": 302.5,
+      "total_score": 6.2,
+      "entry_score": 7.2,
+      "rr_ratio": 0.56,
+      "scores": {
+        "technical": 6.4,
+        "momentum": 4.8,
+        "rel_strength": 7.5,
+        "volume": 2.7,
+        "risk": 10.0,
+        "timing": 6.0
+      },
+      "timeframe": "KISA_VADE",
+      "entry_zone": {
+        "low": 299.475,
+        "high": 304.0125
+      },
+      "stop_loss": 282.5714,
+      "hard_stop": 273.7143,
+      "target1": 313.5714,
+      "target2": 324.6429,
+      "reasoning": "Güçlü MA dizilimi, Endeks üstünde, Dip toparlanması",
+      "rsi": 45.3,
+      "bb_pos": 0.505,
+      "atr_pct": 3.66,
+      "beta": 1.14,
+      "mdd_60": 14.6,
+      "vol_ratio": 0.51,
+      "r5": 2.2,
+      "r20": 5.77,
+      "r60": 11.5,
       "rank": 3
     }
   ],
   "active_pick": {
     "symbol": "TTKOM",
-    "price": 62.8,
+    "price": 63.15,
     "total_score": 6.0,
-    "entry_score": 9.5,
-    "rr_ratio": 2.0,
+    "entry_score": 7.0,
+    "rr_ratio": 0.56,
     "scores": {
-      "technical": 5.6,
-      "momentum": 4.6,
-      "rel_strength": 6.2,
-      "volume": 3.0,
+      "technical": 6.4,
+      "momentum": 4.4,
+      "rel_strength": 5.8,
+      "volume": 3.4,
       "risk": 10.0,
-      "timing": 8.0
+      "timing": 6.0
     },
     "timeframe": "KISA_VADE",
     "entry_zone": {
-      "low": 62.172,
-      "high": 63.114
+      "low": 62.5185,
+      "high": 63.4658
     },
-    "stop_loss": 59.5829,
-    "target1": 64.6286,
-    "target2": 66.4571,
+    "stop_loss": 59.82,
+    "hard_stop": 58.34,
+    "target1": 65.0,
+    "target2": 66.85,
     "reasoning": "Güçlü MA dizilimi, Dip toparlanması",
-    "rsi": 44.0,
-    "bb_pos": 0.521,
-    "atr_pct": 2.91,
-    "beta": 1.1,
+    "rsi": 45.3,
+    "bb_pos": 0.554,
+    "atr_pct": 2.93,
+    "beta": 1.09,
     "mdd_60": 14.1,
-    "vol_ratio": 0.66,
-    "r5": 2.53,
-    "r20": 3.97,
-    "r60": 0.56,
-    "rank": 0,
-    "hard_stop": 58.1086
+    "vol_ratio": 0.82,
+    "r5": 3.1,
+    "r20": 4.55,
+    "r60": 1.12,
+    "rank": 0
   },
   "exit_signal": {
     "symbol": "TTKOM",
     "signal": "DEVAM",
     "exit_pts": 2,
-    "score_now": 5.9,
+    "score_now": 6.0,
     "score_prev": 5.9,
     "message": ""
   },
   "lot_info": {
-    "TRALT": {
-      "lots": 930,
-      "price": 44.38,
-      "cost": 41277.53
-    },
-    "DOHOL": {
-      "lots": 1810,
-      "price": 22.82,
-      "cost": 41308.33
+    "BIMAS": {
+      "lots": 109,
+      "price": 380.75,
+      "cost": 41505.9
     },
     "MGROS": {
-      "lots": 62,
-      "price": 663.0,
-      "cost": 41110.11
+      "lots": 61,
+      "price": 676.0,
+      "cost": 41240.12
+    },
+    "TOASO": {
+      "lots": 137,
+      "price": 302.5,
+      "cost": 41446.64
     }
   },
   "tracker": {
     "active_symbol": "TTKOM",
     "avg_cost": 62.51,
     "total_qty": 658,
-    "current_price": 63.25,
-    "unrealized_pnl": 486.92,
-    "unrealized_pct": 1.18,
+    "current_price": 63.15,
+    "unrealized_pnl": 421.12,
+    "unrealized_pct": 1.02,
     "realized_pnl": 0.0,
     "history_pnl_total": 311,
     "trade_count": 2,
@@ -185,475 +188,475 @@
     "data_source": "manual"
   },
   "score_table": {
-    "TTKOM": {
-      "total": 6.0,
+    "BIMAS": {
+      "total": 5.7,
       "rank": 1,
       "timeframe": "KISA_VADE"
     },
-    "TRALT": {
-      "total": 5.8,
+    "MGROS": {
+      "total": 6.2,
       "rank": 2,
       "timeframe": "KISA_VADE"
     },
-    "MAVI": {
-      "total": 4.9,
+    "TOASO": {
+      "total": 6.2,
       "rank": 3,
-      "timeframe": "ÖNERİLMEZ"
+      "timeframe": "KISA_VADE"
     },
-    "DOHOL": {
-      "total": 5.0,
+    "TTKOM": {
+      "total": 6.0,
       "rank": 4,
       "timeframe": "KISA_VADE"
     },
-    "MGROS": {
-      "total": 5.6,
+    "ODAS": {
+      "total": 6.2,
       "rank": 5,
       "timeframe": "KISA_VADE"
     },
-    "LOGO": {
-      "total": 6.2,
+    "SKBNK": {
+      "total": 5.8,
       "rank": 6,
       "timeframe": "KISA_VADE"
     },
-    "AGHOL": {
-      "total": 6.7,
+    "DEVA": {
+      "total": 5.5,
       "rank": 7,
-      "timeframe": "ORTA_VADE"
+      "timeframe": "KISA_VADE"
     },
-    "SKBNK": {
-      "total": 5.6,
+    "THYAO": {
+      "total": 5.4,
       "rank": 8,
       "timeframe": "KISA_VADE"
     },
-    "ENJSA": {
-      "total": 4.2,
+    "TTRAK": {
+      "total": 5.4,
       "rank": 9,
+      "timeframe": "KISA_VADE"
+    },
+    "BFREN": {
+      "total": 4.5,
+      "rank": 10,
       "timeframe": "ÖNERİLMEZ"
     },
-    "DOAS": {
-      "total": 6.0,
-      "rank": 10,
-      "timeframe": "KISA_VADE"
-    },
-    "ALARK": {
-      "total": 5.8,
+    "AGHOL": {
+      "total": 6.6,
       "rank": 11,
-      "timeframe": "KISA_VADE"
+      "timeframe": "ORTA_VADE"
     },
-    "ODAS": {
-      "total": 6.3,
+    "PGSUS": {
+      "total": 3.9,
       "rank": 12,
-      "timeframe": "KISA_VADE"
+      "timeframe": "ÖNERİLMEZ"
     },
-    "TOASO": {
-      "total": 5.7,
+    "DOHOL": {
+      "total": 5.6,
       "rank": 13,
       "timeframe": "KISA_VADE"
     },
-    "TRGYO": {
-      "total": 5.4,
+    "SAHOL": {
+      "total": 4.5,
       "rank": 14,
-      "timeframe": "KISA_VADE"
+      "timeframe": "ÖNERİLMEZ"
     },
-    "BIMAS": {
-      "total": 5.1,
+    "GUBRF": {
+      "total": 5.5,
       "rank": 15,
       "timeframe": "KISA_VADE"
     },
-    "AEFES": {
-      "total": 6.0,
-      "rank": 16,
-      "timeframe": "KISA_VADE"
-    },
-    "ASELS": {
-      "total": 4.5,
-      "rank": 17,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "EKGYO": {
-      "total": 4.9,
-      "rank": 18,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "AGESA": {
+    "KCHOL": {
       "total": 4.4,
-      "rank": 19,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "RGYAS": {
-      "total": 5.7,
-      "rank": 20,
-      "timeframe": "KISA_VADE"
-    },
-    "GUBRF": {
-      "total": 5.0,
-      "rank": 21,
-      "timeframe": "KISA_VADE"
-    },
-    "TTRAK": {
-      "total": 5.0,
-      "rank": 22,
-      "timeframe": "KISA_VADE"
-    },
-    "ISGYO": {
-      "total": 5.4,
-      "rank": 23,
-      "timeframe": "KISA_VADE"
-    },
-    "REEDR": {
-      "total": 4.1,
-      "rank": 24,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "THYAO": {
-      "total": 5.0,
-      "rank": 25,
-      "timeframe": "KISA_VADE"
-    },
-    "AKSA": {
-      "total": 6.3,
-      "rank": 26,
-      "timeframe": "KISA_VADE"
-    },
-    "DEVA": {
-      "total": 4.7,
-      "rank": 27,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "TUPRS": {
-      "total": 3.8,
-      "rank": 28,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "KZBGY": {
-      "total": 3.8,
-      "rank": 29,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "ISCTR": {
-      "total": 4.2,
-      "rank": 30,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "SAHOL": {
-      "total": 4.7,
-      "rank": 31,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "OTKAR": {
-      "total": 4.6,
-      "rank": 32,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "AGYO": {
-      "total": 4.3,
-      "rank": 33,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "AKGRT": {
-      "total": 4.5,
-      "rank": 34,
+      "rank": 16,
       "timeframe": "ÖNERİLMEZ"
     },
     "ENKAI": {
-      "total": 4.4,
-      "rank": 35,
+      "total": 4.3,
+      "rank": 17,
       "timeframe": "ÖNERİLMEZ"
     },
-    "GARAN": {
-      "total": 4.7,
-      "rank": 36,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "SOKM": {
-      "total": 3.4,
-      "rank": 37,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "HLGYO": {
-      "total": 6.2,
-      "rank": 38,
+    "TRALT": {
+      "total": 5.6,
+      "rank": 18,
       "timeframe": "KISA_VADE"
     },
-    "AKBNK": {
-      "total": 3.8,
-      "rank": 39,
+    "GLYHO": {
+      "total": 5.1,
+      "rank": 19,
+      "timeframe": "KISA_VADE"
+    },
+    "RGYAS": {
+      "total": 5.5,
+      "rank": 20,
+      "timeframe": "KISA_VADE"
+    },
+    "ALARK": {
+      "total": 6.4,
+      "rank": 21,
+      "timeframe": "KISA_VADE"
+    },
+    "AGESA": {
+      "total": 5.4,
+      "rank": 22,
+      "timeframe": "KISA_VADE"
+    },
+    "AKSA": {
+      "total": 6.4,
+      "rank": 23,
+      "timeframe": "KISA_VADE"
+    },
+    "ZOREN": {
+      "total": 4.7,
+      "rank": 24,
       "timeframe": "ÖNERİLMEZ"
     },
-    "KCHOL": {
-      "total": 4.8,
-      "rank": 40,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "GOLTS": {
-      "total": 4.1,
-      "rank": 41,
-      "timeframe": "ÖNERİLMEZ"
+    "LOGO": {
+      "total": 6.2,
+      "rank": 25,
+      "timeframe": "KISA_VADE"
     },
     "ASUZU": {
-      "total": 4.1,
-      "rank": 42,
+      "total": 3.9,
+      "rank": 26,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "BRISA": {
+      "total": 7.0,
+      "rank": 27,
+      "timeframe": "ORTA_VADE"
+    },
+    "SOKM": {
+      "total": 4.3,
+      "rank": 28,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "ULKER": {
+      "total": 4.3,
+      "rank": 29,
       "timeframe": "ÖNERİLMEZ"
     },
     "BERA": {
-      "total": 4.9,
-      "rank": 43,
+      "total": 4.6,
+      "rank": 30,
       "timeframe": "ÖNERİLMEZ"
+    },
+    "OTKAR": {
+      "total": 4.5,
+      "rank": 31,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "AEFES": {
+      "total": 6.0,
+      "rank": 32,
+      "timeframe": "KISA_VADE"
     },
     "ECZYT": {
-      "total": 4.6,
-      "rank": 44,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "KRDMD": {
-      "total": 5.3,
-      "rank": 45,
+      "total": 5.4,
+      "rank": 33,
       "timeframe": "KISA_VADE"
-    },
-    "HATEK": {
-      "total": 6.3,
-      "rank": 46,
-      "timeframe": "KISA_VADE"
-    },
-    "CCOLA": {
-      "total": 6.7,
-      "rank": 47,
-      "timeframe": "ORTA_VADE"
-    },
-    "CIMSA": {
-      "total": 3.9,
-      "rank": 48,
-      "timeframe": "ÖNERİLMEZ"
     },
     "EGEEN": {
-      "total": 3.4,
-      "rank": 49,
+      "total": 4.1,
+      "rank": 34,
       "timeframe": "ÖNERİLMEZ"
-    },
-    "PAPIL": {
-      "total": 4.4,
-      "rank": 50,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "SARKY": {
-      "total": 6.0,
-      "rank": 51,
-      "timeframe": "KISA_VADE"
-    },
-    "TAVHL": {
-      "total": 5.1,
-      "rank": 52,
-      "timeframe": "KISA_VADE"
-    },
-    "NTHOL": {
-      "total": 5.6,
-      "rank": 53,
-      "timeframe": "KISA_VADE"
-    },
-    "ARCLK": {
-      "total": 3.7,
-      "rank": 54,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "EREGL": {
-      "total": 6.5,
-      "rank": 55,
-      "timeframe": "ORTA_VADE"
     },
     "GSRAY": {
-      "total": 4.2,
-      "rank": 56,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "KARSN": {
-      "total": 6.3,
-      "rank": 57,
-      "timeframe": "KISA_VADE"
-    },
-    "ALFAS": {
-      "total": 6.4,
-      "rank": 58,
-      "timeframe": "KISA_VADE"
-    },
-    "IHLGM": {
-      "total": 3.6,
-      "rank": 59,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "ZOREN": {
-      "total": 4.0,
-      "rank": 60,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "EPLAS": {
-      "total": 3.5,
-      "rank": 61,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "PGSUS": {
-      "total": 3.4,
-      "rank": 62,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "VESTL": {
-      "total": 3.4,
-      "rank": 63,
+      "total": 4.1,
+      "rank": 35,
       "timeframe": "ÖNERİLMEZ"
     },
     "AKSEN": {
       "total": 4.3,
-      "rank": 64,
+      "rank": 36,
       "timeframe": "ÖNERİLMEZ"
     },
-    "KONTR": {
-      "total": 2.6,
-      "rank": 65,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "ARSAN": {
-      "total": 4.2,
-      "rank": 66,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "SASA": {
-      "total": 3.6,
-      "rank": 67,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "BFREN": {
-      "total": 4.1,
-      "rank": 68,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "HEKTS": {
+    "ISGYO": {
       "total": 5.6,
-      "rank": 69,
+      "rank": 37,
       "timeframe": "KISA_VADE"
     },
-    "SISE": {
-      "total": 5.0,
-      "rank": 70,
-      "timeframe": "KISA_VADE"
+    "ENJSA": {
+      "total": 3.7,
+      "rank": 38,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "AGYO": {
+      "total": 4.0,
+      "rank": 39,
+      "timeframe": "ÖNERİLMEZ"
     },
     "FROTO": {
       "total": 4.1,
-      "rank": 71,
+      "rank": 40,
       "timeframe": "ÖNERİLMEZ"
     },
-    "SELEC": {
-      "total": 3.9,
-      "rank": 72,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "OYAKC": {
-      "total": 2.8,
-      "rank": 73,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "ULKER": {
-      "total": 3.8,
-      "rank": 74,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "VAKBN": {
-      "total": 5.8,
-      "rank": 75,
+    "TRGYO": {
+      "total": 5.4,
+      "rank": 41,
       "timeframe": "KISA_VADE"
     },
-    "QUAGR": {
-      "total": 6.3,
-      "rank": 76,
+    "MAVI": {
+      "total": 5.3,
+      "rank": 42,
       "timeframe": "KISA_VADE"
     },
-    "ATLAS": {
-      "total": 3.3,
-      "rank": 77,
+    "REEDR": {
+      "total": 4.3,
+      "rank": 43,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "KZBGY": {
+      "total": 2.9,
+      "rank": 44,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "SARKY": {
+      "total": 5.9,
+      "rank": 45,
+      "timeframe": "KISA_VADE"
+    },
+    "KRDMD": {
+      "total": 5.5,
+      "rank": 46,
+      "timeframe": "KISA_VADE"
+    },
+    "TAVHL": {
+      "total": 5.0,
+      "rank": 47,
+      "timeframe": "KISA_VADE"
+    },
+    "PAPIL": {
+      "total": 5.0,
+      "rank": 48,
+      "timeframe": "KISA_VADE"
+    },
+    "ARCLK": {
+      "total": 4.6,
+      "rank": 49,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "VESTL": {
+      "total": 3.6,
+      "rank": 50,
       "timeframe": "ÖNERİLMEZ"
     },
     "DYOBY": {
-      "total": 2.9,
-      "rank": 78,
+      "total": 2.8,
+      "rank": 51,
       "timeframe": "ÖNERİLMEZ"
     },
-    "BRISA": {
-      "total": 7.1,
-      "rank": 79,
-      "timeframe": "ORTA_VADE"
+    "EKGYO": {
+      "total": 4.7,
+      "rank": 52,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "IHLGM": {
+      "total": 3.4,
+      "rank": 53,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "GARAN": {
+      "total": 4.6,
+      "rank": 54,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "EPLAS": {
+      "total": 3.3,
+      "rank": 55,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "NTHOL": {
+      "total": 5.5,
+      "rank": 56,
+      "timeframe": "KISA_VADE"
+    },
+    "ATLAS": {
+      "total": 3.1,
+      "rank": 57,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "GOLTS": {
+      "total": 3.4,
+      "rank": 58,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "SASA": {
+      "total": 3.5,
+      "rank": 59,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "TUPRS": {
+      "total": 4.3,
+      "rank": 60,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "SISE": {
+      "total": 5.2,
+      "rank": 61,
+      "timeframe": "KISA_VADE"
+    },
+    "AKBNK": {
+      "total": 3.7,
+      "rank": 62,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "ISCTR": {
+      "total": 4.0,
+      "rank": 63,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "EREGL": {
+      "total": 6.4,
+      "rank": 64,
+      "timeframe": "KISA_VADE"
+    },
+    "YKBNK": {
+      "total": 4.1,
+      "rank": 65,
+      "timeframe": "ÖNERİLMEZ"
     },
     "ALKIM": {
-      "total": 3.2,
+      "total": 2.8,
+      "rank": 66,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "HLGYO": {
+      "total": 6.3,
+      "rank": 67,
+      "timeframe": "KISA_VADE"
+    },
+    "KONTR": {
+      "total": 2.5,
+      "rank": 68,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "PRKME": {
+      "total": 4.0,
+      "rank": 69,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "SELEC": {
+      "total": 3.7,
+      "rank": 70,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "ASELS": {
+      "total": 5.3,
+      "rank": 71,
+      "timeframe": "KISA_VADE"
+    },
+    "OYAKC": {
+      "total": 3.0,
+      "rank": 72,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "CCOLA": {
+      "total": 6.6,
+      "rank": 73,
+      "timeframe": "ORTA_VADE"
+    },
+    "TKFEN": {
+      "total": 7.1,
+      "rank": 74,
+      "timeframe": "ORTA_VADE"
+    },
+    "KORDS": {
+      "total": 6.5,
+      "rank": 75,
+      "timeframe": "ORTA_VADE"
+    },
+    "DOAS": {
+      "total": 6.5,
+      "rank": 76,
+      "timeframe": "ORTA_VADE"
+    },
+    "OZRDN": {
+      "total": 4.3,
+      "rank": 77,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "HEKTS": {
+      "total": 6.0,
+      "rank": 78,
+      "timeframe": "KISA_VADE"
+    },
+    "CIMSA": {
+      "total": 4.6,
+      "rank": 79,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "BRSAN": {
+      "total": 4.4,
       "rank": 80,
       "timeframe": "ÖNERİLMEZ"
     },
-    "NETAS": {
-      "total": 6.7,
+    "ARSAN": {
+      "total": 4.3,
       "rank": 81,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "NETAS": {
+      "total": 6.6,
+      "rank": 82,
       "timeframe": "ORTA_VADE"
     },
-    "PRKME": {
-      "total": 4.2,
-      "rank": 82,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "PETKM": {
-      "total": 4.1,
-      "rank": 83,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "GLYHO": {
-      "total": 5.4,
-      "rank": 84,
-      "timeframe": "KISA_VADE"
-    },
-    "BRSAN": {
-      "total": 4.6,
-      "rank": 85,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "TCELL": {
-      "total": 3.7,
-      "rank": 86,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "YKBNK": {
-      "total": 4.0,
-      "rank": 87,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "KORDS": {
-      "total": 5.3,
-      "rank": 88,
-      "timeframe": "KISA_VADE"
-    },
-    "OZRDN": {
-      "total": 4.7,
-      "rank": 89,
-      "timeframe": "ÖNERİLMEZ"
-    },
-    "ALGYO": {
-      "total": 6.4,
-      "rank": 90,
-      "timeframe": "KISA_VADE"
-    },
-    "TKFEN": {
+    "KARSN": {
       "total": 6.3,
-      "rank": 91,
+      "rank": 83,
       "timeframe": "KISA_VADE"
     },
-    "FENER": {
-      "total": 6.4,
-      "rank": 92,
-      "timeframe": "KISA_VADE"
-    },
-    "ARASE": {
-      "total": 7.0,
-      "rank": 93,
+    "QUAGR": {
+      "total": 6.9,
+      "rank": 84,
       "timeframe": "ORTA_VADE"
     },
     "HALKB": {
       "total": 6.5,
-      "rank": 94,
+      "rank": 85,
       "timeframe": "ORTA_VADE"
+    },
+    "PETKM": {
+      "total": 4.1,
+      "rank": 86,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "TCELL": {
+      "total": 4.5,
+      "rank": 87,
+      "timeframe": "ÖNERİLMEZ"
+    },
+    "VAKBN": {
+      "total": 5.6,
+      "rank": 88,
+      "timeframe": "KISA_VADE"
+    },
+    "AKGRT": {
+      "total": 5.6,
+      "rank": 89,
+      "timeframe": "KISA_VADE"
+    },
+    "ALFAS": {
+      "total": 6.9,
+      "rank": 90,
+      "timeframe": "ORTA_VADE"
+    },
+    "ALGYO": {
+      "total": 6.4,
+      "rank": 91,
+      "timeframe": "KISA_VADE"
+    },
+    "ARASE": {
+      "total": 7.4,
+      "rank": 92,
+      "timeframe": "ORTA_VADE"
+    },
+    "FENER": {
+      "total": 6.2,
+      "rank": 93,
+      "timeframe": "KISA_VADE"
+    },
+    "HATEK": {
+      "total": 6.4,
+      "rank": 94,
+      "timeframe": "KISA_VADE"
     },
     "INDES": {
       "total": 7.3,
@@ -666,7 +669,7 @@
       "timeframe": "KISA_VADE"
     },
     "ORGE": {
-      "total": 6.7,
+      "total": 7.0,
       "rank": 97,
       "timeframe": "ORTA_VADE"
     }
