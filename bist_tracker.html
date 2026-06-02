@@ -331,25 +331,23 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .pm-wrap::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 5%,rgba(59,130,246,.4) 30%,rgba(96,165,250,.85) 50%,rgba(59,130,246,.4) 70%,transparent 95%);filter:drop-shadow(0 0 5px rgba(59,130,246,.5));}
 .pm-header{display:flex;align-items:center;gap:6px;margin-bottom:10px;}
 .pm-title{font-size:10px;font-weight:800;letter-spacing:2px;color:#93c5fd;text-transform:uppercase;flex:1;}
-.pm-sym-badge{font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 8px;border-radius:5px;background:rgba(59,130,246,.12);color:#bfdbfe;border:1px solid rgba(59,130,246,.28);}
-.pm-score-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.pm-sym-badge{font-family:var(--mono);font-size:15px;font-weight:800;padding:5px 13px;border-radius:8px;background:linear-gradient(135deg,rgba(59,130,246,.22),rgba(37,99,235,.12));color:#eff6ff;border:1px solid rgba(96,165,250,.45);letter-spacing:.8px;box-shadow:0 0 10px rgba(59,130,246,.18);}
+.pm-score-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
 .pm-score-big{font-family:var(--mono);font-size:32px;font-weight:800;line-height:1;min-width:60px;text-align:center;}
 .pm-score-big.pm-good{color:#4ade80;}
 .pm-score-big.pm-warn{color:#fbbf24;}
 .pm-score-big.pm-bad{color:#f87171;}
 .pm-score-info{flex:1;}
-.pm-score-label{font-size:9px;color:#4e6080;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px;}
-.pm-trend-row{display:flex;align-items:center;gap:5px;height:34px;position:relative;}
-.pm-trend-row::before{content:'';position:absolute;top:50%;left:10px;right:10px;height:1px;background:rgba(255,255,255,.07);z-index:0;}
-.pm-dot{width:16px;height:16px;border-radius:50%;position:relative;flex-shrink:0;z-index:1;transition:transform .2s;}
-.pm-dot::after{content:'';position:absolute;top:3px;left:4px;width:5px;height:4px;background:rgba(255,255,255,.45);border-radius:50%;filter:blur(1.5px);}
-.pm-dot.pm-good{background:radial-gradient(circle at 35% 32%,#bbf7d0,#16a34a 70%);box-shadow:0 0 6px rgba(74,222,128,.6),0 2px 4px rgba(0,0,0,.45);}
-.pm-dot.pm-warn{background:radial-gradient(circle at 35% 32%,#fef08a,#d97706 70%);box-shadow:0 0 6px rgba(251,191,36,.6),0 2px 4px rgba(0,0,0,.45);}
-.pm-dot.pm-bad{background:radial-gradient(circle at 35% 32%,#fecaca,#dc2626 70%);box-shadow:0 0 6px rgba(248,113,113,.6),0 2px 4px rgba(0,0,0,.45);}
-.pm-dot.pm-today{outline:2px solid rgba(255,255,255,.55);outline-offset:2px;width:20px;height:20px;}
-.pm-dot.pm-today::after{top:4px;left:5px;width:6px;height:5px;}
-.pm-dot:hover{transform:scale(1.18);}
-.pm-trend-dates{display:flex;justify-content:space-between;margin-top:2px;}
+.pm-score-label{font-size:9px;color:#4e6080;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;}
+/* Skor geçmişi — modern dikey sparkline barlar */
+.pm-spark{display:flex;align-items:flex-end;gap:3px;height:34px;padding:0 1px;}
+.pm-spark-bar{flex:1;min-width:3px;min-height:3px;border-radius:3px 3px 1px 1px;background:currentColor;opacity:.55;transition:height .35s ease,opacity .2s;align-self:flex-end;}
+.pm-spark-bar.pm-good{color:#4ade80;}
+.pm-spark-bar.pm-warn{color:#fbbf24;}
+.pm-spark-bar.pm-bad{color:#f87171;}
+.pm-spark-bar:hover{opacity:.85;}
+.pm-spark-bar.pm-today{opacity:1;box-shadow:0 0 9px currentColor;outline:1.5px solid rgba(255,255,255,.35);outline-offset:1px;}
+.pm-trend-dates{display:flex;justify-content:space-between;margin-top:3px;}
 .pm-trend-dates span{font-size:8px;color:#4e6080;}
 .pm-divider{height:1px;background:rgba(255,255,255,.05);margin:9px 0;}
 .pm-pnl-row{display:flex;gap:6px;margin-bottom:9px;}
@@ -359,13 +357,13 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .pm-pnl-val.neg{color:#f87171;}
 .pm-pnl-val.neu{color:#94a3b8;}
 .pm-pnl-lbl{font-size:8px;color:#4e6080;margin-top:3px;letter-spacing:.3px;}
-.pm-verdict{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;margin-bottom:9px;}
+.pm-verdict{display:flex;flex-direction:column;align-items:center;text-align:center;gap:5px;padding:11px 12px;border-radius:8px;margin-bottom:9px;}
 .pm-verdict.v-devam{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.22);}
 .pm-verdict.v-dikkat{background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.22);}
 .pm-verdict.v-cik{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.22);}
-.pm-verdict-icon{font-size:18px;flex-shrink:0;}
-.pm-verdict-text{flex:1;}
-.pm-verdict-title{font-size:11px;font-weight:800;letter-spacing:.5px;line-height:1;}
+.pm-verdict-icon{font-size:22px;flex-shrink:0;line-height:1;}
+.pm-verdict-text{flex:none;}
+.pm-verdict-title{font-size:13px;font-weight:800;letter-spacing:1px;line-height:1;}
 .pm-verdict.v-devam .pm-verdict-title{color:#4ade80;}
 .pm-verdict.v-dikkat .pm-verdict-title{color:#fbbf24;}
 .pm-verdict.v-cik .pm-verdict-title{color:#f87171;}
@@ -29169,16 +29167,19 @@ function renderPositionMonitor() {
   const hist = (D.scoreHistory && D.scoreHistory[activeSym]) || [];
   const barsEl = $('pm-trend-bars');
   if (barsEl) {
+    barsEl.className = 'pm-spark';
     barsEl.innerHTML = '';
     if (hist.length > 0) {
       hist.forEach((h, i) => {
         const gs = h.gs || 0;
         const cls = gs >= 6 ? 'pm-good' : gs >= 4 ? 'pm-warn' : 'pm-bad';
         const isToday = i === hist.length - 1;
-        const dot = document.createElement('div');
-        dot.className = `pm-dot ${cls}${isToday ? ' pm-today' : ''}`;
-        dot.title = `${h.date ? h.date.slice(5) : ''}: ${gs.toFixed(1)} puan`;
-        barsEl.appendChild(dot);
+        const bar = document.createElement('div');
+        bar.className = `pm-spark-bar ${cls}${isToday ? ' pm-today' : ''}`;
+        // Yükseklik = skor (0-10 → %20-100, min görünür yükseklik için taban)
+        bar.style.height = Math.max(12, Math.min(100, gs * 10)) + '%';
+        bar.title = `${h.date ? h.date.slice(5) : ''}: ${gs.toFixed(1)} puan`;
+        barsEl.appendChild(bar);
       });
       st('pm-trend-from', hist[0].date ? hist[0].date.slice(5) : '—');
     } else {
