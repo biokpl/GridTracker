@@ -36,6 +36,66 @@ except ImportError:
 
 
 # ══════════════════════════════════════════════════════════════
+#  NTFY — Hedef/Takip barı bildirimleri (normal topic, anlık server-side)
+# ══════════════════════════════════════════════════════════════
+NTFY_TOPIC = 'GridTracker-bkpl-07'  # normal topic (alarm değil)
+
+def _send_ntfy(title, body, tags='bell'):
+    """Normal topic'e ntfy push gönder (sayfa açık olmasa da çalışır)."""
+    try:
+        from urllib.parse import quote
+        requests.post(f'https://ntfy.sh/{NTFY_TOPIC}?title={quote(title)}',
+                      data=body.encode('utf-8'),
+                      headers={'Tags': tags, 'Priority': 'default',
+                               'Content-Type': 'text/plain; charset=utf-8'},
+                      timeout=10)
+        # Log'a emoji/Türkçe yazma — bazı konsollar (cp1254) basamıyor, ASCII-güvenli tut
+        _safe = title.encode('ascii', 'ignore').decode('ascii').strip() or 'hedef bildirimi'
+        log.info(f'[ntfy] gonderildi: {_safe}')
+    except Exception as e:
+        log.warning(f'[ntfy] Hedef bildirim hatasi: {e}')
+
+
+def _check_target_alerts(settings, dl, excel_date):
+    """
+    Hedef barı (aylık) ve Takip barı (sembol) dolunca ANLIK ntfy gönderir.
+    Tarayıcı yerine burada (server) yapılır → sayfa kapalı olsa da gelir.
+    Tekrar göndermemek için settings içinde bayrak tutulur.
+    """
+    month     = excel_date[:7]
+    track_sym = (settings.get('trackSymbol') or '').upper().strip()
+
+    # 1) TAKİP HEDEFİ — trackAccum >= trackTarget
+    ttar   = settings.get('trackTarget', 0) or 0
+    taccum = settings.get('trackAccum', 0) or 0
+    if track_sym and ttar > 0:
+        if taccum >= ttar and not settings.get('trackAlerted'):
+            _send_ntfy(f'🎯 {track_sym} TAKİP Hedefine Ulaşıldı!',
+                       f'{track_sym} için {ttar:,.0f} ₺ hedefine ulaştınız.'.replace(',', '.'),
+                       tags='moneybag')
+            settings['trackAlerted'] = True
+        elif taccum < ttar:
+            settings['trackAlerted'] = False  # hedefin altına düştü → yeni dolumda tekrar bildir
+
+    # 2) AYLIK HEDEF — bu ayın net kârı (takip edilen sembol hariç) >= monthlyTarget
+    mtar = settings.get('monthlyTarget', 0) or 0
+    if mtar > 0:
+        month_net = track_month_net = 0.0
+        for dt, d in (dl or {}).items():
+            if not str(dt).startswith(month):
+                continue
+            month_net += d.get('netProfit', 0) or 0
+            if track_sym:
+                track_month_net += ((d.get('bySymbol', {}) or {}).get(track_sym, {}) or {}).get('netProfit', 0) or 0
+        net_for_target = month_net - track_month_net
+        if net_for_target >= mtar and settings.get('monthlyTargetAlertedMonth') != month:
+            _send_ntfy('🎯 Aylık Hedefe Ulaşıldı!',
+                       f'Bu ay {mtar:,.0f} ₺ hedefine ulaştınız.'.replace(',', '.'),
+                       tags='tada')
+            settings['monthlyTargetAlertedMonth'] = month
+
+
+# ══════════════════════════════════════════════════════════════
 #  HTML ŞABLONU  (güncelleme: bist_tracker.html bu içerikten oluşturulur)
 # ══════════════════════════════════════════════════════════════
 HTML_TEMPLATE = '''<!DOCTYPE html>
@@ -2004,6 +2064,12 @@ def run_once(dry_run=False):
             monthly_kar.append({'month': month_key, 'profit': mk_profit})
             monthly_kar.sort(key=lambda x: x['month'])
             log.info(f'Aylık kar kaydedildi: {month_key} → {mk_profit:+,} ₺')
+
+    # Hedef barı (aylık) + Takip barı (sembol) dolunca ANLIK ntfy (server-side)
+    try:
+        _check_target_alerts(settings, dl, excel_date)
+    except Exception as e:
+        log.warning(f'Hedef bildirim kontrol hatası: {e}')
 
     payload = {
         'lastUpdated':    datetime.now().strftime('%Y-%m-%d %H:%M:%S'),

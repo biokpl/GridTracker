@@ -31140,7 +31140,7 @@ function renderMonthly(){
       $('m-target-pct').textContent='%'+rawPct;
       $('m-target-pct').className='m-target-pct'+(done?' done':'');
       mtt.style.display='block';
-      if(done&&!(S._targetAlerted)){S._targetAlerted=true;sendPushNotify('🎯 Aylık Hedefe Ulaşıldı!','Bu ay '+fxi(target)+' ₺ hedefine ulaştınız.','target-done');}
+      if(done&&!(S._targetAlerted)){S._targetAlerted=true;/* push artık server-side (grid_tracker_service) gönderiyor — çift bildirim olmasın */}
       if(!done) S._targetAlerted=false;
     }else{mtt.style.display='none';}
   }
@@ -31186,7 +31186,7 @@ function renderHTrack(){
   $('h-track-pct').textContent='%'+rawPct;
   $('h-track-pct').className='h-track-pct'+(done?' done':'');
   ht.style.display='block';
-  if(done&&rawPct>=100&&!(S._trackAlerted)){S._trackAlerted=true;toast(sym+' hedefine ulaşıldı! 🎯','ok',4000);sendPushNotify('🎯 '+sym+' TAKİP Hedefine Ulaşıldı!',sym+' için '+fxi(trackTarget)+' ₺ hedefine ulaştınız.','track-done');}
+  if(done&&rawPct>=100&&!(S._trackAlerted)){S._trackAlerted=true;toast(sym+' hedefine ulaşıldı! 🎯','ok',4000);/* push artık server-side (grid_tracker_service) gönderiyor — çift bildirim olmasın */}
   if(!done) S._trackAlerted=false;
   const totalPaid=(D&&D.birikimTx)?D.birikimTx.filter(t=>t.trackPayment).reduce((s,t)=>s+Math.abs(t.amount),0):0;
   const pe=$('h-track-paid');
