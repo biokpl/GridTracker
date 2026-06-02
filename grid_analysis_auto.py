@@ -748,10 +748,34 @@ def analyze_stock(ticker, cfg, min_score=None):
 #  FINAL SKOR
 # =============================================================================
 
+def _entry_position_factor(price, support, resistance):
+    """
+    Fiyatın destek-direnç aralığındaki KONUMUNA göre giriş kalitesi çarpanı.
+    Grid botu için ideal giriş = aralığın ORTASI: altta AL, üstte SAT kademeleri
+    olur → anında iki yönlü tur kârı. Fiyat tepedeyse/direncin üstündeyse tüm
+    kademeler ALIM olur (fiyat düştükçe biriktirir, satacak üst kademe yok) →
+    kötü giriş. Bu çarpan, seçimi orta-bölgedeki hisselere kaydırır.
+    Döner: (çarpan 0-1, sinyal etiketi, konum%)
+    """
+    rng = resistance - support
+    if rng <= 0:
+        return 1.0, '', 50
+    pct = (price - support) / rng
+    p100 = round(pct * 100)
+    if   pct >= 1.0:  return 0.55, f'Giriş=DİRENÇ-ÜSTÜ %{p100}(kötü)', p100
+    elif pct >= 0.85: return 0.75, f'Giriş=üst-bölge %{p100}(zayıf)',  p100
+    elif pct >= 0.65: return 0.90, f'Giriş=orta-üst %{p100}',          p100
+    elif pct >= 0.20: return 1.00, f'Giriş=ORTA %{p100}(ideal)',       p100
+    elif pct >= 0.0:  return 0.88, f'Giriş=destek-dibi %{p100}',       p100
+    else:             return 0.72, f'Giriş=destek-altı %{p100}(riskli)', p100
+
+
 def calc_final_scores(results, market_mult):
     """
-    Final = (0.85 * grid_score + 0.15 * profit_norm) * market_mult
+    Final = (0.85 * grid_score + 0.15 * profit_norm) * market_mult * giriş_konumu
     profit_norm: en dusuk karla en yuksek kar arasinda 0-10 normalize.
+    giriş_konumu: fiyat aralığın ortasındaysa 1.0, tepede/direncin üstündeyse düşük
+                  → "şimdi gir" kalitesi de sıralamaya girer (sadece grid uygunluğu değil).
     """
     if not results:
         return results
@@ -761,7 +785,12 @@ def calc_final_scores(results, market_mult):
     for r in results:
         profit_norm      = (r['_raw_profit'] - min_p) / rng_p * 10.0
         base             = 0.85 * r['grid_score'] + 0.15 * profit_norm
-        r['final_score'] = round(base * market_mult, 3)
+        epf, etag, epct  = _entry_position_factor(r['price'], r['support'], r['resistance'])
+        r['final_score'] = round(base * market_mult * epf, 3)
+        r['entry_pos']   = epct          # fiyatın aralıktaki konumu (%)
+        r['entry_factor']= round(epf, 2)
+        if etag:                         # sinyal etiketine giriş konumunu ekle
+            r['signals'] = (r['signals'] + ', ' + etag) if r.get('signals') else etag
         del r['_raw_profit']
     return results
 
