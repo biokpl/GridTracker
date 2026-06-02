@@ -30159,12 +30159,13 @@ function _scoreBar10(label,val,color){
 function _clamp10(v){ return Math.max(0,Math.min(10,v||0)); }
 
 function _renderScoreBars(sc){
-  return _scoreBar10('Teknik',      sc.technical||0,    '#818cf8')+
-         _scoreBar10('Momentum',    sc.momentum||0,     '#22d3ee')+
-         _scoreBar10('Göreli Güç',  sc.rel_strength||0, '#4ade80')+
-         _scoreBar10('Hacim',       sc.volume||0,       '#fb923c')+
-         _scoreBar10('Risk',        sc.risk||0,         '#a78bfa')+
-         _scoreBar10('Zamanlama',   sc.timing||0,       '#f472b6');
+  // Soluk/pastel tonlar — göz almayan, sakin renkler (renk ayrımı korunur)
+  return _scoreBar10('Teknik',      sc.technical||0,    '#8088a3')+
+         _scoreBar10('Momentum',    sc.momentum||0,     '#6f95a0')+
+         _scoreBar10('Göreli Güç',  sc.rel_strength||0, '#7a9b87')+
+         _scoreBar10('Hacim',       sc.volume||0,       '#a8917a')+
+         _scoreBar10('Risk',        sc.risk||0,         '#8f88a8')+
+         _scoreBar10('Zamanlama',   sc.timing||0,       '#a08596');
 }
 
 function toggleAdvDetail(){
