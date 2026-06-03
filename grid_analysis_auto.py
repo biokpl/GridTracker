@@ -917,10 +917,19 @@ def run(dry_run=False, force=False):
 
     def update_score_history(symbol, grid_sc, final_sc, price_val):
         """Firebase scoreHistory guncellemesi — sembol basina max SCORE_HIST_MAX kayit."""
-        hist = fb_get(f'scoreHistory/{symbol}') or []
+        # ── KRITIK: Gecmisi GUVENLI oku ──────────────────────────────────────
+        # Eskiden fb_get hata/timeout'ta None donuyordu -> kod hist=[] yapip
+        # uzerine tek kayit yaziyordu => TUM GECMIS SILINIYORDU. Artik okuma
+        # BASARISIZ olursa hic yazmiyoruz (gecmis korunur, bu guncelleme atlanir).
+        try:
+            _url = f'{FIREBASE_BASE}/scoreHistory/{symbol}.json'
+            with urllib.request.urlopen(_url, timeout=10) as _r:
+                hist = json.loads(_r.read().decode('utf-8'))
+        except Exception as e:
+            log.warning(f'scoreHistory OKUNAMADI ({symbol}): {e} — '
+                        f'gecmis KORUNUYOR, bu guncelleme atlandi')
+            return
         # Firebase bazen diziyi 'nesne' (dict: {"0":{...},"1":{...}}) olarak dondurur.
-        # Eskiden burada hist=[] yapiliyordu -> TUM GECMIS SILINIYORDU. Artik
-        # nesneyi tarihe gore siralayip listeye ceviriyoruz (veri kaybi yok).
         if isinstance(hist, dict):
             hist = [v for _, v in sorted(hist.items(), key=lambda kv: str(kv[0]))
                     if isinstance(v, dict)]
