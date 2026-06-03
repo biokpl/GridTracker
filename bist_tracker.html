@@ -32852,7 +32852,39 @@ async function gcCheckEntryStatus(sym, low, high){
 
 function startAdvTimer(){
   if(_advTimer) clearInterval(_advTimer);
+  // Tam veri (öneriler, skorlar) 90 sn'de bir
   _advTimer=setInterval(()=>{ if(document.getElementById('pg-sermaye')?.style.display!=='none') renderAdvisor(); }, 90000);
+  // Aktif pozisyon fiyatı + K/Z: 12 sn'de bir hafif tik (monitor Firebase'i 5 sn'de günceller)
+  if(window._advPxTimer) clearInterval(window._advPxTimer);
+  window._advPxTimer=setInterval(_advTickPrice, 12000);
+}
+
+// Sadece aktif pozisyonun anlık fiyat + K/Z'sini günceller (tüm kartı yeniden çizmeden).
+async function _advTickPrice(){
+  try{
+    if(document.getElementById('pg-sermaye')?.style.display==='none') return;
+    if(!_advData||!_advData.tracker||!_advData.tracker.active_symbol) return;
+    if($('adv-active')?.style.display==='none') return;
+    // tracker düğümünü çek (monitor 5 sn'de bir current_price/unrealized_pnl yazar)
+    let tr=null;
+    try{
+      const r=await fetch('/api/advisor',{signal:AbortSignal.timeout(2000)});
+      if(r.ok){ const j=await r.json(); tr=j&&j.tracker; }
+    }catch(_){}
+    if(!tr){
+      const r=await fetch(FIREBASE_URL+'/gridtracker/advisor/tracker.json',{signal:AbortSignal.timeout(4000)});
+      if(r.ok) tr=await r.json();
+    }
+    if(!tr||!tr.active_symbol||tr.active_symbol!==_advData.tracker.active_symbol) return;
+    if(tr.current_price){ $('adv-price').textContent=_fmtPrice(tr.current_price); _advData.tracker.current_price=tr.current_price; }
+    const pnl=tr.unrealized_pnl||0, pct=tr.unrealized_pct||0;
+    const histTot=(tr.history_pnl_total!=null?tr.history_pnl_total:(_advData.tracker.history_pnl_total||0));
+    const totalPnl=pnl+histTot;
+    const pnlEl=$('adv-pnl');
+    if(pnlEl){ pnlEl.textContent=_fmtTL(pnl)+(pct?' ('+(pct>=0?'+':'')+pct.toFixed(1)+'%)':''); pnlEl.style.color=pnl>=0?'#4ade80':'#f87171'; }
+    const totEl=$('adv-total-pnl');
+    if(totEl){ totEl.textContent=_fmtTL(totalPnl); totEl.style.color=totalPnl>=0?'#4ade80':'#f87171'; }
+  }catch(_){}
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
