@@ -33682,7 +33682,7 @@ function renderPositionMonitor() {
   const scoreEl = $('pm-score-big');
   if (scoreEl) {
     if (activeGS !== null) {
-      scoreEl.textContent = activeGS.toFixed(1);
+      scoreEl.textContent = activeGS.toFixed(2);
       scoreEl.className = 'pm-score-big ' + (activeGS >= 6 ? 'pm-good' : activeGS >= 4 ? 'pm-warn' : 'pm-bad');
     } else {
       scoreEl.textContent = '?';
@@ -33709,7 +33709,7 @@ function renderPositionMonitor() {
         // Skoru barın tepesine yaz
         const val = document.createElement('span');
         val.className = 'pm-spark-val';
-        val.textContent = gs.toFixed(1);
+        val.textContent = gs.toFixed(2);
         bar.appendChild(val);
         barsEl.appendChild(bar);
       });
