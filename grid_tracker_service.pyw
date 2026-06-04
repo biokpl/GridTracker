@@ -1834,12 +1834,16 @@ def calc_profit(trades, carried_over=None):
 #  FİREBASE
 # ──────────────────────────────────────────────────────────
 def firebase_write(payload):
-    """Veriyi Firebase Realtime Database'e yazar."""
+    """Veriyi Firebase Realtime Database'e yazar.
+    KRİTİK: PUT yerine PATCH — PUT tüm /gridtracker düğümünü değiştirip
+    payload'da olmayan her şeyi (scoreHistory, gridRec, advisor, stocks,
+    livePrices...) SİLİYORDU. PATCH yalnızca verilen anahtarları günceller,
+    geri kalanını korur."""
     try:
         url  = f'{FIREBASE_URL}/gridtracker.json'
-        resp = requests.put(url, json=payload, timeout=15)
+        resp = requests.patch(url, json=payload, timeout=15)
         if resp.status_code == 200:
-            log.info('Firebase: veri yazıldı ✓')
+            log.info('Firebase: veri yazıldı (PATCH, merge) ✓')
             return True
         log.warning(f'Firebase yazma hatası: HTTP {resp.status_code}')
     except Exception as e:
