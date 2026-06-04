@@ -59,6 +59,43 @@ def _save_state(state: dict):
     (BASE / "state.json").write_text(
         json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
+
+def _record_recommended(state: dict, symbol: str, pick: dict = None):
+    """Gün içi önerilen sembolü kaydet — akşam senkronu Excel'de arayıp K/Z işler."""
+    if not symbol:
+        return
+    today = datetime.now().strftime("%Y-%m-%d")
+    recs = state.setdefault("recommended_today", [])
+    recs[:] = [r for r in recs if isinstance(r, dict) and r.get("date") == today]
+    if any(r.get("symbol") == symbol for r in recs):
+        return
+    e = {"symbol": symbol, "date": today, "entry_date": today}
+    if pick:
+        e.update({"stop_loss": pick.get("stop_loss", 0), "hard_stop": pick.get("hard_stop", 0),
+                  "target1": pick.get("target1", 0), "target2": pick.get("target2", 0),
+                  "timeframe": pick.get("timeframe", ""), "score": pick.get("total_score", 0)})
+    recs.append(e)
+
+
+def _push_tracker_after_close(state: dict):
+    """Pozisyon kapanınca kartı ANINDA tazele: tracker'ı yeniden hesapla,
+    result.json + Firebase'e yaz (active_pick temizlenir)."""
+    try:
+        from tracker import track
+        from advisor import RESULT_PATH
+        tr = track(state)
+        if RESULT_PATH.exists():
+            d = json.loads(RESULT_PATH.read_text(encoding="utf-8"))
+            d["tracker"] = tr
+            d["active_pick"] = None
+            RESULT_PATH.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+        import requests as _req
+        _fb = "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app/gridtracker/advisor"
+        _req.put(f"{_fb}/tracker.json", json=tr, timeout=6)
+        _req.put(f"{_fb}/active_pick.json", json=None, timeout=6)
+    except Exception as e:
+        log.debug(f"tracker push (kapanış) hatası: {e}")
+
 def _load_cfg() -> dict:
     return json.loads((BASE / "config.json").read_text(encoding="utf-8"))
 
@@ -216,55 +253,69 @@ def _fast_price_check():
                         priority="high", tags="hourglass")
             return
 
-        # ── 2. HEDEF: kalan tüm lotları sat — TAM ÇIKIŞ ───────────────────
-        if h2 and price >= h2:
-            if _should_send(sym, "H2"):
-                tier1 = active.get("tier1_done", False)
-                half  = qty // 2 if qty else 0
-                kalan = (qty - half) if tier1 else qty  # 1.hedefte yarı satıldıysa kalan, yoksa tümü
-                kalan_kar = (price - entry) * kalan if (entry and kalan) else 0
-                log.info(f"2. HEDEF! {sym} {_fp(price)} — kalan {kalan} lot SAT")
-                new_pick, lot_info = _get_last_alternative(sym)
-                ny = ("\n✅ YENİ ÖNERİ: " + new_pick["symbol"]) if new_pick else ""
-                notifier._send(
-                    f"🎯 {sym} 2. HEDEF — KALANI SAT",
-                    f"Fiyat: {_fp(price)} TL  ({pnl_pct:+.1f}%)\n"
-                    f"━━━━━━━━━━━━━━━━━━━━\n"
-                    f"➤ KALAN {kalan:,} LOT'U SAT (tam çıkış)\n".replace(",", ".") +
-                    f"Bu kademe kârı: +{kalan_kar:,.0f} TL\n".replace(",", ".") +
-                    f"━━━━━━━━━━━━━━━━━━━━\n"
-                    f"Pozisyonu tamamen kapat, kârı al." + ny,
-                    priority="high", tags="dart")
-            return
-
-        # ── 1. HEDEF: yarısını sat — KISMI KÂR REALİZE ────────────────────
+        # ── HEDEF: 1. hedefte TAM ÇIKIŞ (kullanıcının kuralı) + ANINDA YENİ ÖNERİ ──
+        # Kullanıcı 1. hedefte pozisyonun tamamını satıyor. Fiyat hedefe değince:
+        #   1) Pozisyonu kapalı say, kârı (tahmini) history'ye yaz (provisional),
+        #   2) Aktifi temizle, sıradaki öneriyi pending_buy yap + kaydet,
+        #   3) Kartı anında tazele (Firebase tracker), yeni öneri bildirimi gönder.
+        # Akşam senkronu 1.xlsx'ten GERÇEK fiyatla bu tahmini kaydı düzeltir.
         if h1 and price >= h1:
-            if not active.get("tier1_done") and _should_send(sym, "H1"):
-                half  = qty // 2 if qty else 0
-                kalan = qty - half
-                half_kar = (price - entry) * half if (entry and half) else 0
-                log.info(f"1. HEDEF! {sym} {_fp(price)} — yarı ({half}) SAT, {kalan} tut")
-                # State'e işle: bir daha 1. hedef bildirimi gelmesin
+            if _should_send(sym, "TARGET_EXIT"):
+                exit_px = price                      # canlı fiyat (≥ 1. hedef)
+                kar     = (exit_px - entry) * qty if (entry and qty) else 0
+                log.info(f"1. HEDEF — TAM ÇIKIŞ! {sym} {_fp(exit_px)} (+{kar:.0f} TL)")
+                new_pick, lot_info = _get_last_alternative(sym)
                 try:
                     st = _load_state()
                     if st.get("active") and st["active"].get("symbol") == sym:
-                        st["active"]["tier1_done"] = True
-                        # Stop'u maliyete çek — kalan pozisyon risksiz
-                        st["active"]["stop_loss"] = round(entry, 4)
-                        # Felaket stopunu da maliyetin hemen altına çek (%0.8)
-                        st["active"]["hard_stop"] = round(entry * 0.992, 4)
+                        act = st["active"]
+                        st.setdefault("history", []).append({
+                            "symbol": sym,
+                            "entry_date": act.get("entry_date", ""),
+                            "exit_date":  datetime.now().strftime("%Y-%m-%d"),
+                            "entry_price": round(entry, 4),
+                            "exit_price":  round(exit_px, 4),
+                            "qty": qty,
+                            "pnl_tl":  round(kar, 2),
+                            "pnl_pct": round(pnl_pct, 2),
+                            "exit_reason": "1.Hedef (tahmini)",
+                            "provisional": True,   # akşam Excel ile düzeltilecek
+                        })
+                        st["active"] = None
+                        if new_pick:
+                            st["pending_buy"] = {
+                                "symbol":     new_pick["symbol"],
+                                "stop_loss":  new_pick.get("stop_loss", 0),
+                                "hard_stop":  new_pick.get("hard_stop", 0),
+                                "target1":    new_pick.get("target1", 0),
+                                "target2":    new_pick.get("target2", 0),
+                                "score":      new_pick.get("total_score", 0),
+                                "timeframe":  new_pick.get("timeframe", ""),
+                                "entry_low":  new_pick.get("entry_zone", {}).get("low", 0),
+                                "entry_high": new_pick.get("entry_zone", {}).get("high", 0),
+                            }
+                            _record_recommended(st, new_pick["symbol"], new_pick)
                         _save_state(st)
-                except: pass
+                        _push_tracker_after_close(st)
+                except Exception as e:
+                    log.error(f"1. hedef çıkış state hatası: {e}")
+                # Bildirim: tam çıkış + yeni öneri
+                ny = ""
+                if new_pick:
+                    li   = (lot_info or {}).get(new_pick["symbol"], {})
+                    lots = li.get("lots", 0)
+                    ez   = new_pick.get("entry_zone", {})
+                    ny = ("\n━━━━━━━━━━━━━━━━━━━━\n"
+                          f"✅ YENİ ÖNERİ: {new_pick['symbol']}\n"
+                          + (f"Giriş: {_fp(ez.get('low'))}–{_fp(ez.get('high'))} TL\n" if ez.get('low') else "")
+                          + (f"Lot: {lots:,}\n".replace(",", ".") if lots else "")
+                          + f"Stop: {_fp(new_pick.get('stop_loss'))} | Hedef: {_fp(new_pick.get('target1'))} TL")
                 notifier._send(
-                    f"🎯 {sym} 1. HEDEF — YARISINI SAT",
-                    f"Fiyat: {_fp(price)} TL  ({pnl_pct:+.1f}%)\n"
+                    f"🎯 {sym} 1. HEDEF — TAMAMINI SAT",
+                    f"Fiyat: {_fp(exit_px)} TL  ({pnl_pct:+.1f}%)\n"
                     f"━━━━━━━━━━━━━━━━━━━━\n"
-                    f"➤ {half:,} LOT SAT (yarısı)\n".replace(",", ".") +
-                    f"Realize kâr: +{half_kar:,.0f} TL  💰\n".replace(",", ".") +
-                    f"➤ {kalan:,} LOT TUT (2. hedefe taşı)\n".replace(",", ".") +
-                    f"━━━━━━━━━━━━━━━━━━━━\n"
-                    f"🛡 Stop maliyete çekildi ({_fp(entry)}) — kalan risksiz.\n"
-                    f"Sonraki hedef: {_fp(h2)} TL",
+                    f"➤ {qty:,} LOT'U SAT (tam çıkış, kârı al)\n".replace(",", ".") +
+                    f"Tahmini kâr: +{kar:,.0f} TL  💰".replace(",", ".") + ny,
                     priority="high", tags="dart")
             return
 
@@ -602,6 +653,7 @@ def _check_pending_entry():
                 "entry_low":  new_pick.get("entry_zone", {}).get("low", 0),
                 "entry_high": new_pick.get("entry_zone", {}).get("high", 0),
             }
+            _record_recommended(state, new_pick["symbol"], new_pick)
             _save_state(state)
             _reset_state(new_pick["symbol"])  # yeni sembol için kaçtı bildirimi açılsın
             log.info(f"{psym} kaçtı ({price:.2f}>{ehigh:.2f}) → yeni öneri: {new_pick['symbol']}")

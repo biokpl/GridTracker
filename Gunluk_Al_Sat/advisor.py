@@ -72,6 +72,33 @@ def _save_state(state: dict):
     STATE_PATH.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def _record_recommendation(state: dict, symbol: str, pick: dict = None):
+    """
+    Gün içinde önerilen sembolleri kaydeder. Akşam senkronunda bu sembollerin
+    HEPSİ 1.xlsx'te aranır; al-sat yapılmışsa kârı history'ye işlenir.
+    Böylece TTKOM→AKSA gibi gün içi geçişlerde tüm öneriler takip edilir.
+    """
+    if not symbol:
+        return
+    today = datetime.now().strftime("%Y-%m-%d")
+    recs = state.setdefault("recommended_today", [])
+    # Sadece bugünküleri tut (yeni gün → temizle)
+    recs[:] = [r for r in recs if isinstance(r, dict) and r.get("date") == today]
+    if any(r.get("symbol") == symbol for r in recs):
+        return
+    entry = {"symbol": symbol, "date": today, "entry_date": today}
+    if pick:
+        entry.update({
+            "stop_loss": pick.get("stop_loss", 0),
+            "hard_stop": pick.get("hard_stop", 0),
+            "target1":   pick.get("target1", 0),
+            "target2":   pick.get("target2", 0),
+            "timeframe": pick.get("timeframe", ""),
+            "score":     pick.get("total_score", 0),
+        })
+    recs.append(entry)
+
+
 def _ts_str(ts: float) -> str:
     return datetime.fromtimestamp(ts).strftime("%d.%m.%Y %H:%M")
 
@@ -661,7 +688,11 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
                     "entry_low":  np.get("entry_zone", {}).get("low", 0),
                     "entry_high": np.get("entry_zone", {}).get("high", 0),
                 }
-            _save_state(state)
+                _record_recommendation(state, np["symbol"], np)
+        # Aktif yokken günlük öneri verildiyse onu da kaydet
+        if top_picks and not active:
+            _record_recommendation(state, top_picks[0]["symbol"], top_picks[0])
+        _save_state(state)
 
         # Push bildirimleri
         try:
@@ -692,98 +723,122 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
 
 def _sync_position():
     """
-    OTOMATİK POZİSYON TAKİBİ — 1.xlsx'i okuyup pozisyon değişimini yakalar.
-    1.xlsx akşam 18:35'te oluştuğu için bu fonksiyon advisor --run içinde
-    (evening_automation, 18:40) çağrılır.
-      1. Aktif pozisyon tamamen satıldıysa → karı history'ye ekle, active=null.
-      2. pending_buy (önerilen) alındıysa → active = yeni hisse.
+    OTOMATİK POZİSYON TAKİBİ — 1.xlsx'ten GÜN İÇİ TÜM İŞLEMLERİ uzlaştırır.
+    1.xlsx akşam 18:35'te oluştuğu için advisor --run içinde (18:40) çağrılır.
+
+    Mantık (çok-sembollü):
+      • Reconcile edilecek semboller = aktif + pending_buy + gün içi ÖNERİLEN
+        (recommended_today). Yani TTKOM→AKSA gibi geçişlerde her iki hisse de.
+      • Her sembol için 1.xlsx'teki alış/satışlara bakılır:
+          - Satış yapılmışsa → gerçekleşen K/Z history'ye yazılır
+            (monitor'ün gün içi koyduğu 'provisional' tahmini kayıt değiştirilir).
+          - Hâlâ elde tutuluyorsa (net>0) → aktif pozisyon o olur.
+      • Hiçbiri elde değilse → active = None (kart "öneri bekle" moduna geçer).
     """
     try:
         import notifier
         from tracker import _read_excel
-        state  = _load_state()
-        active = state.get("active")
+        state = _load_state()
+        today = datetime.now().strftime("%Y-%m-%d")
 
-        # ── 1. Aktif pozisyon kapandı mı? ──────────────────────────────
-        if active:
-            sym = active["symbol"]
+        # Reconcile edilecek sembol listesi + her birinin öneri bilgisi (stop/hedef)
+        rec_map, syms = {}, []
+        def _add(sym, info=None):
+            if sym and sym not in syms:
+                syms.append(sym)
+            if sym and info and sym not in rec_map:
+                rec_map[sym] = info
+        if state.get("active"):       _add(state["active"]["symbol"], state["active"])
+        if state.get("pending_buy"):  _add(state["pending_buy"]["symbol"], state["pending_buy"])
+        for r in state.get("recommended_today", []):
+            if isinstance(r, dict):   _add(r.get("symbol"), r)
+
+        history = state.setdefault("history", [])
+
+        def _already_final(sym):
+            return any(h.get("symbol") == sym and h.get("exit_date") == today
+                       and not h.get("provisional") for h in history)
+
+        held, closed = {}, []
+        for sym in syms:
             buys, sells = _read_excel(sym)
-            if buys:
-                total_qty = sum(b["execQty"] for b in buys)
-                avg_cost  = (sum(b["execAmount"] + b["commission"] for b in buys)
-                             / total_qty) if total_qty else 0
+            if not buys and not sells:
+                continue
+            buy_qty  = sum(b["execQty"] for b in buys)
+            sell_qty = sum(s["execQty"] for s in sells)
+            # Maliyet: bugün alım varsa ondan, yoksa (devreden pozisyon) state'ten
+            if buy_qty > 0:
+                avg_cost = sum(b["execAmount"] + b["commission"] for b in buys) / buy_qty
+            elif state.get("active") and state["active"]["symbol"] == sym:
+                avg_cost = state["active"].get("entry_price", 0.0)
+                buy_qty  = state["active"].get("qty", buy_qty)
             else:
-                total_qty = active.get("qty", 0)
-                avg_cost  = active.get("entry_price", 0.0)
-            sold_qty = sum(s["execQty"] for s in sells)
-            open_qty = total_qty - sold_qty
+                avg_cost = 0.0
+            net = buy_qty - sell_qty
 
-            if total_qty > 0 and open_qty <= 0 and sold_qty > 0:
+            # Gerçekleşen satış → history (provisional tahmini kaydı temizleyip yenisini yaz)
+            if sell_qty > 0 and avg_cost > 0 and not _already_final(sym):
                 sell_amount = sum(s["execAmount"] - s["commission"] for s in sells)
-                pnl_tl  = sell_amount - (avg_cost * sold_qty)
-                pnl_pct = (pnl_tl / (avg_cost * sold_qty) * 100) if avg_cost and sold_qty else 0
-                exit_px = sell_amount / sold_qty if sold_qty else 0
-                state.setdefault("history", []).append({
+                pnl_tl  = sell_amount - (avg_cost * sell_qty)
+                pnl_pct = (pnl_tl / (avg_cost * sell_qty) * 100) if avg_cost and sell_qty else 0
+                exit_px = sell_amount / sell_qty if sell_qty else 0
+                history[:] = [h for h in history
+                              if not (h.get("symbol") == sym and h.get("provisional"))]
+                history.append({
                     "symbol": sym,
-                    "entry_date": active.get("entry_date", ""),
-                    "exit_date":  datetime.now().strftime("%Y-%m-%d"),
+                    "entry_date": (rec_map.get(sym) or {}).get("entry_date", today),
+                    "exit_date":  today,
                     "entry_price": round(avg_cost, 4),
                     "exit_price":  round(exit_px, 4),
-                    "qty":  sold_qty,
+                    "qty":  sell_qty,
                     "pnl_tl":  round(pnl_tl, 2),
                     "pnl_pct": round(pnl_pct, 2),
-                    "exit_reason": "Satış algılandı",
+                    "exit_reason": "Otomatik (Excel)",
                 })
-                state["active"] = None
-                _save_state(state)
-                print(f"[Advisor] POZİSYON KAPANDI: {sym} K/Z: {pnl_tl:+.0f} TL")
-                try:
-                    notifier._send(
-                        f"✅ {sym} SATILDI",
-                        f"Pozisyon kapandı.\n"
-                        f"Giriş: {avg_cost:.2f} → Çıkış: {exit_px:.2f} TL\n"
-                        f"Kâr/Zarar: {pnl_tl:+,.0f} TL ({pnl_pct:+.1f}%)".replace(",", "."),
-                        tags="white_check_mark")
-                except: pass
-                return
+                closed.append((sym, avg_cost, exit_px, pnl_tl, pnl_pct))
 
-        # ── 2. pending_buy alındı mı? ──────────────────────────────────
-        if not state.get("active"):
-            pending = state.get("pending_buy")
-            if pending:
-                psym = pending.get("symbol", "")
-                pbuys, psells = _read_excel(psym)
-                if pbuys:
-                    tot = sum(b["execQty"] for b in pbuys)
-                    sold = sum(s["execQty"] for s in psells)
-                    net = tot - sold
-                    if net > 0:
-                        avg = (sum(b["execAmount"] + b["commission"] for b in pbuys)
-                               / tot) if tot else 0
-                        state["active"] = {
-                            "symbol": psym,
-                            "entry_date": datetime.now().strftime("%Y-%m-%d"),
-                            "entry_price": round(avg, 4),
-                            "qty": net,
-                            "stop_loss": pending.get("stop_loss", 0),
-                            "hard_stop": pending.get("hard_stop", 0),
-                            "target1":   pending.get("target1", 0),
-                            "target2":   pending.get("target2", 0),
-                            "last_score": pending.get("score", 0),
-                            "timeframe":  pending.get("timeframe", ""),
-                        }
-                        state["pending_buy"] = None
-                        _save_state(state)
-                        print(f"[Advisor] YENİ POZİSYON: {psym} {net} lot @ {avg:.2f}")
-                        try:
-                            notifier._send(
-                                f"🟢 {psym} ALINDI",
-                                f"Yeni pozisyon açıldı.\n"
-                                f"Maliyet: {avg:.2f} TL | {net:,} lot\n"
-                                f"Stop: {pending.get('stop_loss',0):.2f} | "
-                                f"Hedef: {pending.get('target1',0):.2f}".replace(",", "."),
-                                tags="green_circle")
-                        except: pass
+            if net > 0:
+                held[sym] = (net, avg_cost, rec_map.get(sym) or {})
+
+        # Aktif pozisyon = hâlâ elde tutulan (en büyük TL değerli); yoksa None
+        if held:
+            asym = max(held, key=lambda s: held[s][0] * held[s][1])
+            net, avg, rec = held[asym]
+            state["active"] = {
+                "symbol": asym,
+                "entry_date": rec.get("entry_date", today),
+                "entry_price": round(avg, 4),
+                "qty": net,
+                "stop_loss": rec.get("stop_loss", 0),
+                "hard_stop": rec.get("hard_stop", 0),
+                "target1":   rec.get("target1", 0),
+                "target2":   rec.get("target2", 0),
+                "last_score": rec.get("score", 0),
+                "timeframe":  rec.get("timeframe", ""),
+            }
+        else:
+            state["active"] = None
+
+        state["pending_buy"] = None
+        # recommended_today'i sadece bugüne indir (yeni güne taşınmasın)
+        state["recommended_today"] = [r for r in state.get("recommended_today", [])
+                                      if isinstance(r, dict) and r.get("date") == today]
+        _save_state(state)
+
+        # Kapanan her pozisyon için bildirim
+        for sym, avg, exit_px, pnl_tl, pnl_pct in closed:
+            print(f"[Advisor] POZİSYON KAPANDI: {sym} K/Z: {pnl_tl:+.0f} TL")
+            try:
+                notifier._send(
+                    f"✅ {sym} SATILDI",
+                    f"Pozisyon kapandı.\n"
+                    f"Giriş: {avg:.2f} → Çıkış: {exit_px:.2f} TL\n"
+                    f"Kâr/Zarar: {pnl_tl:+,.0f} TL ({pnl_pct:+.1f}%)".replace(",", "."),
+                    tags="white_check_mark")
+            except: pass
+        if state.get("active"):
+            print(f"[Advisor] AKTİF POZİSYON: {state['active']['symbol']} "
+                  f"{state['active']['qty']} lot")
     except Exception as e:
         print(f"[Advisor] Pozisyon senkron hatası: {e}")
 
