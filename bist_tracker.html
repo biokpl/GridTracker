@@ -35442,9 +35442,9 @@ function renderPositionMonitor() {
         const isToday = i === hist.length - 1;
         const bar = document.createElement('div');
         bar.className = `pm-spark-bar ${cls}${isToday ? ' pm-today' : ''}`;
-        // Tüm barların yukarı-aşağı yüksekliği EŞİT (bugünkü bar gibi) — fark sadece
-        // renk, üstteki skor ve outline (outline yalnızca bugünkü barda).
-        bar.style.height = '100%';
+        // Tüm barlar EŞİT ve orta boyda (skora göre değişmez, blok değil) —
+        // fark sadece renk, üstteki skor ve outline (outline yalnızca bugünkü barda).
+        bar.style.height = '55%';
         bar.title = `${h.date ? h.date.slice(5) : ''}: ${gs.toFixed(1)} puan`;
         // Skoru barın tepesine yaz
         const val = document.createElement('span');
