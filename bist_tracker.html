@@ -1413,6 +1413,7 @@ select.field-input option{background:var(--surface2);}
       </div>
       <div class="adv-sym-row">
         <span class="adv-sym" id="adv-top1" style="color:#c4b5fd">—</span>
+        <span id="adv-top1-held" style="display:none;font-size:9px;background:rgba(74,222,128,.14);color:#86efac;border:1px solid rgba(74,222,128,.35);padding:2px 7px;border-radius:5px;white-space:nowrap">—</span>
         <span id="adv-top1-tf" style="font-size:10px;background:rgba(99,102,241,.18);color:#a78bfa;border:1px solid rgba(99,102,241,.35);padding:3px 9px;border-radius:5px">—</span>
         <span style="font-family:var(--mono);font-size:15px;color:#a78bfa;font-weight:800" id="adv-top1-score">—</span>
       </div>
@@ -36705,6 +36706,18 @@ async function renderAdvisor(){
       if(top){
         const li=d.lot_info?.[top.symbol]||{};
         $('adv-top1').textContent=top.symbol;
+        // Bu hisseden elinde kaç lot var? (broker açık pozisyonundan)
+        const heldEl=$('adv-top1-held');
+        if(heldEl){
+          let held=0;
+          try{
+            const op=(D&&D.todayProfit&&D.todayProfit.openPositions)||{};
+            const lst=op[top.symbol];
+            if(Array.isArray(lst)) held=lst.reduce((s,p)=>s+(p.execQty||p.qty||0),0);
+          }catch(_){}
+          if(held>0){ heldEl.textContent='Elinde: '+held.toLocaleString('tr-TR')+' lot'; heldEl.style.display=''; }
+          else heldEl.style.display='none';
+        }
         $('adv-top1-tf').textContent=_tfLabel(top.timeframe);
         $('adv-top1-score').textContent=(top.entry_score!=null?top.entry_score:top.total_score).toFixed(1)+'/10';
         $('adv-top1-reason').textContent=top.reasoning||'';
