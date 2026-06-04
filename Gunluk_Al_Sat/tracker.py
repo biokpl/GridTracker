@@ -12,6 +12,49 @@ import yfinance as yf
 _cfg = json.loads((Path(__file__).parent / "config.json").read_text(encoding="utf-8"))
 EXCEL_PATH  = Path(_cfg["excel_path"])
 COMM_RATE   = _cfg["commission_rate"]
+_FB_TRADES  = ("https://grid-tracker-73ed2-default-rtdb.europe-west1."
+               "firebasedatabase.app/gridtracker/allTrades.json")
+
+
+def _read_trades_firebase(symbol: str, day: str = None):
+    """
+    Firebase 'allTrades'ten verilen sembol için (varsayılan: bugün) Alış/Satış
+    listelerini döndürür. grid_tracker_service 1.xlsx'i işleyip SİLDİĞİ için
+    advisor dosyayı bulamıyordu; kalıcı kaynak Firebase'tir.
+    """
+    import urllib.request
+    if day is None:
+        day = datetime.now().strftime("%Y-%m-%d")
+    try:
+        with urllib.request.urlopen(_FB_TRADES, timeout=15) as r:
+            at = json.loads(r.read().decode("utf-8")) or []
+    except Exception:
+        return [], []
+    if isinstance(at, dict):
+        at = list(at.values())
+    if not isinstance(at, list):
+        return [], []
+    buys, sells = [], []
+    for t in at:
+        if not isinstance(t, dict):
+            continue
+        if str(t.get("date", ""))[:10] != day:
+            continue
+        if str(t.get("symbol", "")).upper() != symbol.upper():
+            continue
+        qty = int(t.get("execQty") or t.get("qty") or 0)
+        px  = _sf(t.get("execPrice") or t.get("price") or 0)
+        amt = _sf(t.get("execAmount") or t.get("amount") or (qty * px))
+        comm = _sf(t.get("commission") or round(amt * COMM_RATE, 4))
+        rec = {"symbol": symbol.upper(), "date": str(t.get("date", ""))[:10],
+               "datetime": t.get("datetime", ""), "time": t.get("time", ""),
+               "execQty": qty, "execPrice": px, "execAmount": amt, "commission": comm}
+        typ = _ss(t.get("type", ""))
+        if "Alı" in typ or "Alis" in typ:
+            buys.append(rec)
+        elif "Sat" in typ:
+            sells.append(rec)
+    return buys, sells
 
 
 def _sf(v):
@@ -25,9 +68,10 @@ def _ss(v):
 
 
 def _read_excel(symbol: str) -> tuple[list, list]:
-    """1.xlsx'den verilen sembol için Alış ve Satış listelerini döndürür."""
+    """Verilen sembol için Alış/Satış listelerini döndürür.
+    Önce 1.xlsx; dosya yoksa (servis sildiyse) Firebase allTrades'e düşer."""
     if not EXCEL_PATH.exists():
-        return [], []
+        return _read_trades_firebase(symbol)
 
     wb = openpyxl.load_workbook(EXCEL_PATH, data_only=True)
     ws = wb.active

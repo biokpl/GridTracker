@@ -766,12 +766,15 @@ def _sync_position():
                 continue
             buy_qty  = sum(b["execQty"] for b in buys)
             sell_qty = sum(s["execQty"] for s in sells)
-            # Maliyet: bugün alım varsa ondan, yoksa (devreden pozisyon) state'ten
+            # Maliyet: bugün alım varsa ondan, yoksa (devreden pozisyon) state'ten/öneriden
             if buy_qty > 0:
                 avg_cost = sum(b["execAmount"] + b["commission"] for b in buys) / buy_qty
             elif state.get("active") and state["active"]["symbol"] == sym:
                 avg_cost = state["active"].get("entry_price", 0.0)
                 buy_qty  = state["active"].get("qty", buy_qty)
+            elif (rec_map.get(sym) or {}).get("entry_price"):
+                avg_cost = rec_map[sym]["entry_price"]
+                buy_qty  = rec_map[sym].get("qty", buy_qty)
             else:
                 avg_cost = 0.0
             net = buy_qty - sell_qty
