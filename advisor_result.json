@@ -109,7 +109,41 @@
       "rank": 3
     }
   ],
-  "active_pick": null,
+  "active_pick": {
+    "symbol": "TTKOM",
+    "price": 62.3,
+    "total_score": 6.5,
+    "entry_score": 7.5,
+    "rr_ratio": 0.77,
+    "scores": {
+      "technical": 5.6,
+      "momentum": 5.0,
+      "rel_strength": 3.2,
+      "volume": 8.8,
+      "risk": 10.0,
+      "timing": 8.0
+    },
+    "timeframe": "ORTA_VADE",
+    "entry_zone": {
+      "low": 61.677,
+      "high": 62.6115
+    },
+    "stop_loss": 59.8311,
+    "hard_stop": 58.314,
+    "target1": 64.1964,
+    "target2": 66.0929,
+    "reasoning": "Hacim artışı, Dip toparlanması",
+    "rsi": 52.1,
+    "bb_pos": 0.497,
+    "atr_pct": 3.04,
+    "beta": 1.08,
+    "mdd_60": 14.1,
+    "vol_ratio": 2.0,
+    "r5": 1.71,
+    "r20": -5.89,
+    "r60": 5.77,
+    "rank": 0
+  },
   "exit_signal": {
     "symbol": null,
     "signal": "—",
@@ -135,20 +169,22 @@
     }
   },
   "tracker": {
-    "active_symbol": null,
-    "avg_cost": 0.0,
-    "total_qty": 0,
-    "current_price": 0.0,
-    "unrealized_pnl": 0.0,
-    "unrealized_pct": 0.0,
+    "active_symbol": "TTKOM",
+    "avg_cost": 63.2063,
+    "total_qty": 643,
+    "current_price": 62.3,
+    "unrealized_pnl": -582.76,
+    "unrealized_pct": -1.43,
     "realized_pnl": 0.0,
     "history_pnl_total": 2828.61,
     "trade_count": 4,
-    "stop_loss": 0.0,
-    "hard_stop": 0.0,
-    "target1": 0.0,
-    "target2": 0.0,
-    "error": null
+    "stop_loss": 59.8311,
+    "hard_stop": 58.314,
+    "target1": 64.1964,
+    "target2": 66.0929,
+    "error": null,
+    "open_qty": 643,
+    "data_source": "excel"
   },
   "score_table": {
     "TRALT": {

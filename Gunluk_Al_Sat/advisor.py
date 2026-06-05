@@ -11,7 +11,7 @@ import json
 import sys
 import time
 import warnings
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 # Windows terminali UTF-8 yapılıyor
@@ -81,9 +81,11 @@ def _record_recommendation(state: dict, symbol: str, pick: dict = None):
     if not symbol:
         return
     today = datetime.now().strftime("%Y-%m-%d")
+    # Son 7 günün önerilerini tut — kullanıcı bir gün sonra (ertesi sabah) alabilir;
+    # "sadece bugün" filtresi dünkü öneriyi düşürüp alımı görünmez yapıyordu.
+    cutoff = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
     recs = state.setdefault("recommended_today", [])
-    # Sadece bugünküleri tut (yeni gün → temizle)
-    recs[:] = [r for r in recs if isinstance(r, dict) and r.get("date") == today]
+    recs[:] = [r for r in recs if isinstance(r, dict) and r.get("date", "") >= cutoff]
     if any(r.get("symbol") == symbol for r in recs):
         return
     entry = {"symbol": symbol, "date": today, "entry_date": today}
@@ -823,9 +825,12 @@ def _sync_position():
             state["active"] = None
 
         state["pending_buy"] = None
-        # recommended_today'i sadece bugüne indir (yeni güne taşınmasın)
+        # recommended_today: son 7 günü tut (ertesi gün alımlar için), aktif olanı çıkar
+        _held_sym = (state.get("active") or {}).get("symbol")
+        _cut = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
         state["recommended_today"] = [r for r in state.get("recommended_today", [])
-                                      if isinstance(r, dict) and r.get("date") == today]
+                                      if isinstance(r, dict) and r.get("date", "") >= _cut
+                                      and r.get("symbol") != _held_sym]
         _save_state(state)
 
         # Kapanan her pozisyon için bildirim

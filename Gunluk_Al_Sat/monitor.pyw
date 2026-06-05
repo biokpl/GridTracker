@@ -7,7 +7,7 @@ Yavaş döngü  (15 dk) : Yahoo teknik analiz → RSI/Bollinger/skor → sinyal
 Piyasa saatleri: 10:00 – 18:20 (BIST)
 """
 import json, sys, time, logging, threading
-from datetime import datetime, time as dtime
+from datetime import datetime, time as dtime, timedelta
 from pathlib import Path
 
 import warnings
@@ -65,8 +65,10 @@ def _record_recommended(state: dict, symbol: str, pick: dict = None):
     if not symbol:
         return
     today = datetime.now().strftime("%Y-%m-%d")
+    # Son 7 günün önerilerini tut (ertesi gün alımlar için kayıt düşmesin)
+    cutoff = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
     recs = state.setdefault("recommended_today", [])
-    recs[:] = [r for r in recs if isinstance(r, dict) and r.get("date") == today]
+    recs[:] = [r for r in recs if isinstance(r, dict) and r.get("date", "") >= cutoff]
     if any(r.get("symbol") == symbol for r in recs):
         return
     e = {"symbol": symbol, "date": today, "entry_date": today}
