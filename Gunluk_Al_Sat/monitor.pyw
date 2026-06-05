@@ -675,9 +675,35 @@ def _check_pending_entry():
         log.error(f"Pending kontrol hatası: {e}")
 
 
+def _dde_watchdog_loop():
+    """
+    DDE SELF-HEAL: Piyasa açıkken DDE feed'i düşmüşse (PC çökmesi/reboot sonrası)
+    ve MatriksIQ açıksa, BIST100 Excel'ini görünmez tekrar açar. Böylece kullanıcı
+    sadece MatriksIQ'yu açar; canlı fiyat kendiliğinden geri gelir. Her 120 sn.
+    """
+    import importlib
+    while True:
+        try:
+            if _is_market_open():
+                sys.path.insert(0, str(BASE))
+                import ensure_dde
+                if not ensure_dde.dde_live():
+                    ok, msg = ensure_dde.ensure()
+                    if ok:
+                        log.info(f"[DDE-watchdog] Canlı fiyat geri getirildi: {msg}")
+                    else:
+                        log.warning(f"[DDE-watchdog] DDE düşük, açılamadı: {msg}")
+        except Exception as e:
+            log.debug(f"[DDE-watchdog] hata: {e}")
+        time.sleep(120)
+
+
 def main():
     log.info("Monitor başlatıldı. Hızlı:5sn | Yavaş:15dk | PendingKontrol:30sn")
     print("[Monitor] Başlatıldı — Hızlı:5sn | Yavaş:15dk | Log:", log_path)
+
+    # DDE self-heal watchdog (canlı fiyat feed'i düşerse otomatik geri getirir)
+    threading.Thread(target=_dde_watchdog_loop, daemon=True).start()
 
     last_slow    = 0.0  # Son teknik analiz zamanı
     last_pending = 0.0  # Son pending (öneri kaçtı mı) kontrolü
