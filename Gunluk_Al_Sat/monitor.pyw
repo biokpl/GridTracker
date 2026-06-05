@@ -248,24 +248,9 @@ def _fast_price_check():
                 active["peak_price"] = peak
                 _save_state(state)
                 log.info(f"TRAIL: {sym} stop {old_stop}→{stop} (peak {_fp(peak)})")
-                # Bildirim: stop son bildirimden ≥%0.5 yükseldiyse (çıkış için)
-                last_n = active.get("trail_notified") or est
-                if stop >= last_n + price * 0.005:
-                    active["trail_notified"] = stop
-                    _save_state(state)
-                    _push_stop_to_card(stop, hard)               # kart anında güncellensin
-                    kilitli = (stop - entry) * qty if (entry and qty) else 0
-                    notifier._send(
-                        f"🔼 {sym} STOP GÜNCELLENDİ",
-                        f"Fiyat yükseldi → stop takip ediyor.\n"
-                        f"━━━━━━━━━━━━━━━━━━━━\n"
-                        f"Yeni stop: {_fp(stop)} ₺  (eski {_fp(old_stop)})\n"
-                        + (f"🔒 Garanti kâr: ~{kilitli:,.0f} TL\n".replace(',', '.')
-                           if stop >= entry else "🛡 Zarar küçültüldü\n") +
-                        f"Felaket stop: {_fp(hard)} ₺\n"
-                        f"━━━━━━━━━━━━━━━━━━━━\n"
-                        f"Çıkışını bu seviyeye ayarla. Anlık: {_fp(price)} ({pnl_pct:+.1f}%)",
-                        priority="default", tags="chart_with_upwards_trend")
+                # Kart anında güncellensin (sessiz — ayrı bildirim yok,
+                # stop kırılınca zaten ÇIK bildirimi gelecek)
+                _push_stop_to_card(stop, hard)
             elif peak > (active.get("peak_price", entry) or entry) + price * 0.0015:
                 active["peak_price"] = peak                       # peak ilerledi, kaydet
                 _save_state(state)
