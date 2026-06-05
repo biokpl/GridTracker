@@ -186,6 +186,76 @@ def _clamp(x, lo=0.0, hi=1.0) -> float:
 
 # ─── Veri İndirme ─────────────────────────────────────────────────────────────
 
+def _weekly_trend(sym: str) -> tuple[str, float]:
+    """
+    Haftalık grafik trendi: MA20 eğimi (8 hafta).
+    Dönür: ('yukari'|'yatay'|'asagi', egim_pct)
+    Günlük iyi görünen ama haftalık düşüşte olan hisseyi filtreler.
+    """
+    try:
+        df = yf.Ticker(f"{sym}.IS").history(period="52wk", interval="1wk", auto_adjust=True)
+        if df is None or len(df) < 10:
+            return "yatay", 0.0
+        c = df["Close"].dropna()
+        ma = c.rolling(20, min_periods=8).mean()
+        if len(ma.dropna()) < 2:
+            return "yatay", 0.0
+        now  = float(ma.iloc[-1])
+        prev = float(ma.iloc[-8]) if len(ma) >= 8 else float(ma.iloc[0])
+        slope = (now - prev) / prev * 100 if prev else 0.0
+        if slope > 2.5:  return "yukari", round(slope, 1)
+        if slope < -2.5: return "asagi",  round(slope, 1)
+        return "yatay", round(slope, 1)
+    except Exception:
+        return "yatay", 0.0
+
+
+def _event_risk(sym: str, df: pd.DataFrame) -> tuple[float, str]:
+    """
+    Bilanço / temettü / olay riski skoru (entry_bonus'a eklenir):
+      - BIST bilanço dönemleri: Mar/May/Aug/Nov ortaları ±10 gün → belirsizlik
+      - yfinance calendar: temettü tarihi yakınsa +bonus (katalizör)
+      - Ani fiyat+hacim anomalisi: geçen 3 günde sırışık büyük hareket → haber var
+    Döner: (skor_ayarlamasi, etiket)
+    """
+    adj, tag = 0.0, ""
+    now = datetime.now()
+    # 1) Bilanço dönem riski (yön belirsiz = ceza)
+    BILANÇO_AYLAR = {3: 15, 5: 15, 8: 15, 11: 15}   # ay → gün (ortası)
+    if now.month in BILANÇO_AYLAR:
+        gun = BILANÇO_AYLAR[now.month]
+        kalan = abs(now.day - gun)
+        if kalan <= 10:
+            adj -= 1.5
+            tag = f"bilanço-yakın({kalan}g)"
+    # 2) yfinance temettü takvimi: yakın temettü = fiyat katalizörü
+    try:
+        cal = yf.Ticker(f"{sym}.IS").calendar
+        ex_div = cal.get("Ex-Dividend Date") if isinstance(cal, dict) else None
+        if ex_div and hasattr(ex_div, "toordinal"):
+            kalan_div = (ex_div - now.date()).days
+            if 0 <= kalan_div <= 20:
+                adj += 1.5; tag = f"temettü-yakın({kalan_div}g)"
+            elif 20 < kalan_div <= 45:
+                adj += 0.5; tag = f"temettü-gelecek({kalan_div}g)"
+    except Exception:
+        pass
+    # 3) Fiyat+hacim anomalisi son 3 günde: muhtemelen büyük haber var
+    try:
+        c = df["Close"]; v = df["Volume"]
+        c3 = c.iloc[-3:].pct_change().abs().dropna()
+        v3 = v.iloc[-3:]
+        v20 = float(v.iloc[-20:].mean()) if len(v) >= 20 else 1
+        if len(c3) and len(v3):
+            max_move = float(c3.max()) * 100
+            max_vol  = float(v3.max()) / v20 if v20 else 1
+            if max_move > 4.0 and max_vol > 2.5:
+                adj -= 1.0; tag += (" " if tag else "") + "haber-anomali"
+    except Exception:
+        pass
+    return round(adj, 2), tag
+
+
 def download_all(symbols: list[str], period: str = "90d") -> dict[str, pd.DataFrame]:
     tickers = [f"{s}.IS" for s in symbols] + ["XU100.IS"]
     raw = yf.download(tickers, period=period, auto_adjust=True, progress=False, threads=True)
@@ -393,8 +463,23 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
         elif rr_ratio >= 1.5: entry_bonus += 0.0
         else:                 entry_bonus -= 1.5   # kazanç potansiyeli düşük
 
+    # ── HAFTALIK TREND FİLTRESİ ────────────────────────────────────────────
+    # Günlük iyi, haftalık aşağı = büyük para karşı → güçlü ceza
+    w_trend, w_slope = _weekly_trend(sym)
+    if   w_trend == "asagi":  entry_bonus -= 2.5   # haftalık MA20 aşağı → kurumlar satıyor
+    elif w_trend == "yukari": entry_bonus += 0.5   # rüzgar arkada
+
+    # ── OLAY RİSKİ (bilanço/temettü/anomali) ────────────────────────────────
+    evt_adj, evt_tag = _event_risk(sym, df)
+    entry_bonus += evt_adj
+
     # Giriş skoru = toplam skor + giriş bonusu (max 10 ile sınırla)
     entry_score = round(min(10.0, max(0.0, total_10 + entry_bonus)), 1)
+
+    # Gerekçeye haftalık trend + olay bilgisi ekle
+    if w_trend == "asagi":  reasoning += f", Haftalık trend aşağı ({w_slope:+.1f}%)"
+    elif w_trend == "yukari": reasoning += f", Haftalık trend yukarı ({w_slope:+.1f}%)"
+    if evt_tag: reasoning += f", {evt_tag}"
 
     return {
         "symbol":       sym,
@@ -566,6 +651,12 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
                 and s["symbol"] != _held]
     top_picks = [{**s, "rank": i+1} for i, s in enumerate(eligible[:3])]
 
+    # ── "BUGÜN İŞLEM YOK" KARARI ────────────────────────────────────────────
+    # Tüm BIST50'de entry_score ≥ 6.5 olan hisse sayısı ≤ 1 ise kaliteli
+    # kurulum yok → aktif pozisyon yoksa nakit kal, güce bekle.
+    high_quality = [s for s in eligible if s.get("entry_score", 0) >= 6.5]
+    no_trade_today = (not active) and len(high_quality) <= 1
+
     # Aktif pozisyon çıkış kontrolü
     exit_signal = {"symbol": None, "signal": "—", "score_now": 0.0, "score_prev": 0.0, "message": ""}
     new_pick_for_exit = None
@@ -620,10 +711,22 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
 
         for p in top_picks:
             lots = calc_lots(avail_capital, p["price"])
+            # ── KADEMELİ POZİSYON: %60 ana giriş + %25 fırsat (pull-back) ──
+            # Tek seferde tam sermaye yerine iki kademe:
+            # 1) Ana giriş (%60): giriş bölgesinde hemen
+            # 2) Fırsat alımı (%25): hisse %2-3 geri çekilirse — ortalama maliyet iyileşir
+            # 3) Nakit tampon (%15): her zaman likit kal
+            lots_main  = calc_lots(avail_capital * 0.60, p["price"])
+            lots_dip   = calc_lots(avail_capital * 0.25, p["price"])
+            dip_target = round(p["price"] * 0.97, 4)   # %3 geri çekilme hedefi
             lot_info[p["symbol"]] = {
-                "lots": lots,
-                "price": p["price"],
-                "cost": round(lots * p["price"] * (1 + CFG["commission_rate"]), 2),
+                "lots":       lots,            # tam sermaye (eski davranış - backward compat)
+                "lots_main":  lots_main,       # %60 ana giriş
+                "lots_dip":   lots_dip,        # %25 fırsat alımı
+                "dip_price":  dip_target,      # fırsat alım fiyatı (~%3 düşük)
+                "price":      p["price"],
+                "cost":       round(lots_main * p["price"] * (1 + CFG["commission_rate"]), 2),
+                "cost_total": round(lots * p["price"] * (1 + CFG["commission_rate"]), 2),
             }
 
     # Tracker P&L
@@ -643,13 +746,15 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
 
     ts = time.time()
     result = {
-        "ts":          ts,
-        "ts_str":      _ts_str(ts),
-        "capital":     capital,
-        "top_picks":   top_picks,
-        "active_pick": active_pick_data,
-        "exit_signal": exit_signal,
-        "lot_info":    lot_info,
+        "ts":             ts,
+        "ts_str":         _ts_str(ts),
+        "capital":        capital,
+        "top_picks":      top_picks,
+        "active_pick":    active_pick_data,
+        "exit_signal":    exit_signal,
+        "lot_info":       lot_info,
+        "no_trade_today": no_trade_today,
+        "high_quality_count": len(high_quality),
         "tracker":     tracker_data,
         "score_table": {s["symbol"]: {"total": s["total_score"], "rank": i+1,
                                        "timeframe": s["timeframe"]}
@@ -709,6 +814,14 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
                     new_pick=new_pick_for_exit,
                     lot_info=lot_info,
                 )
+            elif no_trade_today:
+                # Kaliteli kurulum yok → nakit kal, bekleme bildirimi
+                notifier._send(
+                    "⏸ Bugün Bekleme Günü",
+                    f"BİST50'de entry_score ≥6.5 olan hisse {len(high_quality)} adet.\n"
+                    f"Kaliteli kurulum yok — bugün nakit kalmak en doğrusu.\n"
+                    f"Yarın yeni analiz yapılacak.",
+                    priority="default", tags="hourglass_not_done")
             elif top_picks and not active:
                 # Aktif pozisyon yoksa günlük öneriyi bildir
                 notifier.send_daily_pick(top_picks[0], lot_info.get(top_picks[0]["symbol"]))
