@@ -29,3 +29,6 @@ eski_*.png
 __pycache__/
 *.pyc
 .env
+
+backups/
+health_watchdog.log
