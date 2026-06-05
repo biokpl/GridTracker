@@ -677,6 +677,43 @@ class Handler(SimpleHTTPRequestHandler):
                     st['capital'] = capital
                     with open(state_path, 'w', encoding='utf-8') as f:
                         json.dump(st, f, ensure_ascii=False, indent=2)
+                    # ── Anında lot yeniden hesapla (tam analiz gerekmez) ──
+                    # Mevcut top_picks fiyatlarıyla yeni sermayeye göre lot güncelle
+                    try:
+                        result_path = os.path.join(BASE_DIR, 'advisor_result.json')
+                        if os.path.exists(result_path):
+                            with open(result_path, 'r', encoding='utf-8') as f:
+                                res = json.load(f)
+                            res['capital'] = capital
+                            comm = st.get('commission_rate', 0.0001)
+                            eff  = capital * 0.90
+                            for p in res.get('top_picks', []):
+                                px   = p.get('price', 0)
+                                if px <= 0: continue
+                                lots      = int(eff / px) if px else 0
+                                lots_main = int(eff * 0.60 / px) if px else 0
+                                lots_dip  = int(eff * 0.25 / px) if px else 0
+                                sym = p.get('symbol','')
+                                if sym:
+                                    res.setdefault('lot_info', {})[sym] = {
+                                        'lots': lots, 'lots_main': lots_main,
+                                        'lots_dip': lots_dip,
+                                        'dip_price': round(px * 0.97, 4),
+                                        'price': px,
+                                        'cost':       round(lots_main * px * (1+comm), 2),
+                                        'cost_total': round(lots * px * (1+comm), 2),
+                                    }
+                            with open(result_path, 'w', encoding='utf-8') as f:
+                                json.dump(res, f, ensure_ascii=False)
+                            # Firebase lot_info da güncelle
+                            try:
+                                import requests as _rq
+                                _fb = 'https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app/gridtracker/advisor'
+                                _rq.patch(_fb+'.json', json={'capital': capital, 'lot_info': res.get('lot_info',{})}, timeout=6)
+                            except Exception:
+                                pass
+                    except Exception as _e:
+                        slog.debug(f'lot recalc: {_e}')
                     self.send_json(200, {'ok': True, 'capital': capital})
                 else:
                     self.send_json(404, {'error': 'state.json bulunamadı'})
