@@ -19,6 +19,10 @@ import os, sys, time, logging, subprocess, argparse
 from pathlib import Path
 from datetime import date, datetime
 
+# Konsol penceresi açılmasını engelle (git.exe gibi konsol uygulamaları için).
+# Akşam otomasyonu pythonw ile çalışır; alt süreçler aksi halde cmd penceresi açar.
+CREATE_NO_WINDOW = 0x08000000
+
 if sys.platform == 'win32':
     if sys.stdout is not None:
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -272,7 +276,7 @@ def run(mode='normal'):
         result = subprocess.run(
             [sys.executable, str(grid_script), '--now'],
             capture_output=True, text=True, encoding='utf-8', errors='replace',
-            cwd=str(SCRIPT_DIR)
+            cwd=str(SCRIPT_DIR), creationflags=CREATE_NO_WINDOW
         )
         if result.returncode == 0:
             log.info('grid_tracker_service.py --now tamamlandı ✓')
@@ -289,7 +293,7 @@ def run(mode='normal'):
         result = subprocess.run(
             [sys.executable, str(analysis_script), '--force'],
             capture_output=True, text=True, encoding='utf-8', errors='replace',
-            cwd=str(SCRIPT_DIR)
+            cwd=str(SCRIPT_DIR), creationflags=CREATE_NO_WINDOW
         )
         if result.returncode == 0:
             log.info('grid_analysis_auto.py tamamlandı ✓')
@@ -306,7 +310,7 @@ def run(mode='normal'):
         adv_result = subprocess.run(
             [sys.executable, str(advisor_script), '--run'],
             capture_output=True, text=True, encoding='utf-8', errors='replace',
-            cwd=str(SCRIPT_DIR / 'Gunluk_Al_Sat')
+            cwd=str(SCRIPT_DIR / 'Gunluk_Al_Sat'), creationflags=CREATE_NO_WINDOW
         )
         if adv_result.returncode == 0:
             log.info('advisor.py tamamlandı ✓')
@@ -321,19 +325,22 @@ def run(mode='normal'):
         try:
             subprocess.run(
                 ['git', 'add', 'bist_tracker.html', 'grid_analysis_result.json', 'advisor_result.json'],
-                cwd=str(SCRIPT_DIR), capture_output=True
+                cwd=str(SCRIPT_DIR), capture_output=True,
+                creationflags=CREATE_NO_WINDOW
             )
             commit = subprocess.run(
                 ['git', 'commit', '-m',
                  f'auto: grid analizi guncellendi {datetime.now().strftime("%Y-%m-%d %H:%M")}'],
                 cwd=str(SCRIPT_DIR), capture_output=True, text=True,
-                encoding='utf-8', errors='replace'
+                encoding='utf-8', errors='replace',
+                creationflags=CREATE_NO_WINDOW
             )
             if commit.returncode == 0:
                 push = subprocess.run(
                     ['git', 'push', 'origin', 'master'],
                     cwd=str(SCRIPT_DIR), capture_output=True, text=True,
-                    encoding='utf-8', errors='replace'
+                    encoding='utf-8', errors='replace',
+                    creationflags=CREATE_NO_WINDOW
                 )
                 if push.returncode == 0:
                     log.info('GitHub Pages güncellendi ✓')
