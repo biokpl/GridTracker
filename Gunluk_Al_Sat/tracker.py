@@ -163,9 +163,29 @@ def track(state: dict) -> dict:
     }
 
     # Geçmiş toplam P&L (state.json history'den)
-    history_total = sum(h.get("pnl_tl", 0) for h in state.get("history", []))
+    hist = [h for h in state.get("history", []) if isinstance(h, dict)]
+    history_total = sum(h.get("pnl_tl", 0) for h in hist)
     result["history_pnl_total"] = round(history_total, 2)
-    result["trade_count"] = len(state.get("history", []))
+    result["trade_count"] = len(hist)
+
+    # ── PERFORMANS ÖZETİ (kapanmış işlemlerden) ──────────────────────────────
+    pnls  = [h.get("pnl_tl", 0) for h in hist]
+    wins  = [p for p in pnls if p > 0]
+    losss = [p for p in pnls if p < 0]
+    n = len(pnls)
+    result["perf"] = {
+        "trades":    n,
+        "win_rate":  round(len(wins) / n * 100) if n else 0,
+        "wins":      len(wins),
+        "losses":    len(losss),
+        "avg_win":   round(sum(wins) / len(wins)) if wins else 0,
+        "avg_loss":  round(sum(losss) / len(losss)) if losss else 0,
+        "best":      round(max(pnls)) if pnls else 0,
+        "worst":     round(min(pnls)) if pnls else 0,
+        "total":     round(history_total),
+        # Profit factor: kazançların toplamı / kayıpların mutlak toplamı
+        "pf":        round(sum(wins) / abs(sum(losss)), 2) if losss else (len(wins) and 99.9 or 0),
+    }
 
     active = state.get("active")
     if not active:

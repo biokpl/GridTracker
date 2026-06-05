@@ -79,6 +79,24 @@ def _record_recommended(state: dict, symbol: str, pick: dict = None):
     recs.append(e)
 
 
+def _push_stop_to_card(stop, hard):
+    """Trailing ile yükselen stop'u Firebase'e yaz → danışman kartı anında göstersin."""
+    try:
+        import requests as _req
+        _fb = "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app/gridtracker/advisor"
+        _req.patch(f"{_fb}/tracker.json", json={"stop_loss": stop, "hard_stop": hard}, timeout=6)
+        _req.patch(f"{_fb}/active_pick.json", json={"stop_loss": stop, "hard_stop": hard}, timeout=6)
+        # result.json (PC kartı) da güncellensin
+        from advisor import RESULT_PATH
+        if RESULT_PATH.exists():
+            d = json.loads(RESULT_PATH.read_text(encoding="utf-8"))
+            if d.get("tracker"): d["tracker"]["stop_loss"] = stop; d["tracker"]["hard_stop"] = hard
+            if d.get("active_pick"): d["active_pick"]["stop_loss"] = stop; d["active_pick"]["hard_stop"] = hard
+            RESULT_PATH.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    except Exception as e:
+        log.debug(f"_push_stop_to_card hatası: {e}")
+
+
 def _push_tracker_after_close(state: dict):
     """Pozisyon kapanınca kartı ANINDA tazele: tracker'ı yeniden hesapla,
     result.json + Firebase'e yaz (active_pick temizlenir)."""
@@ -207,6 +225,50 @@ def _fast_price_check():
         qty     = active.get("qty", 0)
         pnl_pct = ((price - entry) / entry * 100) if entry else 0
         pnl_tl  = (price - entry) * qty if (entry and qty) else 0
+
+        # ── TRAILING STOP: fiyat yükseldikçe stop'u YUKARI çek (kâr kilitle) ──
+        # Orijinal stop mesafesi kadar geriden takip eder; sadece yukarı hareket eder.
+        # Stop anlamlı yükseldiğinde "çıkışını buna göre ayarla" bildirimi gönderir.
+        if entry and stop and price > entry:
+            est = active.get("entry_stop")
+            if est is None:
+                est = stop; active["entry_stop"] = est          # orijinal stop
+            if active.get("entry_hard") is None:
+                active["entry_hard"] = hard                      # orijinal felaket stop
+            trail_dist = entry - est                             # orijinal mesafe
+            gap        = est - active.get("entry_hard", hard)    # stop↔felaket farkı
+            peak       = max(active.get("peak_price", entry) or entry, price)
+            new_stop   = round(peak - trail_dist, 4)
+            if new_stop > stop + max(0.01, price * 0.001):       # anlamlı yukarı (≥%0.1)
+                old_stop = stop
+                stop = new_stop
+                hard = round(new_stop - gap, 4)
+                active["stop_loss"] = stop
+                active["hard_stop"] = hard
+                active["peak_price"] = peak
+                _save_state(state)
+                log.info(f"TRAIL: {sym} stop {old_stop}→{stop} (peak {_fp(peak)})")
+                # Bildirim: stop son bildirimden ≥%0.5 yükseldiyse (çıkış için)
+                last_n = active.get("trail_notified") or est
+                if stop >= last_n + price * 0.005:
+                    active["trail_notified"] = stop
+                    _save_state(state)
+                    _push_stop_to_card(stop, hard)               # kart anında güncellensin
+                    kilitli = (stop - entry) * qty if (entry and qty) else 0
+                    notifier._send(
+                        f"🔼 {sym} STOP GÜNCELLENDİ",
+                        f"Fiyat yükseldi → stop takip ediyor.\n"
+                        f"━━━━━━━━━━━━━━━━━━━━\n"
+                        f"Yeni stop: {_fp(stop)} ₺  (eski {_fp(old_stop)})\n"
+                        + (f"🔒 Garanti kâr: ~{kilitli:,.0f} TL\n".replace(',', '.')
+                           if stop >= entry else "🛡 Zarar küçültüldü\n") +
+                        f"Felaket stop: {_fp(hard)} ₺\n"
+                        f"━━━━━━━━━━━━━━━━━━━━\n"
+                        f"Çıkışını bu seviyeye ayarla. Anlık: {_fp(price)} ({pnl_pct:+.1f}%)",
+                        priority="default", tags="chart_with_upwards_trend")
+            elif peak > (active.get("peak_price", entry) or entry) + price * 0.0015:
+                active["peak_price"] = peak                       # peak ilerledi, kaydet
+                _save_state(state)
 
         # ── FELAKET STOPU: stop'un belirgin altı → ANINDA ÇIK (kapanış bekleme) ──
         if hard and price <= hard:

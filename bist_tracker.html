@@ -271,6 +271,9 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .adv-bar-val{font-size:9px;font-weight:600;width:22px;text-align:right;}
 .adv-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
 .adv-detail-btn{font-size:9px;background:none;border:none;color:#2d4a5a;cursor:pointer;padding:0;}
+.adv-perf-box{flex:1;background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.14);border-radius:7px;padding:6px 3px;text-align:center;}
+.adv-perf-v{font-size:13px;font-weight:700;font-family:var(--mono);line-height:1.1;color:#cbd5e1;}
+.adv-perf-l{font-size:7.5px;color:#5a6b80;margin-top:3px;letter-spacing:.2px;}
 .adv-refresh-btn{font-size:9px;background:none;border:none;color:#4e6080;cursor:pointer;padding:0;font-family:var(--mono);}
 .adv-refresh-btn:hover{color:#22d3ee;}
 .adv-top3-row{display:flex;align-items:center;gap:8px;padding:5px 4px;border-bottom:1px solid rgba(255,255,255,.05);}
@@ -1438,6 +1441,21 @@ select.field-input option{background:var(--surface2);}
 
     <!-- Top 3 -->
     <div id="adv-top3" style="margin-top:8px;display:none"></div>
+
+    <!-- ── PERFORMANS ÖZETİ (kapanmış işlemlerden) ── -->
+    <div id="adv-perf" style="display:none;margin-top:10px;padding-top:9px;border-top:1px dashed rgba(125,163,196,.22)">
+      <div style="font-size:8px;color:#5a6b80;letter-spacing:1px;text-transform:uppercase;text-align:center;margin-bottom:7px">◈ Performans Özeti</div>
+      <div style="display:flex;gap:5px">
+        <div class="adv-perf-box"><div id="adv-perf-trades" class="adv-perf-v">—</div><div class="adv-perf-l">İşlem</div></div>
+        <div class="adv-perf-box"><div id="adv-perf-wr" class="adv-perf-v">—</div><div class="adv-perf-l">İsabet</div></div>
+        <div class="adv-perf-box"><div id="adv-perf-pf" class="adv-perf-v">—</div><div class="adv-perf-l">K/Z Oranı</div></div>
+        <div class="adv-perf-box"><div id="adv-perf-total" class="adv-perf-v">—</div><div class="adv-perf-l">Toplam K/Z</div></div>
+      </div>
+      <div style="display:flex;justify-content:center;gap:14px;margin-top:6px;font-size:9px;color:#6b7a92">
+        <span>En iyi: <b id="adv-perf-best" style="color:#4ade80;font-family:var(--mono)">—</b></span>
+        <span>En kötü: <b id="adv-perf-worst" style="color:#f87171;font-family:var(--mono)">—</b></span>
+      </div>
+    </div>
 
     <!-- Alt butonlar -->
     <div class="adv-footer">
@@ -37610,11 +37628,31 @@ async function renderAdvisor(){
     }
 
     if(_advShowDetail) _renderAdvTop3(picks);
+    _renderAdvPerf(tr.perf);
 
   } catch(e){
     console.warn('[Advisor] Kart yüklenemedi:',e);
     card.style.display='none';
   }
+}
+
+// Performans özeti paneli — kapanmış işlemlerden (tracker.perf)
+function _renderAdvPerf(perf){
+  const el=$('adv-perf');
+  if(!el) return;
+  if(!perf || !perf.trades){ el.style.display='none'; return; }
+  el.style.display='block';
+  const st=(id,v)=>{const e=$(id); if(e) e.textContent=v;};
+  const wr=perf.win_rate||0;
+  st('adv-perf-trades', perf.trades);
+  const wrEl=$('adv-perf-wr');
+  if(wrEl){ wrEl.textContent='%'+wr; wrEl.style.color = wr>=60?'#4ade80':wr>=45?'#fbbf24':'#f87171'; }
+  const pfEl=$('adv-perf-pf');
+  if(pfEl){ pfEl.textContent=(perf.pf||0).toFixed(1); pfEl.style.color = perf.pf>=1.5?'#4ade80':perf.pf>=1?'#fbbf24':'#f87171'; }
+  const totEl=$('adv-perf-total');
+  if(totEl){ totEl.textContent=_fmtTL(perf.total||0); totEl.style.color=(perf.total||0)>=0?'#4ade80':'#f87171'; }
+  st('adv-perf-best', _fmtTL(perf.best||0));
+  st('adv-perf-worst', _fmtTL(perf.worst||0));
 }
 
 // Önerilen hisse için canlı GİRİLEBİLİRLİK kontrolü.

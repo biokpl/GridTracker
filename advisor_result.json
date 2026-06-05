@@ -173,7 +173,7 @@
     "avg_cost": 63.2063,
     "total_qty": 643,
     "current_price": 62.3,
-    "unrealized_pnl": -582.76,
+    "unrealized_pnl": -582.75,
     "unrealized_pct": -1.43,
     "realized_pnl": 0.0,
     "history_pnl_total": 2828.61,
@@ -183,8 +183,20 @@
     "target1": 64.1964,
     "target2": 66.0929,
     "error": null,
+    "perf": {
+      "trades": 4,
+      "win_rate": 75,
+      "wins": 3,
+      "losses": 1,
+      "avg_win": 989,
+      "avg_loss": -139,
+      "best": 1272,
+      "worst": -139,
+      "total": 2829,
+      "pf": 21.35
+    },
     "open_qty": 643,
-    "data_source": "excel"
+    "data_source": "manual"
   },
   "score_table": {
     "TRALT": {
