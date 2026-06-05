@@ -638,11 +638,40 @@ def _sync_position():
         log.error(f"Pozisyon senkron hatası: {e}", exc_info=True)
 
 
+def _check_entry_alerts(pick, lot_info, state, notifier, get_price):
+    """Top picks ilk önerisi için de giriş/fırsat alımı alarmı izler."""
+    try:
+        sym  = pick.get("symbol","")
+        ez   = pick.get("entry_zone") or {}
+        elow, ehigh = ez.get("low",0), ez.get("high",0)
+        if not sym or not ehigh: return
+        price, _ = get_price(sym)
+        if not price: return
+        li = (lot_info or {}).get(sym, {})
+        lots_main = li.get("lots_main") or li.get("lots", 0)
+        lots_dip  = li.get("lots_dip", 0)
+        dip_px    = li.get("dip_price") or round(price * 0.97, 2)
+        # Giriş bölgesine girdi
+        if elow and price <= ehigh and price >= elow * 0.98:
+            if _should_send(sym, "GİRİŞ_BÖLGE"):
+                notifier._send(
+                    f"🟢 {sym} GİRİŞ BÖLGESİNDE — AL",
+                    f"Fiyat giriş bölgesine girdi: {_fp(price)} ₺\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"➤ ANA GİRİŞ: {lots_main:,} lot al (şimdi)\n".replace(",",".")
+                    + (f"➤ FIRSAT ALIMI: {lots_dip:,} lot — {_fp(dip_px)} ₺'ye gelirse\n".replace(",",".") if lots_dip else "")
+                    + f"Stop: {_fp(pick.get('stop_loss',0))} | Hedef: {_fp(pick.get('target1',0))}",
+                    priority="high", tags="bell")
+    except Exception as e:
+        log.debug(f"_check_entry_alerts: {e}")
+
+
 def _check_pending_entry():
     """
-    Bekleyen öneri (pending_buy) fiyat KAÇTI mı? Kaçtıysa HEMEN sıradaki
-    uygun öneriye geç (advisor_result.json top_picks'ten, giriş bölgesinde
-    olan ilk hisse). Kullanıcı yarını beklemez — anında yeni hedef alır.
+    Bekleyen öneri (pending_buy) için 3 alarm:
+      1) Fiyat giriş bölgesine GİRDİ → "Şimdi al!" bildirimi
+      2) Fiyat %3 geri çekildi → "Fırsat alımı fırsatı!" bildirimi
+      3) Fiyat giriş bölgesini KAÇTI → sıradaki öneriye geç
     """
     try:
         import notifier
@@ -654,10 +683,21 @@ def _check_pending_entry():
             return  # zaten pozisyon var, öneri takibi yok
         pending = state.get("pending_buy")
         if not pending:
+            # Aktif pozisyon yoksa top_picks'teki ilk hisseyi de izle
+            try:
+                from advisor import RESULT_PATH
+                d = json.loads(RESULT_PATH.read_text(encoding="utf-8"))
+                picks = d.get("top_picks", [])
+                lot_info = d.get("lot_info", {})
+                if picks:
+                    _check_entry_alerts(picks[0], lot_info, state, notifier, get_price)
+            except Exception:
+                pass
             return
 
         psym = pending.get("symbol", "")
         ehigh = pending.get("entry_high", 0)
+        elow  = pending.get("entry_low", 0)
         if not psym or not ehigh:
             return
 
@@ -665,7 +705,51 @@ def _check_pending_entry():
         if not price:
             return
 
-        # Fiyat giriş bölgesinin %1.5 üstüne çıktıysa "kaçtı" say
+        # ── 1. GİRİŞ BÖLGESİNE GİRDİ → "Şimdi al!" ──────────────────────
+        if elow and price <= ehigh and price >= elow * 0.98:
+            if _should_send(psym, "GİRİŞ_BÖLGE"):
+                from advisor import RESULT_PATH
+                d = json.loads(RESULT_PATH.read_text(encoding="utf-8"))
+                li = (d.get("lot_info") or {}).get(psym, {})
+                lots_main = li.get("lots_main") or li.get("lots", 0)
+                lots_dip  = li.get("lots_dip", 0)
+                dip_px    = li.get("dip_price", round(price * 0.97, 2))
+                notifier._send(
+                    f"🟢 {psym} GİRİŞ BÖLGESİNDE — AL",
+                    f"Fiyat giriş bölgesine girdi: {_fp(price)} ₺\n"
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"➤ ANA GİRİŞ: {lots_main:,} lot al (şimdi)\n".replace(",",".")
+                    + (f"➤ FIRSAT ALIMI: {lots_dip:,} lot — fiyat {_fp(dip_px)} ₺'ye gelirse\n".replace(",",".") if lots_dip else "")
+                    + f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"Stop: {_fp(pending.get('stop_loss',0))} | Hedef: {_fp(pending.get('target1',0))}",
+                    priority="high", tags="bell")
+
+        # ── 2. FIRSAT ALIMI: fiyat %3 geri çekildi ───────────────────────
+        dip_ref = pending.get("entry_ref_price") or ehigh
+        dip_target = dip_ref * 0.97
+        if price <= dip_target and not pending.get("dip_notified"):
+            if _should_send(psym, "FIRSAT_ALIM"):
+                from advisor import RESULT_PATH
+                d = json.loads(RESULT_PATH.read_text(encoding="utf-8"))
+                li = (d.get("lot_info") or {}).get(psym, {})
+                lots_dip = li.get("lots_dip", 0)
+                if lots_dip > 0:
+                    try:
+                        st2 = _load_state()
+                        if st2.get("pending_buy") and st2["pending_buy"].get("symbol") == psym:
+                            st2["pending_buy"]["dip_notified"] = True
+                            _save_state(st2)
+                    except Exception: pass
+                    notifier._send(
+                        f"⬇ {psym} FIRSAT ALIMI",
+                        (f"Fiyat %3 geri cekildi: {_fp(price)} TL\n"
+                         f"━━━━━━━━━━━━━━━━━━━━\n"
+                         f"Firsat alimi: {lots_dip} lot al\n"
+                         f"Ortalama maliyet dusecek.\n"
+                         f"Stop: {_fp(pending.get('stop_loss',0))} | Hedef: {_fp(pending.get('target1',0))}"),
+                        priority="high", tags="chart_with_downwards_trend")
+
+        # ── 3. KAÇTI: giriş bölgesinin %1.5 üstüne çıktıysa ──────────────
         if price <= ehigh * 1.015:
             return  # hâlâ girilebilir, dokunma
 
