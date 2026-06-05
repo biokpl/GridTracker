@@ -1370,7 +1370,7 @@ select.field-input option{background:var(--surface2);}
         </div>
       </div>
 
-      <!-- Stop / 1. Hedef / 2. Hedef -->
+      <!-- Stop / Hedef (ilk hedefte tam çıkış — 2. hedef yok) -->
       <div class="adv-levels">
         <div class="adv-level-item">
           <div class="adv-level-lbl">Stop Loss</div>
@@ -1378,13 +1378,8 @@ select.field-input option{background:var(--surface2);}
         </div>
         <div class="adv-level-sep"></div>
         <div class="adv-level-item">
-          <div class="adv-level-lbl">1. Hedef</div>
+          <div class="adv-level-lbl">Hedef</div>
           <div class="adv-level-val" id="adv-t1" style="color:#4ade80">—</div>
-        </div>
-        <div class="adv-level-sep"></div>
-        <div class="adv-level-item">
-          <div class="adv-level-lbl">2. Hedef</div>
-          <div class="adv-level-val" id="adv-t2" style="color:#34d399">—</div>
         </div>
       </div>
 
@@ -37545,7 +37540,6 @@ async function renderAdvisor(){
       if(activePick){
         $('adv-stop').textContent=_fmtPrice(activePick.stop_loss);
         $('adv-t1').textContent  =_fmtPrice(activePick.target1);
-        $('adv-t2').textContent  =_fmtPrice(activePick.target2);
         $('adv-reason').textContent=activePick.reasoning||'';
         $('adv-bars').innerHTML=_renderScoreBars(activePick.scores||{});
         if(_hs) _hs.textContent = activePick.hard_stop ? _fmtPrice(activePick.hard_stop) : '—';
@@ -37553,7 +37547,6 @@ async function renderAdvisor(){
         // Aktif hisse top_picks'te yok (ör. SASA) → stop/hedef'i tracker'dan al
         $('adv-stop').textContent = tr.stop_loss ? _fmtPrice(tr.stop_loss) : '—';
         $('adv-t1').textContent   = tr.target1   ? _fmtPrice(tr.target1)   : '—';
-        $('adv-t2').textContent   = tr.target2   ? _fmtPrice(tr.target2)   : '—';
         $('adv-reason').textContent='';
         $('adv-bars').innerHTML='';
         if(_hs) _hs.textContent = tr.hard_stop ? _fmtPrice(tr.hard_stop) : '—';

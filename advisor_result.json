@@ -145,10 +145,10 @@
     "rank": 0
   },
   "exit_signal": {
-    "symbol": null,
-    "signal": "—",
-    "score_now": 0.0,
-    "score_prev": 0.0,
+    "symbol": "TTKOM",
+    "signal": "DEVAM",
+    "score_now": 6.5,
+    "score_prev": 6.5,
     "message": ""
   },
   "lot_info": {
