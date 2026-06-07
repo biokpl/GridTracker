@@ -108,6 +108,79 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
   background:rgba(9,9,11,.98);
   overflow-x:auto;scrollbar-width:none;
   flex-shrink:0;
+  position:relative;
+}
+/* Sol dekoratif ışık — indigo/violet */
+.nav::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,transparent 5%,rgba(99,102,241,.5) 35%,rgba(139,92,246,.8) 55%,rgba(99,102,241,.5) 75%,transparent 95%);
+  box-shadow:0 0 10px rgba(139,92,246,.45),0 0 4px rgba(99,102,241,.3);
+  border-radius:0 2px 2px 0;pointer-events:none;z-index:2;
+}
+/* Sağ dekoratif ışık — cyan/teal */
+.nav::after{
+  content:'';position:absolute;right:0;top:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,transparent 5%,rgba(6,182,212,.5) 35%,rgba(34,211,238,.8) 55%,rgba(6,182,212,.5) 75%,transparent 95%);
+  box-shadow:0 0 10px rgba(6,182,212,.45),0 0 4px rgba(34,211,238,.3);
+  border-radius:2px 0 0 2px;pointer-events:none;z-index:2;
+}
+/* ── FAB DANIŞMAN ── */
+#fab-adv{
+  position:fixed;bottom:22px;right:16px;
+  width:50px;height:50px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(6,182,212,.92),rgba(8,145,178,.96));
+  border:1px solid rgba(6,182,212,.45);
+  box-shadow:0 4px 18px rgba(6,182,212,.35),0 2px 6px rgba(0,0,0,.4);
+  color:#fff;font-size:20px;cursor:pointer;
+  z-index:900;display:flex;align-items:center;justify-content:center;
+  transition:transform .2s ease,box-shadow .2s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+#fab-adv:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(6,182,212,.5);}
+#fab-adv:active{transform:scale(.95);}
+/* Kırmızı nokta — aktif sinyal badge */
+#fab-badge{
+  position:absolute;top:2px;right:2px;
+  width:11px;height:11px;border-radius:50%;
+  background:#ef4444;border:2px solid #09090b;
+  display:none;animation:fab-pulse 1.8s ease-in-out infinite;
+}
+@keyframes fab-pulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.6);}60%{box-shadow:0 0 0 5px rgba(239,68,68,0);}}
+/* ── SLIDE-UP PANEL ── */
+#adv-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);
+  z-index:940;opacity:0;pointer-events:none;
+  transition:opacity .3s ease;
+}
+#adv-overlay.open{opacity:1;pointer-events:auto;}
+#adv-panel{
+  position:fixed;bottom:0;left:0;right:0;
+  max-height:88vh;
+  background:linear-gradient(180deg,#0e1117 0%,#09090b 100%);
+  border-top:1px solid rgba(6,182,212,.28);
+  border-radius:18px 18px 0 0;
+  z-index:950;
+  transform:translateY(100%);
+  transition:transform .38s cubic-bezier(.32,.72,0,1);
+  overflow-y:auto;overflow-x:hidden;
+  padding:0 14px 32px;
+  scrollbar-width:thin;scrollbar-color:rgba(6,182,212,.2) transparent;
+}
+#adv-panel.open{transform:translateY(0);}
+/* Panel üst tutamak */
+#adv-panel-handle{
+  display:flex;flex-direction:column;align-items:center;
+  padding:10px 0 6px;
+  position:sticky;top:0;background:linear-gradient(180deg,#0e1117 80%,transparent);
+  z-index:1;
+}
+#adv-panel-handle::before{
+  content:'';width:36px;height:4px;border-radius:4px;
+  background:rgba(6,182,212,.35);
+}
+#adv-panel-title{
+  font-size:10px;color:rgba(6,182,212,.7);letter-spacing:1.5px;
+  text-transform:uppercase;margin-top:5px;font-weight:600;
 }
 .nav::-webkit-scrollbar{display:none;}
 .nav-btn{
@@ -1018,6 +1091,23 @@ select.field-input option{background:var(--surface2);}
   <button class="nav-btn" onclick="go('pg-gridcalc',this)"><span class="nav-icon">⊞</span>GridBot</button>
 </div>
 
+<!-- ── FAB DANIŞMAN BUTONU ── -->
+<button id="fab-adv" onclick="toggleAdvPanel()" title="Günlük AL/SAT Danışmanı">
+  <span id="fab-badge"></span>📊
+</button>
+
+<!-- ── DANIŞMAN OVERLAY ── -->
+<div id="adv-overlay" onclick="closeAdvPanel()"></div>
+
+<!-- ── DANIŞMAN SLIDE-UP PANEL ── -->
+<div id="adv-panel">
+  <div id="adv-panel-handle">
+    <div id="adv-panel-title">Günlük AL/SAT Danışmanı</div>
+  </div>
+  <!-- advisor-card buraya JS ile taşınacak -->
+  <div id="adv-panel-content"></div>
+</div>
+
 <!-- CONTENT -->
 <div class="content">
 
@@ -1307,12 +1397,6 @@ select.field-input option{background:var(--surface2);}
     </div>
   </div>
 
-  <!-- ── Danışman Akıllı Kart ── -->
-  <div class="gc-section-sep" style="margin:4px 0 10px">
-    <div class="gc-sep-line-l"></div>
-    <div class="gc-sep-node">📊</div>
-    <div class="gc-sep-line-r"></div>
-  </div>
   <div class="adv-wrap" id="advisor-card" style="display:none">
 
     <!-- Başlık -->
@@ -37483,6 +37567,48 @@ async function saveAdvCapital(){
   } catch(e){ toast('Bağlantı hatası','err'); }
 }
 
+// ── FAB / SLIDE-UP PANEL ──────────────────────────────────
+(function initAdvPanel(){
+  // advisor-card'ı panel-content'e taşı (DOM ready sonrası)
+  function moveCard(){
+    const card=document.getElementById('advisor-card');
+    const tgt=document.getElementById('adv-panel-content');
+    if(card&&tgt&&card.parentNode!==tgt){ tgt.appendChild(card); }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',moveCard);
+  else moveCard();
+})();
+
+function openAdvPanel(){
+  document.getElementById('adv-overlay').classList.add('open');
+  document.getElementById('adv-panel').classList.add('open');
+  document.body.style.overflow='hidden';
+  // Kart görünür yap
+  const card=document.getElementById('advisor-card');
+  if(card) card.style.display='block';
+}
+function closeAdvPanel(){
+  document.getElementById('adv-overlay').classList.remove('open');
+  document.getElementById('adv-panel').classList.remove('open');
+  document.body.style.overflow='';
+}
+function toggleAdvPanel(){
+  const panel=document.getElementById('adv-panel');
+  if(panel.classList.contains('open')) closeAdvPanel();
+  else { openAdvPanel(); renderAdvisor(); }
+}
+// Badge güncelle: aktif pozisyon veya sinyal varsa kırmızı nokta göster
+function _updateFabBadge(){
+  const badge=document.getElementById('fab-badge');
+  if(!badge) return;
+  const tr=(_advData&&_advData.tracker)||{};
+  const hasActive=!!(tr.active_symbol);
+  const sig=(tr.signal||'');
+  const urgent=hasActive&&(sig==='ÇIK'||sig==='ACİL_ÇIK'||sig==='ÇIK_ERKEN'||sig==='DEĞİŞTİR');
+  badge.style.display=urgent?'block':'none';
+}
+// ─────────────────────────────────────────────────────────
+
 async function renderAdvisor(){
   const card=$('advisor-card');
   if(!card) return;
@@ -37500,6 +37626,7 @@ async function renderAdvisor(){
     if(!d){ card.style.display='none'; return; }
     _advData=d;
     card.style.display='';  // CSS display'i temizle (adv-wrap görünür)
+    _updateFabBadge();
 
     $('adv-ts').textContent=d.ts_str||'';
 
@@ -37755,7 +37882,7 @@ async function gcCheckEntryStatus(sym, low, high){
 function startAdvTimer(){
   if(_advTimer) clearInterval(_advTimer);
   // Tam veri (öneriler, skorlar) 90 sn'de bir
-  _advTimer=setInterval(()=>{ if(document.getElementById('pg-sermaye')?.style.display!=='none') renderAdvisor(); }, 90000);
+  _advTimer=setInterval(()=>{ renderAdvisor(); }, 90000);
   // Aktif pozisyon fiyatı + K/Z: 12 sn'de bir hafif tik (monitor Firebase'i 5 sn'de günceller)
   if(window._advPxTimer) clearInterval(window._advPxTimer);
   window._advPxTimer=setInterval(_advTickPrice, 12000);
@@ -37764,7 +37891,8 @@ function startAdvTimer(){
 // Sadece aktif pozisyonun anlık fiyat + K/Z'sini günceller (tüm kartı yeniden çizmeden).
 async function _advTickPrice(){
   try{
-    if(document.getElementById('pg-sermaye')?.style.display==='none') return;
+    // panel kapalıysa fiyat güncellemesini atla
+    if(!document.getElementById('adv-panel')?.classList.contains('open')) return;
     if(!_advData||!_advData.tracker||!_advData.tracker.active_symbol) return;
     if($('adv-active')?.style.display==='none') return;
     // tracker düğümünü çek (monitor 5 sn'de bir current_price/unrealized_pnl yazar)
