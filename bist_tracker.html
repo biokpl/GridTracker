@@ -38087,39 +38087,8 @@ document.addEventListener('DOMContentLoaded',async()=>{
     const el=$(id); if(el) el.addEventListener('input',()=>{ window._gcDirty=true; });
   });
 
-  // ── YÜKLEME GÖSTERGESİ ───────────────────────────────────────────────────
-  // fbRead() HTTP çağrısı kaldırıldı — SSE ilk bağlantıda zaten tam veriyi
-  // gönderdiği için ayrı bir HTTP isteğine gerek yok.
-  // SSE ilk "put" eventi gelene kadar overlay göster; 3 sn içinde SSE gelmezse
-  // localStorage'daki eski veri fallback olarak render edilir.
   let _sseFirstDone = false;
-  const _overlay = document.createElement('div');
-  _overlay.style.cssText = [
-    'position:fixed','inset:0','z-index:9999',
-    'background:rgba(10,10,20,.72)',
-    'display:flex','align-items:center','justify-content:center',
-    'transition:opacity .25s'
-  ].join(';');
-  _overlay.innerHTML = '<div style="color:#e0e8ff;font-size:1.05rem;font-family:inherit;'
-    +'letter-spacing:.06em;text-align:center;line-height:1.7">'
-    +'<span style="font-size:1.6rem;display:block;margin-bottom:6px">⟳</span>'
-    +'Güncel veriler yükleniyor…</div>';
-  document.body.appendChild(_overlay);
-
-  function _hideOverlay(){
-    if(_sseFirstDone) return;
-    _sseFirstDone = true;
-    _overlay.style.opacity = '0';
-    setTimeout(()=>{ _overlay.remove(); }, 260);
-  }
-
-  // 3 sn fallback: SSE gelmezse localStorage ile render
-  const _sseTimeout = setTimeout(()=>{
-    if(!_sseFirstDone){
-      _hideOverlay();
-      if(D) renderAll(false);
-    }
-  }, 3000);
+  const _sseTimeout = setTimeout(()=>{ if(!_sseFirstDone && D){ _sseFirstDone=true; renderAll(false); } }, 3000);
 
   // Firebase SSE — değişiklik anında yansır
   function syncSettings(){
@@ -38178,7 +38147,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
         if(!D.birikimTx) D.birikimTx=[];
         saveCache();
         clearTimeout(_sseTimeout);
-        _hideOverlay();
+        _sseFirstDone=true;
         renderAll(D.lastUpdated&&D.lastUpdated!==prev);
       } else {
         if(!D) return;
