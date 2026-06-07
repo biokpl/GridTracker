@@ -1399,6 +1399,10 @@ select.field-input option{background:var(--surface2);}
           🚨 <b>Felaket stop:</b> <span id="adv-hardstop" style="font-weight:800">—</span> <span style="color:#9ca3af;font-weight:400">(buraya inerse anında çık)</span>
         </div>
       </div>
+
+      <!-- MANUEL ONAY: Sattım → pozisyonu kapat, sıradaki öneriye geç -->
+      <button id="adv-btn-sold" onclick="advConfirmSold()" style="width:100%;margin-top:11px;padding:13px;font-size:14px;font-weight:800;color:#fff;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;border-radius:10px;cursor:pointer;letter-spacing:.3px;box-shadow:0 0 14px rgba(239,68,68,.25)">✅ SATTIM — Pozisyonu Kapat</button>
+      <div style="font-size:8.5px;color:#6b7280;text-align:center;margin-top:4px;opacity:.8">Sattıktan sonra bas → sıradaki öneri anında gelir</div>
     </div>
 
     <!-- ── ÖNERI MODU (aktif pozisyon yok) ── -->
@@ -1442,6 +1446,10 @@ select.field-input option{background:var(--surface2);}
       <!-- AKSİYON ALANI: kaç lot alınacak — dikkat çekici -->
       <div id="adv-top1-lots" style="display:none;font-size:14px;color:#86efac;font-weight:800;padding:11px 12px;background:linear-gradient(135deg,rgba(74,222,128,.16),rgba(34,197,94,.08));border:1.5px solid rgba(74,222,128,.45);border-radius:10px;margin-bottom:9px;text-align:center;box-shadow:0 0 14px rgba(74,222,128,.18);letter-spacing:.3px"></div>
       <div id="adv-bars-suggest"></div>
+
+      <!-- MANUEL ONAY: Aldım → öneriyi aktif pozisyon yap -->
+      <button id="adv-btn-bought" onclick="advConfirmBought()" style="width:100%;margin-top:10px;padding:13px;font-size:14px;font-weight:800;color:#04210f;background:linear-gradient(135deg,#4ade80,#22c55e);border:none;border-radius:10px;cursor:pointer;letter-spacing:.3px;box-shadow:0 0 14px rgba(74,222,128,.25)">🟢 ALDIM — Pozisyonu Aç</button>
+      <div style="font-size:8.5px;color:#6b7280;text-align:center;margin-top:4px;opacity:.8">Önerilen hisseyi aldıysan bas → takip başlasın</div>
     </div>
 
     <!-- Top 3 -->
@@ -37656,6 +37664,35 @@ async function renderAdvisor(){
     console.warn('[Advisor] Kart yüklenemedi:',e);
     card.style.display='none';
   }
+}
+
+// ── MANUEL ONAY: Sattım / Aldım ──────────────────────────────────────────
+// Firebase'e komut yazar; PC'deki monitor.pyw birkaç sn içinde işler:
+//   sold   → aktif pozisyonu kapatır, sıradaki öneriyi hazırlar
+//   bought → önerilen hisseyi aktif pozisyon yapar
+async function advConfirmSold(){
+  const tr=(_advData&&_advData.tracker)||{};
+  const sym=tr.active_symbol;
+  if(!sym){ toast('Aktif pozisyon yok','inf',2500); return; }
+  if(!confirm(sym+' pozisyonunu SATTIĞINIZI onaylıyor musunuz?\nSıradaki öneri hazırlanacak.')) return;
+  const id=Date.now()+'-'+Math.random().toString(36).slice(2,6);
+  try{
+    await fbWrite('gridtracker/advisor/userAction',{action:'sold',symbol:sym,ts:Date.now(),id});
+    toast('✅ '+sym+' satışı alındı — sıradaki öneri hazırlanıyor...','ok',3500);
+    setTimeout(renderAdvisor,4500); setTimeout(renderAdvisor,9000);
+  }catch(e){ toast('Bağlantı hatası, tekrar dene','inf',3000); }
+}
+async function advConfirmBought(){
+  const picks=(_advData&&_advData.top_picks)||[];
+  const sym=picks[0]&&picks[0].symbol;
+  if(!sym){ toast('Şu an öneri yok','inf',2500); return; }
+  if(!confirm(sym+' ALDIĞINIZI onaylıyor musunuz?\nPozisyon takibi başlayacak.')) return;
+  const id=Date.now()+'-'+Math.random().toString(36).slice(2,6);
+  try{
+    await fbWrite('gridtracker/advisor/userAction',{action:'bought',symbol:sym,ts:Date.now(),id});
+    toast('🟢 '+sym+' alımı alındı — pozisyon açılıyor...','ok',3500);
+    setTimeout(renderAdvisor,4500); setTimeout(renderAdvisor,9000);
+  }catch(e){ toast('Bağlantı hatası, tekrar dene','inf',3000); }
 }
 
 // Performans özeti paneli — kapanmış işlemlerden (tracker.perf)
