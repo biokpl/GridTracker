@@ -323,7 +323,7 @@ def _fast_price_check():
                     f"━━━━━━━━━━━━━━━━━━━━\n"
                     f"Sattıktan sonra uygulamadan ✅ 'Sattım'a bas → "
                     f"sıradaki öneri anında gelsin.",
-                    priority="high", tags="dart")
+                    priority="urgent", tags="dart", alert=True)
             return
 
         # ── Her şey normal: sadece log ─────────────────────────────────────
@@ -711,8 +711,8 @@ def _slow_analysis():
                 ]
                 if new_pick:
                     lines += notifier._new_pick_lines(new_pick, lot_info)
-                notifier._send(f"🟠 {sym} — ERKEN ÇIKIŞ ÖNERİSİ", "\n".join(lines),
-                               priority="high", tags="warning")
+                notifier._send(f"🟠 {sym} — ERKEN ÇIKIŞ — SAT", "\n".join(lines),
+                               priority="urgent", tags="warning", alert=True)
         elif final in ("DİKKAT", "ÇIK", "ACİL_ÇIK", "DEĞİŞTİR"):
             if _should_send_state(sym, final):
                 new_pick, lot_info = _get_last_alternative(sym)
