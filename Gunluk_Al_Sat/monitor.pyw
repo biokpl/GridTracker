@@ -116,7 +116,7 @@ def _push_tracker_after_close(state: dict):
         import requests as _req
         _fb = "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app/gridtracker/advisor"
         _req.put(f"{_fb}/tracker.json", json=tr, timeout=6)
-        _req.put(f"{_fb}/active_pick.json", json=None, timeout=6)
+        _req.put(f"{_fb}/active_pick.json", data="null", timeout=6)  # json=None gövde göndermez
     except Exception as e:
         log.debug(f"tracker push (kapanış) hatası: {e}")
 
@@ -385,10 +385,12 @@ def _get_last_alternative(exclude_sym: str):
 # ── MANUEL ONAY KOMUTLARI (HTML "Sattım"/"Aldım" → Firebase → burada işlenir) ──
 
 def _clear_user_action():
-    """İşlenen komutu Firebase'den temizle (null yaz)."""
+    """İşlenen komutu Firebase'den temizle (null yaz).
+    NOT: requests'te json=None gövde GÖNDERMEZ; Firebase'e literal null yazmak
+    için data='null' kullanılmalı (aksi halde node silinmez)."""
     try:
         import requests as _req
-        _req.put(_FB_USERACTION, json=None, timeout=6)
+        _req.put(_FB_USERACTION, data="null", timeout=6)
     except Exception as e:
         log.debug(f"_clear_user_action: {e}")
 
@@ -523,8 +525,11 @@ def _do_user_bought(state: dict, symbol: str):
             RESULT_PATH.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
         import requests as _req
         _fb = _FB_BASE + "/gridtracker/advisor"
-        _req.put(_fb + "/tracker.json",     json=tr,        timeout=6)
-        _req.put(_fb + "/active_pick.json", json=pick_data, timeout=6)
+        _req.put(_fb + "/tracker.json", json=tr, timeout=6)
+        if pick_data is None:
+            _req.put(_fb + "/active_pick.json", data="null", timeout=6)
+        else:
+            _req.put(_fb + "/active_pick.json", json=pick_data, timeout=6)
     except Exception as e:
         log.debug(f"bought tracker push: {e}")
 
