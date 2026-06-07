@@ -600,6 +600,96 @@ def check_exit(active: dict, score_now: dict) -> tuple[str, str, int]:
         return "DEVAM", "", exit_pts
 
 
+# ─── Erken Zayıflama / Bozulma Dedektörü (AŞAĞI yönlü) ───────────────────────
+
+def check_early_weakness(active: dict, df: pd.DataFrame, score: dict,
+                         xu100: pd.DataFrame = None) -> tuple[str, str, int]:
+    """
+    check_exit yukarı/kâr-al odaklıdır; bu fonksiyon DÜŞÜŞ/kırılma odaklıdır.
+    Açık pozisyonda erken bozulma belirtilerini stop'a varmadan yakalar →
+    vur-kaç: küçük zararla (veya küçük kârla) erkenden çık, sıradakine geç.
+
+    Döndürür: (level, mesaj, puan)
+    level: DEVAM | ZAYIFLAMA (hazır ol) | ERKEN_ÇIK (stop'a varmadan çık)
+    Dengeli eşik: puan ≥ 5 → ERKEN_ÇIK, ≥ 3 → ZAYIFLAMA
+    """
+    close = df["Close"]
+    price = float(score.get("price") or close.iloc[-1])
+    entry = active.get("entry_price", 0) or 0
+    stop  = active.get("stop_loss", 0) or 0
+    rsi   = score.get("rsi", 50.0)
+
+    loss_pct = ((price - entry) / entry * 100) if entry else 0.0
+
+    pts = 0
+    sig = []
+
+    # 1) Kısa vade trend kırıldı — fiyat MA9 / MA20 altında
+    ma9  = float(close.rolling(9).mean().iloc[-1])  if len(close) >= 9  else price
+    ma20 = float(close.rolling(20).mean().iloc[-1]) if len(close) >= 20 else price
+    if price < ma9:  pts += 1; sig.append("MA9 altı")
+    if price < ma20: pts += 1; sig.append("MA20 altı")
+
+    # 2) MACD aşağı — taze aşağı kesişim ekstra ağırlık
+    ema12 = close.ewm(span=12, adjust=False).mean()
+    ema26 = close.ewm(span=26, adjust=False).mean()
+    macd  = ema12 - ema26
+    sgl   = macd.ewm(span=9, adjust=False).mean()
+    if len(macd) >= 2:
+        m_now, m_prv = float(macd.iloc[-1]), float(macd.iloc[-2])
+        s_now, s_prv = float(sgl.iloc[-1]),  float(sgl.iloc[-2])
+        if m_now < s_now:
+            pts += 1; sig.append("MACD aşağı")
+            if m_prv >= s_prv:
+                pts += 1; sig.append("MACD taze aşağı kesişim")
+
+    # 3) Son 5 günün dibi kırıldı — destek bozulması (güçlü sinyal)
+    if len(close) >= 6:
+        low5 = float(close.iloc[-6:-1].min())
+        if price < low5:
+            pts += 2; sig.append("5-gün dibi kırıldı")
+
+    # 4) RSI güç kaybı (45 altı)
+    if rsi < 45:
+        pts += 1; sig.append(f"RSI {rsi:.0f} (zayıf)")
+
+    # 5) Dağıtım — son 3 gün düşüş hacmi > yükseliş hacmi (ve zararda)
+    try:
+        last = df.iloc[-3:]
+        chg  = last["Close"].diff()
+        up_v = float(last[chg > 0]["Volume"].sum())
+        dn_v = float(last[chg < 0]["Volume"].sum())
+        if dn_v > up_v * 1.3 and price < entry:
+            pts += 1; sig.append("Dağıtım hacmi")
+    except Exception:
+        pass
+
+    # 6) Göreceli zayıflık — son 3 gün endeksten belirgin kötü
+    if xu100 is not None and len(xu100) > 3 and len(close) > 3:
+        try:
+            stk = (float(close.iloc[-1]) / float(close.iloc[-4]) - 1) * 100
+            idx = (float(xu100["Close"].iloc[-1]) / float(xu100["Close"].iloc[-4]) - 1) * 100
+            if stk < idx - 1.5 and stk < 0:
+                pts += 1; sig.append("Endeksten zayıf")
+        except Exception:
+            pass
+
+    # 7) Stop tehlike bölgesi — fiyat stopun hemen üstünde (%1.5)
+    if stop and stop < price <= stop * 1.015:
+        pts += 2; sig.append("Stop bölgesine yakın")
+
+    # 8) Zarar eşiği — vur-kaç: küçük zararı büyütme
+    if   loss_pct <= -2.5: pts += 2; sig.append(f"Zarar %{loss_pct:.1f}")
+    elif loss_pct <= -1.5: pts += 1; sig.append(f"Zarar %{loss_pct:.1f}")
+
+    msg = " | ".join(sig)
+    if pts >= 5:
+        return "ERKEN_ÇIK", msg, pts
+    if pts >= 3:
+        return "ZAYIFLAMA", msg, pts
+    return "DEVAM", "", pts
+
+
 # ─── Ana Analiz ──────────────────────────────────────────────────────────────
 
 def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:

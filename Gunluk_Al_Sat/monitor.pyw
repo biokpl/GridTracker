@@ -647,8 +647,23 @@ def _slow_analysis():
         score = advisor.score_stock(sym, df, xu100, all_returns, cfg["sectors"])
         signal, msg, exit_pts = advisor.check_exit(active, score)
 
+        # AŞAĞI yönlü erken bozulma dedektörü (vur-kaç: küçük zararla erken çık)
+        ew_level, ew_msg, ew_pts = advisor.check_early_weakness(active, df, score, xu100)
+
+        # Nihai sinyal: check_exit ÇIK/ACİL/DEĞİŞTİR öncelikli; yoksa erken-zayıflama
+        if signal in ("ÇIK", "ACİL_ÇIK", "DEĞİŞTİR"):
+            final, final_msg = signal, msg
+        elif ew_level == "ERKEN_ÇIK":
+            final, final_msg = "ÇIK_ERKEN", ew_msg
+        elif ew_level == "ZAYIFLAMA":
+            final, final_msg = "DİKKAT", (ew_msg or msg)
+        elif signal == "DİKKAT":
+            final, final_msg = "DİKKAT", msg
+        else:
+            final, final_msg = "DEVAM", ""
+
         log.info(f"{sym}: Skor={score['total_score']:.1f}/10  RSI={score['rsi']:.0f}"
-                 f"  ÇıkışPuan={exit_pts}  Sinyal={signal}")
+                 f"  ÇıkışPuan={exit_pts}  Zayıflama={ew_level}({ew_pts})  Sinyal={final}")
 
         # State güncelle
         state["active"]["last_score"] = score["total_score"]
@@ -658,15 +673,18 @@ def _slow_analysis():
             state["active"]["stop_loss"] = state["active"].get("stop_loss") or score["stop_loss"]
         _save_state(state)
 
+        # Kartta gösterilecek etiket (ÇIK_ERKEN → "ERKEN ÇIK")
+        disp_sig = "ERKEN ÇIK" if final == "ÇIK_ERKEN" else final
+
         # result.json güncelle
         try:
             from advisor import RESULT_PATH
             old = json.loads(RESULT_PATH.read_text(encoding="utf-8")) if RESULT_PATH.exists() else {}
             old["exit_signal"] = {
-                "symbol": sym, "signal": signal, "exit_pts": exit_pts,
+                "symbol": sym, "signal": disp_sig, "exit_pts": max(exit_pts, ew_pts),
                 "score_now": score["total_score"],
                 "score_prev": active.get("last_score", score["total_score"]),
-                "message": msg,
+                "message": final_msg,
             }
             old["ts_str"] = datetime.now().strftime("%d.%m.%Y %H:%M")
             RESULT_PATH.write_text(json.dumps(old, ensure_ascii=False), encoding="utf-8")
@@ -680,16 +698,30 @@ def _slow_analysis():
             except: pass
         except: pass
 
-        # Push: DİKKAT / ÇIK / DEĞİŞTİR — SADECE sinyal değiştiğinde
-        # (aynı sinyal sürdükçe saat başı tekrar bildirim GÖNDERİLMEZ)
-        if signal in ("DİKKAT", "ÇIK", "ACİL_ÇIK", "DEĞİŞTİR") and _should_send_state(sym, signal):
-            new_pick, lot_info = _get_last_alternative(sym)
-            notifier.send_exit_signal(
-                signal, sym,
-                active.get("last_score", score["total_score"]),
-                score["total_score"], msg, new_pick, lot_info
-            )
-        elif signal == "DEVAM":
+        # Push — SADECE sinyal değiştiğinde (aynı sinyal sürdükçe tekrar yok)
+        if final == "ÇIK_ERKEN":
+            if _should_send_state(sym, "ÇIK_ERKEN"):
+                new_pick, lot_info = _get_last_alternative(sym)
+                lines = [
+                    f"Skor: {score['total_score']:.1f}/10  |  RSI: {score['rsi']:.0f}",
+                    f"Sebep: {ew_msg}",
+                    "",
+                    "📉 Yapı bozuluyor — stop'a varmadan, küçük zararla/kârla",
+                    "çıkıp sıradaki fırsata geçmek için uygun an.",
+                ]
+                if new_pick:
+                    lines += notifier._new_pick_lines(new_pick, lot_info)
+                notifier._send(f"🟠 {sym} — ERKEN ÇIKIŞ ÖNERİSİ", "\n".join(lines),
+                               priority="high", tags="warning")
+        elif final in ("DİKKAT", "ÇIK", "ACİL_ÇIK", "DEĞİŞTİR"):
+            if _should_send_state(sym, final):
+                new_pick, lot_info = _get_last_alternative(sym)
+                notifier.send_exit_signal(
+                    final, sym,
+                    active.get("last_score", score["total_score"]),
+                    score["total_score"], final_msg, new_pick, lot_info
+                )
+        else:  # DEVAM
             # Durum düzeldi — sonraki kötüleşme yeniden bildirilsin
             _reset_state(sym)
 

@@ -37380,13 +37380,13 @@ function _fmtNum(v){
 function _signalClass(sig){
   if(sig==='DEVAM')                  return 'devam';
   if(sig==='DİKKAT')                 return 'dikkat';
-  if(sig==='ÇIK'||sig==='ACİL_ÇIK') return 'cik';
+  if(sig==='ÇIK'||sig==='ACİL_ÇIK'||sig==='ERKEN ÇIK') return 'cik';
   return '';
 }
 
 function _wrapClass(sig){
   if(sig==='DİKKAT')                 return 'signal-dikkat';
-  if(sig==='ÇIK'||sig==='ACİL_ÇIK') return 'signal-cik';
+  if(sig==='ÇIK'||sig==='ACİL_ÇIK'||sig==='ERKEN ÇIK') return 'signal-cik';
   return '';
 }
 
@@ -37530,7 +37530,7 @@ async function renderAdvisor(){
       const symRow=$('adv-symbol')?.closest('.adv-sym-row');
       if(symRow){
         const rc=sig==='DEVAM'?'sig-devam':sig==='DİKKAT'?'sig-dikkat':
-                 (sig==='ÇIK'||sig==='ACİL_ÇIK')?'sig-cik':'sig-bekle';
+                 (sig==='ÇIK'||sig==='ACİL_ÇIK'||sig==='ERKEN ÇIK')?'sig-cik':'sig-bekle';
         symRow.className='adv-sym-row '+rc;
       }
 
