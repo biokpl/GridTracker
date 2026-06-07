@@ -38058,7 +38058,7 @@ function clearAll(){
 document.addEventListener('DOMContentLoaded',async()=>{
   load();
   startAdvTimer();
-  if(loadCache()){ syncSettings(); renderAll(false); }
+  if(loadCache()){ syncSettings(); }
   // Son açık sekmeyi geri yükle
   try{
     const lastPage=sessionStorage.getItem('gt_lastPage');
@@ -38081,36 +38081,45 @@ document.addEventListener('DOMContentLoaded',async()=>{
     if(e.key==='Enter'){ e.preventDefault(); addBirikimTx('in'); }
   });
 
-  // Firebase'den güncel veriyi yükle
-  const fb=await fbRead();
-  if(fb){
-    D=fb;
-    if(!D.birikimTx) D.birikimTx=[];
-    if(D.settings){
-      if(D.settings.costs) S.settings.costs=D.settings.costs;
-      if(D.settings.botSymbols) S.settings.botSymbols=D.settings.botSymbols;
-      if(D.settings.monthlyTarget!=null) S.settings.monthlyTarget=D.settings.monthlyTarget;
-      if(D.settings.trackSymbol!=null) S.settings.trackSymbol=D.settings.trackSymbol;
-      if(D.settings.trackTarget!=null) S.settings.trackTarget=D.settings.trackTarget;
-      if(D.settings.trackAccum!=null) S.settings.trackAccum=D.settings.trackAccum;
-      if(D.settings.trackLastDate!=null) S.settings.trackLastDate=D.settings.trackLastDate;
-      if(D.settings.trackPayAmt!=null) S.settings.trackPayAmt=D.settings.trackPayAmt;
-      if(D.settings.gridCalc!=null) S.settings.gridCalc=D.settings.gridCalc;
-    }
-    saveCache();
-    renderAll(false);
-  }
-  // GridBot sonuçları Firebase'den yüklendikten sonra göster
-  const gc=S.settings.gridCalc||{};
-  if(gc.symbol&&gc.capital>0&&gc.support>0&&gc.resistance>0&&gc.atr>0){
-    renderGridCalcPage();
-  }
   // GridCalc input'larına dirty flag — Firebase sync kullanıcı düzenlemesini ezmesin
   window._gcDirty=false;
   ['gc-sym','gc-price','gc-cap','gc-sup','gc-res','gc-atr'].forEach(id=>{
     const el=$(id); if(el) el.addEventListener('input',()=>{ window._gcDirty=true; });
   });
-  renderHome();
+
+  // ── YÜKLEME GÖSTERGESİ ───────────────────────────────────────────────────
+  // fbRead() HTTP çağrısı kaldırıldı — SSE ilk bağlantıda zaten tam veriyi
+  // gönderdiği için ayrı bir HTTP isteğine gerek yok.
+  // SSE ilk "put" eventi gelene kadar overlay göster; 3 sn içinde SSE gelmezse
+  // localStorage'daki eski veri fallback olarak render edilir.
+  let _sseFirstDone = false;
+  const _overlay = document.createElement('div');
+  _overlay.style.cssText = [
+    'position:fixed','inset:0','z-index:9999',
+    'background:rgba(10,10,20,.72)',
+    'display:flex','align-items:center','justify-content:center',
+    'transition:opacity .25s'
+  ].join(';');
+  _overlay.innerHTML = '<div style="color:#e0e8ff;font-size:1.05rem;font-family:inherit;'
+    +'letter-spacing:.06em;text-align:center;line-height:1.7">'
+    +'<span style="font-size:1.6rem;display:block;margin-bottom:6px">⟳</span>'
+    +'Güncel veriler yükleniyor…</div>';
+  document.body.appendChild(_overlay);
+
+  function _hideOverlay(){
+    if(_sseFirstDone) return;
+    _sseFirstDone = true;
+    _overlay.style.opacity = '0';
+    setTimeout(()=>{ _overlay.remove(); }, 260);
+  }
+
+  // 3 sn fallback: SSE gelmezse localStorage ile render
+  const _sseTimeout = setTimeout(()=>{
+    if(!_sseFirstDone){
+      _hideOverlay();
+      if(D) renderAll(false);
+    }
+  }, 3000);
 
   // Firebase SSE — değişiklik anında yansır
   function syncSettings(){
@@ -38168,6 +38177,8 @@ document.addEventListener('DOMContentLoaded',async()=>{
         D=data;
         if(!D.birikimTx) D.birikimTx=[];
         saveCache();
+        clearTimeout(_sseTimeout);
+        _hideOverlay();
         renderAll(D.lastUpdated&&D.lastUpdated!==prev);
       } else {
         if(!D) return;
