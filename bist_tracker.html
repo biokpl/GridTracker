@@ -110,38 +110,43 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
   flex-shrink:0;
   position:relative;
 }
-/* Sol dekoratif ışık — indigo/violet */
+/* Sol dekoratif ışık — soldan başlayan indigo/violet yatay gradient */
 .nav::before{
-  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
-  background:linear-gradient(180deg,transparent 5%,rgba(99,102,241,.5) 35%,rgba(139,92,246,.8) 55%,rgba(99,102,241,.5) 75%,transparent 95%);
-  box-shadow:0 0 10px rgba(139,92,246,.45),0 0 4px rgba(99,102,241,.3);
-  border-radius:0 2px 2px 0;pointer-events:none;z-index:2;
+  content:'';position:absolute;left:0;bottom:0;
+  width:38%;height:2px;
+  background:linear-gradient(90deg,rgba(139,92,246,.95) 0%,rgba(99,102,241,.6) 55%,transparent 100%);
+  box-shadow:0 0 8px rgba(139,92,246,.4);
+  pointer-events:none;z-index:2;
 }
-/* Sağ dekoratif ışık — cyan/teal */
+/* Sağ dekoratif ışık — sağdan başlayan cyan/teal yatay gradient */
 .nav::after{
-  content:'';position:absolute;right:0;top:0;bottom:0;width:3px;
-  background:linear-gradient(180deg,transparent 5%,rgba(6,182,212,.5) 35%,rgba(34,211,238,.8) 55%,rgba(6,182,212,.5) 75%,transparent 95%);
-  box-shadow:0 0 10px rgba(6,182,212,.45),0 0 4px rgba(34,211,238,.3);
-  border-radius:2px 0 0 2px;pointer-events:none;z-index:2;
+  content:'';position:absolute;right:0;bottom:0;
+  width:38%;height:2px;
+  background:linear-gradient(270deg,rgba(6,182,212,.95) 0%,rgba(34,211,238,.6) 55%,transparent 100%);
+  box-shadow:0 0 8px rgba(6,182,212,.4);
+  pointer-events:none;z-index:2;
 }
 /* ── FAB DANIŞMAN ── */
 #fab-adv{
   position:fixed;bottom:22px;right:16px;
-  width:50px;height:50px;border-radius:50%;
-  background:linear-gradient(135deg,rgba(6,182,212,.92),rgba(8,145,178,.96));
-  border:1px solid rgba(6,182,212,.45);
-  box-shadow:0 4px 18px rgba(6,182,212,.35),0 2px 6px rgba(0,0,0,.4);
-  color:#fff;font-size:20px;cursor:pointer;
-  z-index:900;display:flex;align-items:center;justify-content:center;
-  transition:transform .2s ease,box-shadow .2s ease;
-  -webkit-tap-highlight-color:transparent;
+  height:42px;padding:0 16px;border-radius:21px;
+  background:rgba(6,182,212,.15);
+  border:1px solid rgba(6,182,212,.4);
+  box-shadow:0 2px 12px rgba(6,182,212,.2),0 1px 4px rgba(0,0,0,.35);
+  color:rgba(6,182,212,.9);font-size:11px;font-weight:700;letter-spacing:.5px;
+  cursor:pointer;z-index:900;
+  display:flex;align-items:center;gap:6px;
+  transition:background .2s ease,box-shadow .2s ease,transform .15s ease;
+  -webkit-tap-highlight-color:transparent;white-space:nowrap;
+  font-family:var(--sans);
 }
-#fab-adv:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(6,182,212,.5);}
-#fab-adv:active{transform:scale(.95);}
+#fab-adv:hover{background:rgba(6,182,212,.22);box-shadow:0 4px 18px rgba(6,182,212,.32);}
+#fab-adv:active{transform:scale(.96);}
+#fab-adv .fab-icon{font-size:15px;}
 /* Kırmızı nokta — aktif sinyal badge */
 #fab-badge{
-  position:absolute;top:2px;right:2px;
-  width:11px;height:11px;border-radius:50%;
+  position:absolute;top:-3px;right:-3px;
+  width:10px;height:10px;border-radius:50%;
   background:#ef4444;border:2px solid #09090b;
   display:none;animation:fab-pulse 1.8s ease-in-out infinite;
 }
@@ -154,34 +159,47 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 }
 #adv-overlay.open{opacity:1;pointer-events:auto;}
 #adv-panel{
-  position:fixed;bottom:0;left:0;right:0;
+  position:fixed;bottom:0;
+  left:50%;transform:translateX(-50%) translateY(100%);
+  width:100%;max-width:480px;
   max-height:88vh;
   background:linear-gradient(180deg,#0e1117 0%,#09090b 100%);
   border-top:1px solid rgba(6,182,212,.28);
   border-radius:18px 18px 0 0;
   z-index:950;
-  transform:translateY(100%);
   transition:transform .38s cubic-bezier(.32,.72,0,1);
   overflow-y:auto;overflow-x:hidden;
   padding:0 14px 32px;
   scrollbar-width:thin;scrollbar-color:rgba(6,182,212,.2) transparent;
 }
-#adv-panel.open{transform:translateY(0);}
+#adv-panel.open{transform:translateX(-50%) translateY(0);}
 /* Panel üst tutamak */
 #adv-panel-handle{
-  display:flex;flex-direction:column;align-items:center;
-  padding:10px 0 6px;
-  position:sticky;top:0;background:linear-gradient(180deg,#0e1117 80%,transparent);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 2px 8px;
+  position:sticky;top:0;background:linear-gradient(180deg,#0e1117 85%,transparent);
   z-index:1;
 }
-#adv-panel-handle::before{
+#adv-panel-grip{
+  display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;
+}
+#adv-panel-grip::before{
   content:'';width:36px;height:4px;border-radius:4px;
-  background:rgba(6,182,212,.35);
+  background:rgba(6,182,212,.3);display:block;
 }
 #adv-panel-title{
-  font-size:10px;color:rgba(6,182,212,.7);letter-spacing:1.5px;
-  text-transform:uppercase;margin-top:5px;font-weight:600;
+  font-size:10px;color:rgba(6,182,212,.65);letter-spacing:1.5px;
+  text-transform:uppercase;font-weight:600;
 }
+#adv-panel-close{
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  color:rgba(156,163,175,.8);font-size:14px;
+  width:30px;height:30px;border-radius:50%;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s,color .15s;flex-shrink:0;
+  font-family:var(--sans);line-height:1;
+}
+#adv-panel-close:hover{background:rgba(255,255,255,.12);color:#fff;}
 .nav::-webkit-scrollbar{display:none;}
 .nav-btn{
   flex:1;min-width:58px;
@@ -1093,7 +1111,8 @@ select.field-input option{background:var(--surface2);}
 
 <!-- ── FAB DANIŞMAN BUTONU ── -->
 <button id="fab-adv" onclick="toggleAdvPanel()" title="Günlük AL/SAT Danışmanı">
-  <span id="fab-badge"></span>📊
+  <span id="fab-badge"></span>
+  <span class="fab-icon">📈</span>AL/SAT
 </button>
 
 <!-- ── DANIŞMAN OVERLAY ── -->
@@ -1102,7 +1121,10 @@ select.field-input option{background:var(--surface2);}
 <!-- ── DANIŞMAN SLIDE-UP PANEL ── -->
 <div id="adv-panel">
   <div id="adv-panel-handle">
-    <div id="adv-panel-title">Günlük AL/SAT Danışmanı</div>
+    <div id="adv-panel-grip">
+      <div id="adv-panel-title">📈 Günlük AL/SAT Danışmanı</div>
+    </div>
+    <button id="adv-panel-close" onclick="closeAdvPanel()" title="Kapat">✕</button>
   </div>
   <!-- advisor-card buraya JS ile taşınacak -->
   <div id="adv-panel-content"></div>
