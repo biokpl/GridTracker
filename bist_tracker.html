@@ -36219,9 +36219,19 @@ function gcRecRender(d) {
   // kullanıcının sermayesi) hesaplanır — kart ile form artık tutarlı.
   _gcRecRenderGrid(d, price);
 
-  // Fiyat + dot: tek seferde anlık DDE fiyatıyla konumlanır (eski fiyat gösterilmez).
-  // DDE erişilemezse d.price fallback. Dot gizli başlar, konumlanınca görünür.
-  if (sym) gcRecUpdateLivePrice(sym, support, resistance, price);
+  // Fiyat + dot: anlık DDE fiyatıyla konumlanır. Periyodik güncelleme başlatılır.
+  if (sym) {
+    gcRecUpdateLivePrice(sym, support, resistance, price);
+    // Eski timer varsa temizle, 12 sn'de bir canlı fiyat güncelle
+    if (window._gcRecPriceTimer) clearInterval(window._gcRecPriceTimer);
+    window._gcRecPriceTimer = setInterval(() => {
+      // Sadece GridBot sekmesi açıkken çalış
+      const pg = document.getElementById('pg-gridcalc');
+      if (pg && pg.classList.contains('on')) {
+        gcRecUpdateLivePrice(sym, support, resistance, price);
+      }
+    }, 12000);
+  }
 
   // signals: JSON'da string olarak kaydediliyor, split ederek dizi yap
   const signals = typeof d.signals === 'string'
