@@ -235,11 +235,21 @@ def _fast_price_check():
         # Stop anlamlı yükseldiğinde "çıkışını buna göre ayarla" bildirimi gönderir.
         if entry and stop and price > entry:
             est = active.get("entry_stop")
-            if est is None:
-                est = stop; active["entry_stop"] = est          # orijinal stop
-            if active.get("entry_hard") is None:
-                active["entry_hard"] = hard                      # orijinal felaket stop
-            trail_dist = entry - est                             # orijinal mesafe
+            # GÜVENLİK: entry_stop eksik VEYA girişin altında değilse (bozuk
+            # bookkeeping — örn. mutabakat alanı düşürdüyse), mevcut stop'tan
+            # değil, güvenli bir orijinal mesafeden türet. Aksi halde trail_dist
+            # negatif olur ve stop fiyatın üstüne çıkıp sahte stop-out yapar.
+            if est is None or est >= entry:
+                # Mevcut stop girişin altındaysa onu kullan; değilse peak'ten türet
+                if stop < entry:
+                    est = stop
+                else:
+                    _pk = active.get("peak_price", entry) or entry
+                    est = round(entry - max(0.01, _pk - stop), 4)
+                active["entry_stop"] = est                       # orijinal stop (onarıldı)
+            if active.get("entry_hard") is None or active.get("entry_hard") >= entry:
+                active["entry_hard"] = round(est - max(0.01, est - hard), 4) if hard < est else round(est * 0.96, 4)
+            trail_dist = entry - est                             # orijinal mesafe (>0 garanti)
             gap        = est - active.get("entry_hard", hard)    # stop↔felaket farkı
             peak       = max(active.get("peak_price", entry) or entry, price)
             new_stop   = round(peak - trail_dist, 4)

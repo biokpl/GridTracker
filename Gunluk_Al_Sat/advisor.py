@@ -1024,6 +1024,12 @@ def _sync_position():
                 "last_score": rec.get("score", 0),
                 "timeframe":  rec.get("timeframe", ""),
             }
+            # KRİTİK: Trailing stop bookkeeping'ini KORU. Aksi halde ertesi gün
+            # entry_stop eksik kalır → trail_dist negatif → stop fiyatın üstüne
+            # çıkar → sahte stop-out tetiklenir.
+            for _tf in ("peak_price", "entry_stop", "entry_hard"):
+                if rec.get(_tf) is not None:
+                    state["active"][_tf] = rec[_tf]
         else:
             state["active"] = None
 
