@@ -926,8 +926,18 @@ def run():
                 time.sleep(5)
         if not dde_ok:
             log.warning('DDE 3 denemede bağlanamadı — Yahoo fallback devrede kalacak.')
+            _send_notify(
+                '⚠️ DDE Bağlanamadı — Fiyatlar Gecikmeli',
+                'MatriksIQ açık ama Excel DDE 3 denemede bağlanamadı.\nFiyatlar Yahoo (gecikmeli) ile alınacak.',
+                tag='warning', priority='high'
+            )
     else:
         log.warning(f'Fiyat Excel dosyası bulunamadı: {bist_excel}')
+        _send_notify(
+            '⚠️ DDE Excel Dosyası Bulunamadı',
+            f'Fiyat Excel dosyası yok: {bist_excel}\nFiyatlar Yahoo (gecikmeli) ile alınacak.',
+            tag='warning', priority='high'
+        )
 
     # ── Adım 6: CepTel_Mesajlar sayfasına git ──────────────
     navigate_to_ceptel()

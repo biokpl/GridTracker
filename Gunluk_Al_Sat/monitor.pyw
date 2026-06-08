@@ -128,12 +128,12 @@ def _is_market_open() -> bool:
     if now.weekday() not in WEEKDAYS: return False
     return MARKET_OPEN <= now.time() <= MARKET_CLOSE
 
-def _should_send(sym: str, signal: str) -> bool:
-    """Olay bazlı (stop/hedef): aynı olay 60 dk içinde tekrar gönderilmez."""
+def _should_send(sym: str, signal: str, cooldown: int = 3600) -> bool:
+    """Olay bazlı: aynı olay cooldown sn içinde tekrar gönderilmez (varsayılan 60 dk)."""
     key = f"{sym}:{signal}"
     with _sent_lock:
         last = _sent.get(key, 0)
-        if time.time() - last < 3600:
+        if time.time() - last < cooldown:
             return False
         _sent[key] = time.time()
     return True
@@ -1009,8 +1009,8 @@ def _dde_watchdog_loop():
     DDE SELF-HEAL: Piyasa açıkken DDE feed'i düşmüşse (PC çökmesi/reboot sonrası)
     ve MatriksIQ açıksa, BIST100 Excel'ini görünmez tekrar açar. Böylece kullanıcı
     sadece MatriksIQ'yu açar; canlı fiyat kendiliğinden geri gelir. Her 120 sn.
+    Bildirim: self-heal başarısızsa 10 dk'da bir ACİL bildirim.
     """
-    import importlib
     while True:
         try:
             if _is_market_open():
@@ -1020,8 +1020,26 @@ def _dde_watchdog_loop():
                     ok, msg = ensure_dde.ensure()
                     if ok:
                         log.info(f"[DDE-watchdog] Canlı fiyat geri getirildi: {msg}")
+                        # Eğer daha önce DDE hatası bildirildiyse "düzeldi" bildirimi gönder
+                        if _should_send("__DDE__", "DDE_RECOVERED", cooldown=300):
+                            notifier._send(
+                                "✅ DDE Bağlantısı Geri Geldi",
+                                f"Canlı fiyat feed'i yeniden aktif: {msg}",
+                                priority="default", tags="white_check_mark")
                     else:
                         log.warning(f"[DDE-watchdog] DDE düşük, açılamadı: {msg}")
+                        # Her 10 dakikada bir bildirim gönder (spam olmasın)
+                        if _should_send("__DDE__", "DDE_FAIL", cooldown=600):
+                            if msg == "matriks-kapali":
+                                notifier._send(
+                                    "⚠️ MatriksIQ Kapalı — Fiyatlar Gecikmeli",
+                                    "MatriksIQ çalışmıyor. Canlı fiyat alınamıyor, Yahoo (gecikmeli) kullanılıyor.\nMatriksIQ'yu aç.",
+                                    priority="high", tags="warning")
+                            else:
+                                notifier._send(
+                                    "⚠️ DDE Bağlanamadı — Fiyatlar Gecikmeli",
+                                    f"DDE self-heal başarısız ({msg}). Canlı fiyat alınamıyor.\nYahoo (gecikmeli) fallback devrede.",
+                                    priority="high", tags="warning")
         except Exception as e:
             log.debug(f"[DDE-watchdog] hata: {e}")
         time.sleep(120)
