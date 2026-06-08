@@ -36889,6 +36889,8 @@ function load(){ try{
     if(D.settings.trackTarget!=null) S.settings.trackTarget=D.settings.trackTarget;
     if(D.settings.trackAccum!=null) S.settings.trackAccum=D.settings.trackAccum;
     if(D.settings.trackLastDate!=null) S.settings.trackLastDate=D.settings.trackLastDate;
+    if(D.settings.trackAccumBase!=null) S.settings.trackAccumBase=D.settings.trackAccumBase;
+    if(D.settings.trackLastSymNet!=null) S.settings.trackLastSymNet=D.settings.trackLastSymNet;
     if(D.settings.trackPayAmt!=null) S.settings.trackPayAmt=D.settings.trackPayAmt;
     if(D.settings.gridCalc!=null) S.settings.gridCalc=D.settings.gridCalc;
   }
@@ -37385,8 +37387,29 @@ function renderHTrack(){
   const trackTarget=S.settings.trackTarget||0;
   if(!sym||trackTarget<=0){ht.style.display='none';return;}
   const today=D?D.today||'':'';
-  const accum=S.settings.trackAccum||0;
-  const lastDate=S.settings.trackLastDate||'';
+  let accum=S.settings.trackAccum||0;
+  let lastDate=S.settings.trackLastDate||'';
+  // ── SELF-HEAL ──────────────────────────────────────────────
+  // Server takip değerlerini her zaman BİRLİKTE ve gerçek tarihle yazar.
+  // Eski/cache'lenmiş bir client trackAccum=0 + trackLastDate='' yazıp bozabilir
+  // (trackAccumBase & trackLastSymNet dokunulmadan kalır). Bu imzayı yakalayıp
+  // doğru birikimi (base + son sembol net) geri kurtar ve Firebase'i onar.
+  const _base=S.settings.trackAccumBase;
+  const _lastSymNet=S.settings.trackLastSymNet||0;
+  if(!lastDate&&_base!=null&&(_base!==0||_lastSymNet!==0)){
+    const healed=Math.round((_base+_lastSymNet)*10000)/10000;
+    if(healed!==accum){
+      accum=healed;
+      lastDate=today||lastDate;
+      S.settings.trackAccum=accum;
+      S.settings.trackLastDate=lastDate;
+      if(D&&D.settings){D.settings.trackAccum=accum;D.settings.trackLastDate=lastDate;}
+      // Firebase'i de düzelt (gelecekte bozulmasın)
+      try{fbWrite('gridtracker/settings/trackAccum',accum);fbWrite('gridtracker/settings/trackLastDate',lastDate);}catch(e){}
+      console.warn('[HTrack self-heal] Bozuk birikim onarıldı →',accum,'TL');
+    }
+  }
+  // ───────────────────────────────────────────────────────────
   const todaySymNet=(D&&D.todayProfit&&D.todayProfit.bySymbol&&D.todayProfit.bySymbol[sym]&&today>lastDate)?(D.todayProfit.bySymbol[sym].netProfit||0):0;
   const total=accum+todaySymNet;
   const rawPct=Math.round(total/trackTarget*100);
@@ -39588,6 +39611,8 @@ document.addEventListener('DOMContentLoaded',async()=>{
     if(ds.trackTarget!=null) S.settings.trackTarget=ds.trackTarget;
     if(ds.trackAccum!=null) S.settings.trackAccum=ds.trackAccum;
     if(ds.trackLastDate!=null) S.settings.trackLastDate=ds.trackLastDate;
+    if(ds.trackAccumBase!=null) S.settings.trackAccumBase=ds.trackAccumBase;
+    if(ds.trackLastSymNet!=null) S.settings.trackLastSymNet=ds.trackLastSymNet;
     if(ds.trackPayAmt!=null) S.settings.trackPayAmt=ds.trackPayAmt;
     if(ds.gridCalc!=null && !window._gcDirty) S.settings.gridCalc=ds.gridCalc;
     // Daha önce sadece localStorage'daydı — artık Firebase'den de oku
