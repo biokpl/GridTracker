@@ -888,49 +888,28 @@ def run():
     # MatriksIQ tam hazır olmadan açılırsa DDE advise loop kurulamaz ve
     # hücreler hata kodu (-2146826246) gösterir. Bağlantıyı doğrulayıp
     # gerekirse kapatıp yeniden açarız (3 deneme).
+    # DDE Excel'i sadece AÇ — doğrulama yapma.
+    # Borsa 10:00'da açılır, DDE o ana kadar canlı veri vermez.
+    # Doğrulama görevi monitor.pyw _dde_watchdog_loop'una ait (10:00 sonrası kontrol eder).
     log.info('BIST100 fiyat Excel dosyası açılıyor (DDE)...')
     bist_excel = SCRIPT_DIR / 'Bist100 - Anlık Fiyat.xlsx'
     if bist_excel.exists():
-        import win32com.client as _win32
-        dde_ok = False
-        for deneme in range(1, 4):
-            try:
-                _xl = _win32.Dispatch("Excel.Application")
-                _xl.Visible = False
-                _xl.DisplayAlerts = False
-                _xl.AskToUpdateLinks = False
-                # Önce bu dosya zaten açıksa kapat (temiz başlangıç)
-                for _w in list(_xl.Workbooks):
-                    if 'Fiyat' in _w.Name:
-                        _w.Close(SaveChanges=False)
-                time.sleep(2)
-                _wb = _xl.Workbooks.Open(str(bist_excel), UpdateLinks=3)
-                _xl.Visible = False
-                # DDE'nin dolması için bekle, sonra doğrula
-                time.sleep(8)
-                _ws = _wb.Sheets(1)
-                _ok = 0
-                for _r in range(2, 8):
-                    _v = _ws.Cells(_r, 3).Value
-                    if isinstance(_v, (int, float)) and 0.01 <= _v <= 100000:
-                        _ok += 1
-                if _ok >= 3:
-                    dde_ok = True
-                    log.info(f'Excel DDE bağlantısı CANLI (deneme {deneme}, {_ok}/6 ok)')
-                    break
-                else:
-                    log.warning(f'DDE veri vermedi (deneme {deneme}), yeniden denenecek...')
-                    time.sleep(10)  # MatriksIQ'nun hazırlanması için bekle
-            except Exception as e:
-                log.warning(f'Excel DDE deneme {deneme} hatası: {e}')
-                time.sleep(5)
-        if not dde_ok:
-            log.warning('DDE 3 denemede bağlanamadı — Yahoo fallback devrede kalacak.')
-            _send_notify(
-                '⚠️ DDE Bağlanamadı — Fiyatlar Gecikmeli',
-                'MatriksIQ açık ama Excel DDE 3 denemede bağlanamadı.\nFiyatlar Yahoo (gecikmeli) ile alınacak.',
-                tag='warning', priority='high'
-            )
+        try:
+            import win32com.client as _win32
+            _xl = _win32.Dispatch("Excel.Application")
+            _xl.Visible = False
+            _xl.DisplayAlerts = False
+            _xl.AskToUpdateLinks = False
+            # Önce bu dosya zaten açıksa kapat (temiz başlangıç)
+            for _w in list(_xl.Workbooks):
+                if 'Fiyat' in _w.Name:
+                    _w.Close(SaveChanges=False)
+            time.sleep(1)
+            _xl.Workbooks.Open(str(bist_excel), UpdateLinks=3)
+            _xl.Visible = False
+            log.info('Excel DDE dosyası açıldı — borsa açılınca (10:00) otomatik canlı veri akacak.')
+        except Exception as e:
+            log.warning(f'Excel DDE açma hatası: {e}')
     else:
         log.warning(f'Fiyat Excel dosyası bulunamadı: {bist_excel}')
         _send_notify(
