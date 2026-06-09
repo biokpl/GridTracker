@@ -39766,11 +39766,9 @@ function renderOverall(){
         const diff=prev?h.amount-prev.amount:null;
         const dc=diff!==null?(diff>=0?'td-pos':'td-neg'):'';
         const diffTxt=diff!==null?(diff>=0?'+':'')+fxi(diff)+' ₺':'—';
-        const dp=h.date.split('-').reverse();
-        // Yıl ay başlığında zaten var → satırda sadece gün.ay göster
-        const dateFmt=`${dp[0]}.${dp[1]}`;
+        // Ay zaten grup başlığında (Haziran 2026) → satırda sadece gün + haftanın günü
         html+=`<tr>
-          <td style="color:#7b92b5;font-weight:600">${dateFmt}</td>
+          <td style="color:#7b92b5;font-weight:600">${_tblGun(h.date)}</td>
           <td style="color:#c4cfe0;font-weight:600;font-family:var(--mono)">${fxi(h.amount)}₺</td>
           <td class="${dc}" style="font-weight:${diff!==null?'600':'400'}">${diffTxt}</td>
           <td style="color:#4e6080;font-family:var(--sans)">${h.note||'—'}</td>
