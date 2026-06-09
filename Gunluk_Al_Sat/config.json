@@ -1,6 +1,6 @@
 {
   "capital": 0,
-  "strategy_mode": "HIBRIT",
+  "strategy_mode": "RK",
   "ntfy_topic": "GridTracker-bkpl-07",
   "ntfy_topic_alert": "GridTracker-bkpl-07-acil",
   "excel_path": "C:/Users/BioCSI/CLAUDE/GridTracker/1.xlsx",

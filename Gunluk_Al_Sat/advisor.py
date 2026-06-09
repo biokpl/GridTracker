@@ -32,15 +32,19 @@ STATE_PATH   = BASE / "state.json"
 RESULT_PATH  = Path(CFG["result_path"])
 FIREBASE_URL = "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app"
 
-# Strateji modu (config.json'dan, varsayılan HIBRIT):
-#   "GUNLUK" → kısa vade vur-kaç: sıkı stop (~%1.2), küçük ulaşılabilir hedef (~%2.2)
-#   "HIBRIT" → eskinin ~%3 hedefi + R/K disiplini + dirence satış (ÖNERİLEN)
+# Strateji modu (config.json'dan, varsayılan RK):
+#   "RK"     → R/K-ODAKLI (ÖNERİLEN): hedef DAİMA riskten büyük (reward ≥ 1.4×risk),
+#              sakin hisse tercihi (ATR %1.5-2.2), R/K<1.2 olanı önermez. "Riske değer kâr."
+#   "HIBRIT" → eskinin ~%3 hedefi, geniş stop (R/K<1 olabilir), yüksek isabete dayalı
+#   "GUNLUK" → çok sıkı stop (~%1.2), küçük hedef (~%2.2)
 #   "ORTA"   → orijinal orta vade: geniş ATR hedef, geniş stop
-STRATEGY_MODE = (CFG.get("strategy_mode") or "HIBRIT").upper()
+STRATEGY_MODE = (CFG.get("strategy_mode") or "RK").upper()
 def _is_daily() -> bool:
     return STRATEGY_MODE.startswith("G")    # GUNLUK / GÜNLÜK
 def _is_hybrid() -> bool:
     return STRATEGY_MODE.startswith("H")    # HIBRIT / HİBRİT
+def _is_rk() -> bool:
+    return STRATEGY_MODE.startswith("R") or STRATEGY_MODE.startswith("V")  # RK / VURKAC
 
 
 def _firebase_push(result: dict):
@@ -373,6 +377,14 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
                      5 if 2.8 < atr_pct <= 3.5 else
                      3 if 0.9 <= atr_pct < 1.2 else
                      1 if 3.5 < atr_pct <= 4.5 else 0)
+    elif _is_rk():
+        # R/K-ODAKLI: SAKİN hisse tercih (ATR %1.5–2.2). Bu bantta dar stop hem
+        # güvenli (fitile takılmaz) hem hedef ulaşılabilir → R/K doğal olarak ≥1.4.
+        # Oynak hisse (>%2.8) ya uzak hedef gerektirir ya R/K bozar → ağır ceza.
+        atr_score = (7 if 1.4 <= atr_pct <= 2.2 else
+                     5 if 2.2 < atr_pct <= 2.8 else
+                     4 if 1.0 <= atr_pct < 1.4 else
+                     2 if 2.8 < atr_pct <= 3.5 else 0)
     elif _is_hybrid():
         # HİBRİT: orta oynaklık tercih (R/K doğal olarak iyi). Aşırı oynak (>%5)
         # hisse geniş stop gerektirir → R/K bozulur → ceza. İdeal bant %1.5–3.5.
@@ -450,6 +462,31 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
                             target1 + max(0.008 * price, 0.7 * atr_val)), 4)
         if target1 <= price:   target1 = round(price * 1.012, 4)
         if target2 <= target1: target2 = round(target1 * 1.01, 4)
+    elif _is_rk():
+        # ══ R/K-ODAKLI: hedef DAİMA riskten büyük (reward ≥ 1.4 × risk) + ulaşılabilir ══
+        # Stop: yapısal swing dibi (son 10 gün), 1.0–1.3 ATR bandı (sakin hissede ~%1.5-2.2).
+        _swing_low = float(close.iloc[-10:].min()) if len(close) >= 10 else float(close.min())
+        _struct    = _swing_low - 0.2 * atr_val
+        _near      = price - 1.0 * atr_val          # en dar
+        _far       = price - 1.3 * atr_val          # en geniş
+        stop_loss  = round(min(max(_struct, _far), _near), 4)
+        hard_stop  = round(stop_loss - 0.6 * atr_val, 4)
+        _risk      = price - stop_loss
+        # Hedef = riskin 1.4 katı (reward > risk GARANTİ), taban %1.5,
+        # ULAŞILABİLİRLİK TAVANI ~%3.5 (günde-iki günde dönebilsin).
+        target1 = price + max(1.4 * _risk, price * 0.015)
+        target1 = min(target1, price * 1.035)
+        # Dirençte kapat (takılmadan önce sat)
+        if _nearest_res is not None and _nearest_res < target1:
+            target1 = max(price * 1.008, _nearest_res - 0.10 * atr_val)
+        target1 = round(target1, 4)
+        # target2: riskin ~2 katı, ~%5 tavan
+        target2 = round(min(price + 2.0 * _risk, price * 1.05), 4)
+        if target1 <= price:   target1 = round(price * 1.012, 4)
+        if target2 <= target1: target2 = round(target1 * 1.012, 4)
+        # NOT: Oynak hisselerde stop büyük → 1.4×risk hedef %3.5 tavanı aşar →
+        # tavana çekilince R/K<1.2 kalır → R/K kapısı bu hisseleri ELER.
+        # Böylece sistem doğal olarak SAKİN hisseleri seçer (risk küçük, R/K iyi).
     else:
         # ══ HİBRİT / ORTA MOD: geniş ATR hedef (~%3, dirençte kapanır) ══
         # Stop: YAKIN swing dibi (son 10 gün) + küçük ATR tamponu.
@@ -534,6 +571,10 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
     #            geniş-stop/kenar vakaları korunur — eski sistemin gücü buydu)
     if timeframe != "ÖNERİLMEZ":
         if _is_daily() and rr_ratio < 1.5:
+            timeframe = "ÖNERİLMEZ"
+        elif _is_rk() and 0 < rr_ratio < 1.2:
+            # R/K-ODAKLI: reward, riskin en az 1.2 katı değilse ÖNERME.
+            # (Direnç hedefi yakına çektiyse R/K<1.2 kalabilir → o işlem riske değmez.)
             timeframe = "ÖNERİLMEZ"
         elif _is_hybrid() and 0 < rr_ratio < 0.5:
             # Sadece BERBAT R/K (risk, kârın 2 katından fazla). İyi-isabetli
