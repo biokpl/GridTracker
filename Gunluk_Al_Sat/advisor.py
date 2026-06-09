@@ -32,11 +32,15 @@ STATE_PATH   = BASE / "state.json"
 RESULT_PATH  = Path(CFG["result_path"])
 FIREBASE_URL = "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app"
 
-# Strateji modu: "GUNLUK" (kısa vade vur-kaç: sıkı stop, ulaşılabilir hedef) veya
-# "ORTA" (orta vade: geniş ATR hedef). config.json'dan okunur, varsayılan ORTA.
-STRATEGY_MODE = (CFG.get("strategy_mode") or "ORTA").upper()
+# Strateji modu (config.json'dan, varsayılan HIBRIT):
+#   "GUNLUK" → kısa vade vur-kaç: sıkı stop (~%1.2), küçük ulaşılabilir hedef (~%2.2)
+#   "HIBRIT" → eskinin ~%3 hedefi + R/K disiplini + dirence satış (ÖNERİLEN)
+#   "ORTA"   → orijinal orta vade: geniş ATR hedef, geniş stop
+STRATEGY_MODE = (CFG.get("strategy_mode") or "HIBRIT").upper()
 def _is_daily() -> bool:
-    return STRATEGY_MODE.startswith("G")   # GUNLUK / GÜNLÜK
+    return STRATEGY_MODE.startswith("G")    # GUNLUK / GÜNLÜK
+def _is_hybrid() -> bool:
+    return STRATEGY_MODE.startswith("H")    # HIBRIT / HİBRİT
 
 
 def _firebase_push(result: dict):
@@ -369,6 +373,13 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
                      5 if 2.8 < atr_pct <= 3.5 else
                      3 if 0.9 <= atr_pct < 1.2 else
                      1 if 3.5 < atr_pct <= 4.5 else 0)
+    elif _is_hybrid():
+        # HİBRİT: orta oynaklık tercih (R/K doğal olarak iyi). Aşırı oynak (>%5)
+        # hisse geniş stop gerektirir → R/K bozulur → ceza. İdeal bant %1.5–3.5.
+        atr_score = (7 if 1.5 <= atr_pct <= 3.5 else
+                     5 if 3.5 < atr_pct <= 5.0 else
+                     4 if 1.0 <= atr_pct < 1.5 else
+                     2 if 5.0 < atr_pct <= 6.5 else 0)
     else:
         atr_score = 7 if 1.5 <= atr_pct <= 5.0 else (4 if 1.0 <= atr_pct < 1.5 else (3 if 5.0 < atr_pct <= 8.0 else 0))
 
@@ -440,12 +451,14 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
         if target1 <= price:   target1 = round(price * 1.012, 4)
         if target2 <= target1: target2 = round(target1 * 1.01, 4)
     else:
-        # ══ ORTA MOD (mevcut): geniş ATR hedef, yapısal stop ══
-        # Stop: YAKIN swing dibi (son 10 gün) + küçük ATR tamponu; 1.0–1.8 ATR bandı.
+        # ══ HİBRİT / ORTA MOD: geniş ATR hedef (~%3, dirençte kapanır) ══
+        # Stop: YAKIN swing dibi (son 10 gün) + küçük ATR tamponu.
+        #   HİBRİT → 1.0–1.5 ATR (biraz sıkı, R/K iyileşir, isabet korunur)
+        #   ORTA   → 1.0–1.8 ATR (tam genişlik, en yüksek nefes alanı)
         _swing_low   = float(close.iloc[-10:].min()) if len(close) >= 10 else float(close.min())
         _struct_stop = _swing_low - 0.3 * atr_val
         _near_stop   = price - 1.0 * atr_val
-        _far_stop    = price - 1.8 * atr_val
+        _far_stop    = price - (1.5 if _is_hybrid() else 1.8) * atr_val
         stop_loss    = round(min(max(_struct_stop, _far_stop), _near_stop), 4)
         hard_stop    = round(stop_loss - 0.8 * atr_val, 4)
         _atr_t1 = price * (1 + 1.0 * atr_pct / 100)
@@ -515,10 +528,18 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
         elif rr_ratio >= 1.5: entry_bonus += 0.0
         else:                 entry_bonus -= 1.5   # kazanç potansiyeli düşük
 
-    # GÜNLÜK MOD R/K KAPISI: hedef, riskin en az 1.5 katı değilse "riske değmez"
-    # → öneri listesinden çıkar (komik kâr için işlem açma şartın).
-    if _is_daily() and timeframe != "ÖNERİLMEZ" and rr_ratio < 1.5:
-        timeframe = "ÖNERİLMEZ"
+    # R/K KAPISI (mod bazlı):
+    #   GÜNLÜK → R/K<1.5 ise ele (komik kâr için işlem açma; sıkı stop ⇒ yüksek R/K mümkün)
+    #   HİBRİT → R/K<0.7 ise ele (sadece BERBAT olanları; yüksek isabeti veren
+    #            geniş-stop/kenar vakaları korunur — eski sistemin gücü buydu)
+    if timeframe != "ÖNERİLMEZ":
+        if _is_daily() and rr_ratio < 1.5:
+            timeframe = "ÖNERİLMEZ"
+        elif _is_hybrid() and 0 < rr_ratio < 0.5:
+            # Sadece BERBAT R/K (risk, kârın 2 katından fazla). İyi-isabetli
+            # geniş-stop vakaları korunur; R/K disiplini esas olarak entry_bonus
+            # (skor sıralaması) + ATR tercihi ile sağlanır.
+            timeframe = "ÖNERİLMEZ"
 
     # ── HAFTALIK TREND FİLTRESİ ────────────────────────────────────────────
     # Günlük iyi, haftalık aşağı = büyük para karşı → güçlü ceza
