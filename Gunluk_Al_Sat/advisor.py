@@ -403,8 +403,29 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
     stop_loss    = round(min(max(_struct_stop, _far_stop), _near_stop), 4)
     # Felaket stopu: kapanış beklemeden ANINDA çıkılacak seviye (stop'un ~0.8 ATR altı)
     hard_stop    = round(stop_loss - 0.8 * atr_val, 4)
-    target1   = round(price * (1 + 1.0 * atr_pct / 100), 4)
-    target2   = round(price * (1 + 2.0 * atr_pct / 100), 4)
+    # ── Hedef: ATR (volatilite) + Yapısal Direnç birlikte ─────────────────
+    # ATR tabanlı hedefler (volatiliteye göre minimum mantıklı mesafe)
+    _atr_t1 = price * (1 + 1.0 * atr_pct / 100)
+    _atr_t2 = price * (1 + 2.0 * atr_pct / 100)
+    # Yapısal direnç: fiyatın belirgin üstündeki en yakın tepe (20 & 55 gün).
+    # Stop swing dibini (destek) kullanıyor; hedef de simetrik olarak tepeyi kullanır.
+    _highs = []
+    if len(close) >= 20: _highs.append(float(close.iloc[-20:].max()))
+    if len(close) >= 55: _highs.append(float(close.iloc[-55:].max()))
+    _res_above   = sorted(h for h in _highs if h > price * 1.005)
+    _nearest_res = _res_above[0] if _res_above else None
+    # target1: direnç ATR hedefinden YAKINSA → dirençte takılmadan hemen önce sat
+    #          (0.15 ATR tampon). Direnç uzaktaysa/yoksa → saf ATR hedefi.
+    #          Taban: girişin en az %0.5 üstü (geçersiz/negatif hedef olmasın).
+    if _nearest_res is not None and _nearest_res < _atr_t1:
+        target1 = round(max(price * 1.005, _nearest_res - 0.15 * atr_val), 4)
+    else:
+        target1 = round(_atr_t1, 4)
+    # target2: ATR×2 tabanı; her zaman target1'den en az 1 ATR yukarıda
+    target2 = round(max(_atr_t2, target1 + 1.0 * atr_val), 4)
+    # atr_pct sıfırsa (veri yetersiz) hedef fiyatın altında kalmasın
+    if target1 <= price: target1 = round(price * 1.01, 4)
+    if target2 <= target1: target2 = round(target1 * 1.01, 4)
 
     # Gerekçe
     reasons = []
