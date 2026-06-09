@@ -702,18 +702,26 @@ def check_early_weakness(active: dict, df: pd.DataFrame, score: dict,
     pts = 0
     sig = []
 
-    # 1) Kısa vade trend kırıldı — fiyat MA9 / MA20 altında
+    # YUMUŞAK SİNYAL KAPISI: Erken zayıflama = pozisyon ALEYHE dönüyor demektir.
+    # Desteğe yakın / dip-toparlanması ile alınan hisse TANIMI GEREĞİ MA altında ve
+    # RSI'si soğumuştur (pullback budur — iyi giriş). Pozisyon henüz flat/yeşilken
+    # bu yumuşak momentum sinyalleri (MA/MACD/RSI) zayıflık SAYILMAZ; yoksa yeni
+    # alınan her hisse anında DİKKAT verir (öneri mantığıyla çelişir).
+    # Sadece pozisyon en az %0.5 zarardayken bu sinyaller devreye girer.
+    _losing = loss_pct <= -0.5
+
+    # 1) Kısa vade trend kırıldı — fiyat MA9 / MA20 altında (yalnız zararda)
     ma9  = float(close.rolling(9).mean().iloc[-1])  if len(close) >= 9  else price
     ma20 = float(close.rolling(20).mean().iloc[-1]) if len(close) >= 20 else price
-    if price < ma9:  pts += 1; sig.append("MA9 altı")
-    if price < ma20: pts += 1; sig.append("MA20 altı")
+    if _losing and price < ma9:  pts += 1; sig.append("MA9 altı")
+    if _losing and price < ma20: pts += 1; sig.append("MA20 altı")
 
-    # 2) MACD aşağı — taze aşağı kesişim ekstra ağırlık
+    # 2) MACD aşağı — taze aşağı kesişim ekstra ağırlık (yalnız zararda)
     ema12 = close.ewm(span=12, adjust=False).mean()
     ema26 = close.ewm(span=26, adjust=False).mean()
     macd  = ema12 - ema26
     sgl   = macd.ewm(span=9, adjust=False).mean()
-    if len(macd) >= 2:
+    if _losing and len(macd) >= 2:
         m_now, m_prv = float(macd.iloc[-1]), float(macd.iloc[-2])
         s_now, s_prv = float(sgl.iloc[-1]),  float(sgl.iloc[-2])
         if m_now < s_now:
@@ -721,14 +729,14 @@ def check_early_weakness(active: dict, df: pd.DataFrame, score: dict,
             if m_prv >= s_prv:
                 pts += 1; sig.append("MACD taze aşağı kesişim")
 
-    # 3) Son 5 günün dibi kırıldı — destek bozulması (güçlü sinyal)
+    # 3) Son 5 günün dibi kırıldı — destek bozulması (GÜÇLÜ sinyal, her zaman sayılır)
     if len(close) >= 6:
         low5 = float(close.iloc[-6:-1].min())
         if price < low5:
             pts += 2; sig.append("5-gün dibi kırıldı")
 
-    # 4) RSI güç kaybı (45 altı)
-    if rsi < 45:
+    # 4) RSI güç kaybı (45 altı) — yalnız zararda (flat pullback'te normal)
+    if _losing and rsi < 45:
         pts += 1; sig.append(f"RSI {rsi:.0f} (zayıf)")
 
     # 5) Dağıtım — son 3 gün düşüş hacmi > yükseliş hacmi (ve zararda)
