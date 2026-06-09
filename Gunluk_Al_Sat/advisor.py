@@ -32,6 +32,12 @@ STATE_PATH   = BASE / "state.json"
 RESULT_PATH  = Path(CFG["result_path"])
 FIREBASE_URL = "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app"
 
+# Strateji modu: "GUNLUK" (kısa vade vur-kaç: sıkı stop, ulaşılabilir hedef) veya
+# "ORTA" (orta vade: geniş ATR hedef). config.json'dan okunur, varsayılan ORTA.
+STRATEGY_MODE = (CFG.get("strategy_mode") or "ORTA").upper()
+def _is_daily() -> bool:
+    return STRATEGY_MODE.startswith("G")   # GUNLUK / GÜNLÜK
+
 
 def _firebase_push(result: dict):
     """Özet veriyi Firebase'e yazar (telefon erişimi için)."""
@@ -355,7 +361,16 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
     # ── 5. Risk & Volatilite (15p) ──────────────────────────────────────────
     atr_val = _atr(df)
     atr_pct = atr_val / price * 100 if price else 0
-    atr_score = 7 if 1.5 <= atr_pct <= 5.0 else (4 if 1.0 <= atr_pct < 1.5 else (3 if 5.0 < atr_pct <= 8.0 else 0))
+    if _is_daily():
+        # GÜNLÜK: sıkı (~%1) stop ancak ORTA oynaklıkta yaşar. Çok vahşi hisse
+        # (ATR>%3.5) fitil avına takılır → elenir; çok sakin (ATR<%1) %1.5 hedefe
+        # ulaşamaz → düşük puan. İdeal bant %1.2–2.8.
+        atr_score = (7 if 1.2 <= atr_pct <= 2.8 else
+                     5 if 2.8 < atr_pct <= 3.5 else
+                     3 if 0.9 <= atr_pct < 1.2 else
+                     1 if 3.5 < atr_pct <= 4.5 else 0)
+    else:
+        atr_score = 7 if 1.5 <= atr_pct <= 5.0 else (4 if 1.0 <= atr_pct < 1.5 else (3 if 5.0 < atr_pct <= 8.0 else 0))
 
     mdd = _max_drawdown(close, 60)
     mdd_score = 5 if mdd < 0.15 else (2 if mdd < 0.25 else 0)
@@ -386,46 +401,62 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
     total_10  = round(raw_total / 10.0, 1)  # 0–10 arası
 
     # Zaman dilimi
-    if   total_10 >= 7.5 and mom_score >= 14: timeframe = "KISA_VADE"
+    if _is_daily():
+        timeframe = "GÜNLÜK" if total_10 >= 5.0 else "ÖNERİLMEZ"
+    elif total_10 >= 7.5 and mom_score >= 14: timeframe = "KISA_VADE"
     elif total_10 >= 6.5:                     timeframe = "ORTA_VADE"
     elif total_10 >= 5.0:                     timeframe = "KISA_VADE"
     else:                                     timeframe = "ÖNERİLMEZ"
 
     # ── Stop & Hedef ──────────────────────────────────────────────────────
-    # Stop yerleşimi: YAKIN swing dibi + küçük ATR tamponu (fitil/stop avı için).
-    #   • Son 10 günün dibinin 0.3 ATR ALTINA koy → bariz dip seviyesinde değil
-    #   • Girişten 1.0–1.8 ATR bandında sınırla → R/K bozulmasın, kapanış onayı
-    #     zaten fitili elediği için stopun aşırı geniş olmasına gerek yok.
-    _swing_low   = float(close.iloc[-10:].min()) if len(close) >= 10 else float(close.min())
-    _struct_stop = _swing_low - 0.3 * atr_val   # swing dibinin hemen altı
-    _near_stop   = price - 1.0 * atr_val         # en yakın (min mesafe)
-    _far_stop    = price - 1.8 * atr_val         # en uzak (risk tavanı)
-    stop_loss    = round(min(max(_struct_stop, _far_stop), _near_stop), 4)
-    # Felaket stopu: kapanış beklemeden ANINDA çıkılacak seviye (stop'un ~0.8 ATR altı)
-    hard_stop    = round(stop_loss - 0.8 * atr_val, 4)
-    # ── Hedef: ATR (volatilite) + Yapısal Direnç birlikte ─────────────────
-    # ATR tabanlı hedefler (volatiliteye göre minimum mantıklı mesafe)
-    _atr_t1 = price * (1 + 1.0 * atr_pct / 100)
-    _atr_t2 = price * (1 + 2.0 * atr_pct / 100)
-    # Yapısal direnç: fiyatın belirgin üstündeki en yakın tepe (20 & 55 gün).
-    # Stop swing dibini (destek) kullanıyor; hedef de simetrik olarak tepeyi kullanır.
+    # Yapısal direnç (her iki modda hedef kapağı için): fiyatın üstündeki en
+    # yakın anlamlı tepe (20 & 55 gün).
     _highs = []
     if len(close) >= 20: _highs.append(float(close.iloc[-20:].max()))
     if len(close) >= 55: _highs.append(float(close.iloc[-55:].max()))
     _res_above   = sorted(h for h in _highs if h > price * 1.005)
     _nearest_res = _res_above[0] if _res_above else None
-    # target1: direnç ATR hedefinden YAKINSA → dirençte takılmadan hemen önce sat
-    #          (0.15 ATR tampon). Direnç uzaktaysa/yoksa → saf ATR hedefi.
-    #          Taban: girişin en az %0.5 üstü (geçersiz/negatif hedef olmasın).
-    if _nearest_res is not None and _nearest_res < _atr_t1:
-        target1 = round(max(price * 1.005, _nearest_res - 0.15 * atr_val), 4)
+
+    if _is_daily():
+        # ══ GÜNLÜK MOD: sıkı stop (~%1), ulaşılabilir hedef (min %1.5, R/K≥1.8) ══
+        # Stop: yakın swing dibi (son 5 gün) VEYA yüzde tabanlı — %0.8–1.5 bandında.
+        _swing_low = float(close.iloc[-5:].min()) if len(close) >= 5 else float(close.min())
+        _struct    = _swing_low - 0.15 * atr_val
+        _stop_far  = price * (1 - 0.012)            # en geniş: %1.2 (kullanıcı tercihi ~%1)
+        _stop_near = price * (1 - 0.008)            # en dar:   %0.8
+        stop_loss  = round(min(max(_struct, _stop_far), _stop_near), 4)
+        hard_stop  = round(stop_loss - 0.5 * atr_val, 4)   # felaket: stop'un 0.5 ATR altı
+        _risk_pct  = (price - stop_loss) / price if price else 0.01
+        # Hedef: max(%1.5, riskin 1.8 katı) — "anlamlı + riske değer". ~%3 tavan
+        # (günlük ulaşılabilirlik). Sonra dirençte kapanır.
+        _tgt_pct = min(max(0.015, 1.8 * _risk_pct), 0.03)
+        target1  = price * (1 + _tgt_pct)
+        if _nearest_res is not None and _nearest_res < target1:
+            target1 = max(price * 1.008, _nearest_res - 0.10 * atr_val)
+        target1 = round(target1, 4)
+        # target2: ikinci kademe (hedefin ~1.6 katı mesafe), ATR×2 veya direnç tavanı
+        target2 = round(min(price * (1 + 2 * _tgt_pct),
+                            target1 + max(0.008 * price, 0.7 * atr_val)), 4)
+        if target1 <= price:   target1 = round(price * 1.012, 4)
+        if target2 <= target1: target2 = round(target1 * 1.01, 4)
     else:
-        target1 = round(_atr_t1, 4)
-    # target2: ATR×2 tabanı; her zaman target1'den en az 1 ATR yukarıda
-    target2 = round(max(_atr_t2, target1 + 1.0 * atr_val), 4)
-    # atr_pct sıfırsa (veri yetersiz) hedef fiyatın altında kalmasın
-    if target1 <= price: target1 = round(price * 1.01, 4)
-    if target2 <= target1: target2 = round(target1 * 1.01, 4)
+        # ══ ORTA MOD (mevcut): geniş ATR hedef, yapısal stop ══
+        # Stop: YAKIN swing dibi (son 10 gün) + küçük ATR tamponu; 1.0–1.8 ATR bandı.
+        _swing_low   = float(close.iloc[-10:].min()) if len(close) >= 10 else float(close.min())
+        _struct_stop = _swing_low - 0.3 * atr_val
+        _near_stop   = price - 1.0 * atr_val
+        _far_stop    = price - 1.8 * atr_val
+        stop_loss    = round(min(max(_struct_stop, _far_stop), _near_stop), 4)
+        hard_stop    = round(stop_loss - 0.8 * atr_val, 4)
+        _atr_t1 = price * (1 + 1.0 * atr_pct / 100)
+        _atr_t2 = price * (1 + 2.0 * atr_pct / 100)
+        if _nearest_res is not None and _nearest_res < _atr_t1:
+            target1 = round(max(price * 1.005, _nearest_res - 0.15 * atr_val), 4)
+        else:
+            target1 = round(_atr_t1, 4)
+        target2 = round(max(_atr_t2, target1 + 1.0 * atr_val), 4)
+        if target1 <= price:   target1 = round(price * 1.01, 4)
+        if target2 <= target1: target2 = round(target1 * 1.01, 4)
 
     # Gerekçe
     reasons = []
@@ -483,6 +514,11 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
         elif rr_ratio >= 2.0: entry_bonus += 1.0
         elif rr_ratio >= 1.5: entry_bonus += 0.0
         else:                 entry_bonus -= 1.5   # kazanç potansiyeli düşük
+
+    # GÜNLÜK MOD R/K KAPISI: hedef, riskin en az 1.5 katı değilse "riske değmez"
+    # → öneri listesinden çıkar (komik kâr için işlem açma şartın).
+    if _is_daily() and timeframe != "ÖNERİLMEZ" and rr_ratio < 1.5:
+        timeframe = "ÖNERİLMEZ"
 
     # ── HAFTALIK TREND FİLTRESİ ────────────────────────────────────────────
     # Günlük iyi, haftalık aşağı = büyük para karşı → güçlü ceza
