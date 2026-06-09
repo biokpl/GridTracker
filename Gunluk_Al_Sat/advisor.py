@@ -770,7 +770,11 @@ def check_early_weakness(active: dict, df: pd.DataFrame, score: dict,
 
 # ─── Ana Analiz ──────────────────────────────────────────────────────────────
 
-def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
+def run_analysis(dry_run: bool = False, quiet: bool = False,
+                 refresh_only: bool = False) -> dict:
+    # refresh_only=True → sadece top_picks/lot/score_table'ı yeniden üretip
+    # Firebase'e yazar; aktif pozisyon mutasyonu, çıkış/öneri push'u ve
+    # _sync_position (akşam Excel mutabakatı) ATLANIR. Gün içi öneri tazeleme için.
     symbols = CFG["bist100"]
     sectors = CFG["sectors"]
     state   = _load_state()
@@ -943,6 +947,11 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
 
         # Firebase'e yaz (telefon erişimi için)
         _firebase_push(result)
+
+        # refresh_only: sadece öneriler tazelendi → state mutasyonu / push /
+        # _sync_position'a dokunma, çık.
+        if refresh_only:
+            return result
 
         # State güncelle
         if active:

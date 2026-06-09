@@ -454,6 +454,17 @@ def _do_user_sold(state: dict, symbol: str):
     })
     state["active"] = None
 
+    # SATTIĞIN AN TAZE ÖNERİ: sıradaki hisseyi eski (saatlerce önceki) top_picks'ten
+    # değil, ŞİMDİ yeniden üretilen analizden seç. ~30-60 sn sürer ama satıştan
+    # sonra güncel öneri kritik. Başarısız olursa mevcut top_picks'e düşer (graceful).
+    if _is_market_open():
+        try:
+            import advisor
+            log.info("Sattım sonrası öneriler tazeleniyor (canlı analiz)...")
+            advisor.run_analysis(refresh_only=True, quiet=True)
+        except Exception as e:
+            log.warning(f"Satış sonrası refresh başarısız, mevcut öneriler kullanılacak: {e}")
+
     new_pick, lot_info = _get_last_alternative(sym)
     if new_pick:
         state["pending_buy"] = {
@@ -1055,8 +1066,40 @@ def _dde_watchdog_loop():
         time.sleep(120)
 
 
+def _picks_refresh_loop():
+    """Pozisyon YOKKEN (kullanıcı fırsat ararken) önerileri gün içi taze tutar.
+    Her 10 dk'da bir top_picks'i yeniden üretir → sayfayı her açtığında güncel.
+    SPAM YOK: sadece #1 öneri DEĞİŞİNCE bildirim gönderir, yoksa sessiz günceller.
+    (Pozisyon varken atlar — o durumu _slow_analysis yönetir.)"""
+    REFRESH_MIN = 10
+    last_top = None
+    while True:
+        try:
+            if _is_market_open():
+                state = _load_state()
+                if not state.get("active"):
+                    import advisor, notifier
+                    res  = advisor.run_analysis(refresh_only=True, quiet=True)
+                    tp   = (res or {}).get("top_picks", [])
+                    top1 = tp[0]["symbol"] if tp else None
+                    if top1 and top1 != last_top:
+                        try:
+                            notifier.send_daily_pick(tp[0], (res.get("lot_info") or {}).get(top1))
+                        except Exception:
+                            pass
+                        last_top = top1
+                        log.info(f"[Öneri-tazele] Yeni #1 öneri: {top1}")
+                    elif top1:
+                        log.info(f"[Öneri-tazele] #1 aynı ({top1}) — sessiz güncellendi")
+                else:
+                    last_top = None   # pozisyon açıldı; bir sonraki flat dönemde yeniden bildir
+        except Exception as e:
+            log.debug(f"[Öneri-tazele] hata: {e}")
+        time.sleep(REFRESH_MIN * 60)
+
+
 def main():
-    log.info("Monitor başlatıldı. Hızlı:5sn | Yavaş:15dk | PendingKontrol:30sn")
+    log.info("Monitor başlatıldı. Hızlı:5sn | Yavaş:15dk | Öneri-tazele:10dk")
     print("[Monitor] Başlatıldı — Hızlı:5sn | Yavaş:15dk | Log:", log_path)
 
     # DDE self-heal watchdog (canlı fiyat feed'i düşerse otomatik geri getirir)
@@ -1064,6 +1107,9 @@ def main():
 
     # Kullanıcı komut dinleyici (HTML "Sattım"/"Aldım" butonları — 7/24, 4 sn)
     threading.Thread(target=_user_action_loop, daemon=True).start()
+
+    # Gün-içi öneri tazeleyici (pozisyon yokken her 10 dk top_picks güncellenir)
+    threading.Thread(target=_picks_refresh_loop, daemon=True).start()
 
     last_slow    = 0.0  # Son teknik analiz zamanı
     last_pending = 0.0  # Son pending (öneri kaçtı mı) kontrolü
