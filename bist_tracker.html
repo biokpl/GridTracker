@@ -38272,6 +38272,16 @@ function renderMonthlyChart(){
     </div>`;
   }).join('');
 }
+// Günlük Detay tablosu tarih: ay üstte zaten yazdığı için sadece GÜN + haftanın günü
+// "2026-06-09" → "9 Sal" (gün kalın, gün adı soluk)
+function _tblGun(iso){
+  if(!iso) return '—';
+  const p=String(iso).split('-');
+  if(p.length<3) return iso;
+  const dt=new Date(+p[0], +p[1]-1, +p[2]);
+  const gun=['Paz','Pzt','Sal','Çar','Per','Cum','Cmt'][dt.getDay()]||'';
+  return `<b>${+p[2]}</b> <span style="color:#4e6080;font-size:9px;font-weight:400">${gun}</span>`;
+}
 function renderMonthlyKar(){
   const MN=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
   const fmt=m=>{const[y,mo]=m.split('-');return MN[parseInt(mo)-1]+' '+y;};
@@ -38417,7 +38427,7 @@ function renderMonthly(){
     const rowBg=isBest?'background:rgba(34,197,94,.04)':isWorst?'background:rgba(239,68,68,.04)':'';
     const badge=isBest?'<span style="font-size:7px;background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.2);border-radius:3px;padding:1px 4px;margin-left:4px;vertical-align:middle">EN İYİ</span>':isWorst?'<span style="font-size:7px;background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.2);border-radius:3px;padding:1px 4px;margin-left:4px;vertical-align:middle">EN KÖTÜ</span>':'';
     return `<tr style="${rowBg}">
-      <td style="color:#7b92b5;font-weight:600">${(d.date||'').slice(5).replace('-','.')}${badge}</td>
+      <td style="color:#7b92b5;font-weight:600">${_tblGun(d.date)}${badge}</td>
       <td class="td-dim">${d.trades!=null?d.trades:'—'}</td>
       <td class="${d.grossProfit>0?'td-pos':d.grossProfit<0?'td-neg':''}">${d.grossProfit?fxsi(d.grossProfit):'—'}</td>
       <td class="td-amb">${d.commission?fx(d.commission):'—'}</td>
