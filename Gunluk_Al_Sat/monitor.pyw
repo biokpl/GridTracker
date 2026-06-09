@@ -584,6 +584,17 @@ def _do_set_capital(state: dict, capital):
                    json={"capital": cap}, timeout=6)
     except Exception as e:
         log.debug(f"set_capital firebase patch: {e}")
+    # LOTLARI YENİ SERMAYEYE GÖRE yeniden hesapla — arka planda (~30-60 sn).
+    # run_analysis(refresh_only) state.json'daki yeni capital'i okur, top_picks
+    # lot_info'sunu yeni sermayeye göre üretip Firebase'e yazar.
+    def _recalc_lots():
+        try:
+            import advisor
+            advisor.run_analysis(refresh_only=True, quiet=True)
+            log.info("Sermaye sonrası lotlar yeniden hesaplandı.")
+        except Exception as e:
+            log.debug(f"sermaye sonrası lot recalc: {e}")
+    threading.Thread(target=_recalc_lots, daemon=True).start()
 
 
 def _process_user_action():
