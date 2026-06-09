@@ -533,7 +533,12 @@ def _do_user_bought(state: dict, symbol: str):
     _save_state(state)
     log.info(f"MANUEL ALIŞ: {sym} {qty} lot @ {_fp(entry)}")
 
-    # Kartı anında aktif pozisyon moduna geçir: tracker + active_pick Firebase'e
+    # Kartı anında aktif pozisyon moduna geçir: tracker + active_pick + sinyal Firebase'e
+    # İlk sinyal "DEVAM" yazılır (yeni alındı, tutmaya devam) → kart "BEKLENİYOR"
+    # yerine "DEVAM" gösterir. Gerçek sinyal birazdan _slow_analysis ile gelir.
+    _init_score = src.get("score", src.get("total_score", 0)) or 0
+    init_es = {"symbol": sym, "signal": "DEVAM", "exit_pts": 0,
+               "score_now": _init_score, "score_prev": _init_score, "message": ""}
     try:
         from tracker import track
         from advisor import RESULT_PATH
@@ -543,10 +548,12 @@ def _do_user_bought(state: dict, symbol: str):
             d = json.loads(RESULT_PATH.read_text(encoding="utf-8"))
             d["tracker"]     = tr
             d["active_pick"] = pick_data
+            d["exit_signal"] = init_es
             RESULT_PATH.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
         import requests as _req
         _fb = _FB_BASE + "/gridtracker/advisor"
         _req.put(_fb + "/tracker.json", json=tr, timeout=6)
+        _req.patch(_fb + ".json", json={"exit_signal": init_es}, timeout=6)
         if pick_data is None:
             _req.put(_fb + "/active_pick.json", data="null", timeout=6)
         else:
@@ -561,6 +568,11 @@ def _do_user_bought(state: dict, symbol: str):
         f"Stop: {_fp(state['active']['stop_loss'])} | Hedef: {_fp(state['active']['target1'])} TL\n"
         f"Akşam gerçek rakamlarla güncellenecek.",
         priority="high", tags="green_circle")
+
+    # Gerçek sinyali HEMEN hesapla (sadece bu hisse + endeks indirilir, ~5 sn)
+    # → kart "DEVAM/DİKKAT" doğru sinyali 15 dk beklemeden gösterir.
+    if _is_market_open():
+        threading.Thread(target=_slow_analysis, daemon=True).start()
 
 
 def _do_set_capital(state: dict, capital):
