@@ -563,8 +563,31 @@ def _do_user_bought(state: dict, symbol: str):
         priority="high", tags="green_circle")
 
 
+def _do_set_capital(state: dict, capital):
+    """Kullanıcı sermayeyi güncelledi → state.json'a yaz, Firebase'i tazele.
+    (HTML yerel sunucuya değil Firebase'e yazdığı için telefonda da çalışır.)"""
+    try:
+        cap = float(capital or 0)
+    except (TypeError, ValueError):
+        cap = 0
+    if cap <= 0:
+        log.info("set_capital: geçersiz değer, atlandı.")
+        _save_state(state)   # last_action_id yine de yazılsın (komut işlendi sayılsın)
+        return
+    state["capital"] = cap
+    _save_state(state)
+    log.info(f"SERMAYE GÜNCELLENDİ: {cap:,.0f} TL".replace(",", "."))
+    # Firebase advisor/capital'i güncelle (kart anında doğru göstersin)
+    try:
+        import requests as _req
+        _req.patch(_FB_BASE + "/gridtracker/advisor.json",
+                   json={"capital": cap}, timeout=6)
+    except Exception as e:
+        log.debug(f"set_capital firebase patch: {e}")
+
+
 def _process_user_action():
-    """Firebase'deki kullanıcı komutunu (Sattım/Aldım) işler — idempotent (id ile)."""
+    """Firebase'deki kullanıcı komutunu (Sattım/Aldım/SetCapital) işler — idempotent (id ile)."""
     import requests as _req
     try:
         r   = _req.get(_FB_USERACTION, timeout=8)
@@ -591,6 +614,8 @@ def _process_user_action():
             _do_user_sold(state, symbol)
         elif action == "bought":
             _do_user_bought(state, symbol)
+        elif action == "set_capital":
+            _do_set_capital(state, act.get("capital"))
         else:
             _save_state(state)
     except Exception as e:

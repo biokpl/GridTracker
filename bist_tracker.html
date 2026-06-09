@@ -38896,20 +38896,17 @@ async function saveAdvCapital(){
   const raw=inp.value.replace(/[^\d]/g,'');
   const val=parseInt(raw)||0;
   if(val<=0){ toast('Geçerli bir sermaye girin','err'); return; }
+  const id=Date.now()+'-'+Math.random().toString(36).slice(2,6);
   try{
-    const r=await fetch('/api/advisor/capital',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({capital:val})
-    });
-    if(r.ok){
-      toast(`Sermaye ${val.toLocaleString('tr-TR')} ₺ kaydedildi`,'ok');
-      inp.value='';
-      renderAdvisor();
-    } else {
-      toast('Kaydedilemedi','err');
-    }
-  } catch(e){ toast('Bağlantı hatası','err'); }
+    // Firebase komutu — PC ve telefonda çalışır (yerel sunucuya bağımlı DEĞİL).
+    // Monitor bu komutu işleyip state.json'a yazar (Sattım/Aldım ile aynı kanal).
+    await fbWrite('gridtracker/advisor/userAction',{action:'set_capital',capital:val,ts:Date.now(),id});
+    // Anlık görsel geri bildirim için Firebase capital'i de yaz
+    await fbWrite('gridtracker/advisor/capital',val);
+    toast(`Sermaye ${val.toLocaleString('tr-TR')} ₺ kaydedildi`,'ok',3000);
+    inp.value='';
+    setTimeout(renderAdvisor,1500); setTimeout(renderAdvisor,5000);
+  } catch(e){ toast('Bağlantı hatası, tekrar dene','err'); }
 }
 
 // ── FAB / SLIDE-UP PANEL ──────────────────────────────────
