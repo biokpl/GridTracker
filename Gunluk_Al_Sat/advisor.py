@@ -854,6 +854,13 @@ def run_analysis(dry_run: bool = False, quiet: bool = False) -> dict:
         _ap = next((s for s in scores if s["symbol"] == active["symbol"]), None)
         if _ap:
             active_pick_data = {**_ap, "rank": 0}
+            # KİLİTLİ seviyeler: _ap'in target/stop'u her döngüde GÜNCEL FİYATLA
+            # yeniden hesaplanır → hedef fiyatı kovalayıp yukarı kaçar. Pozisyon
+            # açıkken state.active'deki kilitli (girişte sabit + trailing) değerleri
+            # kullan ki hedef sabit ve ulaşılabilir kalsın.
+            for _k in ("target1", "target2", "stop_loss", "hard_stop"):
+                if active.get(_k):
+                    active_pick_data[_k] = active[_k]
 
     ts = time.time()
     result = {

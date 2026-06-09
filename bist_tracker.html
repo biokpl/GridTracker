@@ -39038,21 +39038,21 @@ async function renderAdvisor(){
         scoreEl.style.color=sc>=6.5?'#4ade80':sc>=5.0?'#fbbf24':'#f87171';
       }
 
-      // Stop / Hedefler — gereksiz sıfır yok
+      // Stop / Hedefler — DAİMA kilitli tracker değerlerinden (girişte sabitlenen
+      // + trailing ile güncellenen). active_pick'in target/stop'u her döngüde
+      // GÜNCEL FİYATLA yeniden hesaplandığı için pozisyon açıkken KULLANILMAZ —
+      // aksi halde hedef fiyatı kovalayıp yukarı kaçar (ulaşılamaz hareketli hedef).
       const _hs=$('adv-hardstop');
+      $('adv-stop').textContent = tr.stop_loss ? _fmtPrice(tr.stop_loss) : (activePick?_fmtPrice(activePick.stop_loss):'—');
+      $('adv-t1').textContent   = tr.target1   ? _fmtPrice(tr.target1)   : (activePick?_fmtPrice(activePick.target1):'—');
+      if(_hs) _hs.textContent   = tr.hard_stop ? _fmtPrice(tr.hard_stop) : (activePick&&activePick.hard_stop?_fmtPrice(activePick.hard_stop):'—');
+      // Gerekçe + skor çubukları taze analizden (activePick) gösterilebilir
       if(activePick){
-        $('adv-stop').textContent=_fmtPrice(activePick.stop_loss);
-        $('adv-t1').textContent  =_fmtPrice(activePick.target1);
         $('adv-reason').textContent=activePick.reasoning||'';
         $('adv-bars').innerHTML=_renderScoreBars(activePick.scores||{});
-        if(_hs) _hs.textContent = activePick.hard_stop ? _fmtPrice(activePick.hard_stop) : '—';
       } else {
-        // Aktif hisse top_picks'te yok (ör. SASA) → stop/hedef'i tracker'dan al
-        $('adv-stop').textContent = tr.stop_loss ? _fmtPrice(tr.stop_loss) : '—';
-        $('adv-t1').textContent   = tr.target1   ? _fmtPrice(tr.target1)   : '—';
         $('adv-reason').textContent='';
         $('adv-bars').innerHTML='';
-        if(_hs) _hs.textContent = tr.hard_stop ? _fmtPrice(tr.hard_stop) : '—';
       }
 
       // Çıkış mesajı
