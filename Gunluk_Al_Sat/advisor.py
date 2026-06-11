@@ -1108,10 +1108,15 @@ def _sync_position():
                        and not h.get("provisional") for h in history)
 
         held, closed = {}, []
+        _prev_active     = state.get("active")
+        _prev_active_sym = (_prev_active or {}).get("symbol")
+        _active_in_excel = False   # aktif sembolün 1.xlsx'te HERHANGİ bir kaydı var mı?
         for sym in syms:
             buys, sells = _read_excel(sym)
             if not buys and not sells:
                 continue
+            if sym == _prev_active_sym:
+                _active_in_excel = True
             buy_qty  = sum(b["execQty"] for b in buys)
             sell_qty = sum(s["execQty"] for s in sells)
             # Maliyet: bugün alım varsa ondan, yoksa (devreden pozisyon) state'ten/öneriden
@@ -1173,6 +1178,14 @@ def _sync_position():
             for _tf in ("peak_price", "entry_stop", "entry_hard"):
                 if rec.get(_tf) is not None:
                     state["active"][_tf] = rec[_tf]
+        elif _prev_active_sym and not _active_in_excel:
+            # KRİTİK KORUMA: Aktif pozisyonun 1.xlsx'te HİÇ kaydı yok.
+            # 1.xlsx yalnızca O GÜNÜN işlemlerini içerir — pozisyon birden çok gün
+            # tutuluyorsa ve o gün işlem yapılmadıysa dosyada görünmez. Bu durumda
+            # pozisyon SATILMIŞ DEĞİL, sadece o gün dokunulmamış → AYNEN KORU.
+            # (Eski davranış: sessizce siliyordu → kullanıcı elinde hisseyle
+            # takipsiz/alarmsız kalıyordu.)
+            print(f"[Advisor] {_prev_active_sym}: bugün Excel kaydı yok → pozisyon korunuyor (satış yok).")
         else:
             state["active"] = None
 
