@@ -1203,6 +1203,29 @@ def _picks_refresh_loop():
                         log.info(f"[Öneri-tazele] Yeni #1 öneri: {top1}")
                     elif top1:
                         log.info(f"[Öneri-tazele] #1 aynı ({top1}) — sessiz güncellendi")
+                    # pending_buy'ı KARTLA SENKRON tut: kart top1 gösterirken
+                    # pending eski sembolde kalmasın (giriş/kaçtı alarmları
+                    # yanlış hisseyi izler, Aldım'da seviye karışır).
+                    if top1:
+                        st2 = _load_state()
+                        pb  = st2.get("pending_buy")
+                        if not st2.get("active") and pb and pb.get("symbol") != top1:
+                            p0 = tp[0]
+                            st2["pending_buy"] = {
+                                "symbol":     top1,
+                                "stop_loss":  p0.get("stop_loss", 0),
+                                "hard_stop":  p0.get("hard_stop", 0),
+                                "target1":    p0.get("target1", 0),
+                                "target2":    p0.get("target2", 0),
+                                "score":      p0.get("total_score", 0),
+                                "timeframe":  p0.get("timeframe", ""),
+                                "entry_low":  (p0.get("entry_zone") or {}).get("low", 0),
+                                "entry_high": (p0.get("entry_zone") or {}).get("high", 0),
+                            }
+                            _record_recommended(st2, top1, p0)
+                            _save_state(st2)
+                            log.info(f"[Öneri-tazele] pending_buy kartla senkronlandı: "
+                                     f"{pb.get('symbol')} → {top1}")
                 else:
                     last_top = None   # pozisyon açıldı; bir sonraki flat dönemde yeniden bildir
         except Exception as e:

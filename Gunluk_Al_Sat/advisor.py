@@ -872,6 +872,28 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
                 and s["symbol"] != _held]
     top_picks = [{**s, "rank": i+1} for i, s in enumerate(eligible[:3])]
 
+    # ── HİSTEREZİS (gün-içi tazelemede #1 seksek oynamasın) ────────────────
+    # Skorlar başa baş iken küçük fiyat oynamaları #1'i dakikalar içinde
+    # değiştirebiliyor (BRISA→ALKIM gibi) → kullanıcı karar veremiyor.
+    # Kural: yeni aday, önceki #1'in GÜNCEL giriş skorunu en az 0.8 puan
+    # farkla geçmedikçe önceki #1 korunur. (Önceki #1 elenmiş/uygunsuzsa
+    # doğal olarak değişir.)
+    if refresh_only and top_picks:
+        try:
+            _old   = json.loads(RESULT_PATH.read_text(encoding="utf-8")) if RESULT_PATH.exists() else {}
+            _prev1 = ((_old.get("top_picks") or [{}])[0] or {}).get("symbol")
+            _new1  = top_picks[0]["symbol"]
+            if _prev1 and _new1 != _prev1:
+                _prev_pick = next((s for s in eligible if s["symbol"] == _prev1), None)
+                if _prev_pick:
+                    _gap = (top_picks[0].get("entry_score", 0)
+                            - _prev_pick.get("entry_score", 0))
+                    if _gap < 0.8:
+                        _ordered = [_prev_pick] + [p for p in eligible if p["symbol"] != _prev1]
+                        top_picks = [{**s, "rank": i+1} for i, s in enumerate(_ordered[:3])]
+        except Exception:
+            pass
+
     # ── "BUGÜN İŞLEM YOK" KARARI ────────────────────────────────────────────
     # Tüm BIST50'de entry_score ≥ 6.5 olan hisse sayısı ≤ 1 ise kaliteli
     # kurulum yok → aktif pozisyon yoksa nakit kal, güce bekle.
