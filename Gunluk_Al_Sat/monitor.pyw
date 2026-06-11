@@ -931,6 +931,67 @@ def _check_entry_alerts(pick, lot_info, state, notifier, get_price):
         log.debug(f"_check_entry_alerts: {e}")
 
 
+def _check_active_dip_buy(state: dict, notifier, get_price):
+    """
+    AKTİF pozisyonda FIRSAT ALIMI: kullanıcı %60 ile girdi; fiyat girişten
+    %3 geri çekilirse kalan %25 sermaye ile "maliyet düşür" bildirimi (BİR KEZ).
+    Korumalar (düşen bıçağa ekletmez):
+      • Fiyat stop bölgesindeyse (stop'un %1 üstü ve altı) → GÖNDERME
+      • Sinyal DİKKAT/ÇIK/ERKEN ÇIK ise (yapı bozuk) → GÖNDERME
+    """
+    try:
+        active = state.get("active") or {}
+        sym   = active.get("symbol")
+        entry = active.get("entry_price", 0) or 0
+        stop  = active.get("stop_loss", 0) or 0
+        if not sym or not entry or active.get("dip_notified"):
+            return
+        price, _src = get_price(sym)
+        if not price:
+            return
+        # UYARLAMALI TETİK: girişten stop'a YARI YOL (en az %1 çekilme).
+        # Sabit %3 kullanılmaz çünkü dar stoplu pozisyonda %3 çekilme stop
+        # bölgesinin içine düşer → bildirim hiç atmaz. Yarı yol her stop
+        # genişliğinde geçerli bir "ucuzladı ama yapı sağlam" noktasıdır.
+        _risk   = (entry - stop) if (stop and stop < entry) else entry * 0.03
+        trigger = entry - max(0.5 * _risk, 0.01 * entry)
+        if price > trigger:               # yeterli geri çekilme henüz yok
+            return
+        if stop and price <= stop * 1.01: # stop bölgesi — ekleme yapılmaz
+            return
+        # Yapı bozuksa ekleme yok (son sinyal DİKKAT/ÇIK ailesi mi?)
+        try:
+            from advisor import RESULT_PATH
+            d = json.loads(RESULT_PATH.read_text(encoding="utf-8"))
+            sig = ((d.get("exit_signal") or {}).get("signal") or "").upper()
+            if "ÇIK" in sig or "DİKKAT" in sig:
+                return
+        except Exception:
+            pass
+        cap  = state.get("capital", 0) or 0
+        lots = int((cap * 0.25) // price) if cap and price else 0
+        if lots <= 0:
+            return
+        if not _should_send(sym, "AKTIF_FIRSAT_ALIM"):
+            return
+        active["dip_notified"] = True   # bir kez bildir
+        _save_state(state)
+        qty     = active.get("qty", 0) or 0
+        avg_new = (entry * qty + price * lots) / max(1, qty + lots)
+        _dd = (entry - price) / entry * 100
+        notifier._send(
+            f"⬇ {sym} FIRSAT ALIMI — maliyet düşür",
+            f"Fiyat girişten %{_dd:.1f} geri çekildi: {_fp(price)} ₺ (giriş {_fp(entry)})\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"➤ {lots} lot EKLE (kalan %25 sermaye)\n"
+            f"Yeni ort. maliyet ~{_fp(avg_new)} ₺ olur\n"
+            f"Stop: {_fp(stop)} | Yapı sağlam (sinyal DEVAM)",
+            priority="high", tags="chart_with_downwards_trend")
+        log.info(f"AKTİF FIRSAT ALIMI bildirildi: {sym} @ {_fp(price)} ({lots} lot)")
+    except Exception as e:
+        log.debug(f"_check_active_dip_buy: {e}")
+
+
 def _check_pending_entry():
     """
     Bekleyen öneri (pending_buy) için 3 alarm:
@@ -945,7 +1006,10 @@ def _check_pending_entry():
 
         state = _load_state()
         if state.get("active"):
-            return  # zaten pozisyon var, öneri takibi yok
+            # Pozisyon açık → öneri takibi yok ama FIRSAT ALIMI izlenir
+            # (girişten %3 geri çekilirse kalan %25 ile maliyet düşürme)
+            _check_active_dip_buy(state, notifier, get_price)
+            return
         pending = state.get("pending_buy")
         if not pending:
             # Aktif pozisyon yoksa top_picks'teki ilk hisseyi de izle
