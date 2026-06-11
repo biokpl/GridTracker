@@ -1142,6 +1142,21 @@ def _sync_position():
             # Maliyet: bugün alım varsa ondan, yoksa (devreden pozisyon) state'ten/öneriden
             if buy_qty > 0:
                 avg_cost = sum(b["execAmount"] + b["commission"] for b in buys) / buy_qty
+                # ÇOK-GÜNLÜ TAKVİYE (fırsat alımı): pozisyon ÖNCEKİ günden devrediyorsa,
+                # 1.xlsx yalnızca bugünün alışlarını içerir. Bugünkü lotlar devreden
+                # lotların ÜSTÜNE eklenir (toplam lot + ağırlıklı ort. maliyet) — aksi
+                # halde pozisyon "sadece bugünkü lotlar" olarak EZİLİYORDU.
+                if (_prev_active_sym == sym
+                        and (_prev_active or {}).get("entry_date", today) < today
+                        and (_prev_active or {}).get("qty", 0) > 0
+                        and (_prev_active or {}).get("entry_price", 0) > 0):
+                    _po_qty = _prev_active["qty"]
+                    _po_avg = _prev_active["entry_price"]
+                    _tot    = _po_qty + buy_qty
+                    avg_cost = (_po_avg * _po_qty + avg_cost * buy_qty) / _tot
+                    buy_qty  = _tot
+                    print(f"[Advisor] {sym}: devreden {_po_qty} + bugün alınan lotlar birleştirildi "
+                          f"→ {_tot} lot @ {avg_cost:.4f}")
             elif state.get("active") and state["active"]["symbol"] == sym:
                 avg_cost = state["active"].get("entry_price", 0.0)
                 buy_qty  = state["active"].get("qty", buy_qty)
