@@ -932,17 +932,15 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
 
         for p in top_picks:
             lots = calc_lots(avail_capital, p["price"])
-            # ── KADEMELİ POZİSYON: %60 ana giriş + %25 fırsat (pull-back) ──
-            # Tek seferde tam sermaye yerine iki kademe:
-            # 1) Ana giriş (%60): giriş bölgesinde hemen
-            # 2) Fırsat alımı (%25): hisse %2-3 geri çekilirse — ortalama maliyet iyileşir
-            # 3) Nakit tampon (%15): her zaman likit kal
-            lots_main  = calc_lots(avail_capital * 0.60, p["price"])
+            # ── KADEMELİ POZİSYON: %75 ana giriş + %25 fırsat (pull-back) ──
+            # 1) Ana giriş (%75): giriş bölgesinde hemen
+            # 2) Fırsat alımı (%25): geri çekilmede — ortalama maliyet iyileşir
+            lots_main  = calc_lots(avail_capital * 0.75, p["price"])
             lots_dip   = calc_lots(avail_capital * 0.25, p["price"])
             dip_target = round(p["price"] * 0.97, 4)   # %3 geri çekilme hedefi
             lot_info[p["symbol"]] = {
                 "lots":       lots,            # tam sermaye (eski davranış - backward compat)
-                "lots_main":  lots_main,       # %60 ana giriş
+                "lots_main":  lots_main,       # %75 ana giriş
                 "lots_dip":   lots_dip,        # %25 fırsat alımı
                 "dip_price":  dip_target,      # fırsat alım fiyatı (~%3 düşük)
                 "price":      p["price"],

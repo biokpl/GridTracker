@@ -933,7 +933,7 @@ def _check_entry_alerts(pick, lot_info, state, notifier, get_price):
 
 def _check_active_dip_buy(state: dict, notifier, get_price):
     """
-    AKTİF pozisyonda FIRSAT ALIMI: kullanıcı %60 ile girdi; fiyat girişten
+    AKTİF pozisyonda FIRSAT ALIMI: kullanıcı %75 ile girdi; fiyat girişten
     %3 geri çekilirse kalan %25 sermaye ile "maliyet düşür" bildirimi (BİR KEZ).
     Korumalar (düşen bıçağa ekletmez):
       • Fiyat stop bölgesindeyse (stop'un %1 üstü ve altı) → GÖNDERME

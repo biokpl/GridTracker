@@ -41069,10 +41069,10 @@ async function renderAdvisor(){
 
         const lotEl=$('adv-top1-lots');
         if(lotEl && li.lots_main>0){
-          // Kademeli pozisyon: %60 ana + %25 fırsat alımı
+          // Kademeli pozisyon: %75 ana + %25 fırsat alımı
           lotEl.innerHTML=
             '💰 <span style="font-size:19px;color:#4ade80">'+li.lots_main.toLocaleString('tr-TR')+'</span> LOT AL'
-            +'<span style="font-size:9px;color:#6ee7b7;margin-left:6px;opacity:.75">(%60 ana giriş)</span>'
+            +'<span style="font-size:9px;color:#6ee7b7;margin-left:6px;opacity:.75">(%75 ana giriş)</span>'
             +'<div style="font-size:10px;font-weight:600;color:#6ee7b7;margin-top:2px;opacity:.85">≈ '+_fmtNum(li.cost)+' ₺ maliyet</div>'
             +(li.lots_dip>0?
               '<div style="font-size:9px;color:#a5b4c0;margin-top:4px;padding-top:4px;border-top:1px dashed rgba(255,255,255,.1)">'
