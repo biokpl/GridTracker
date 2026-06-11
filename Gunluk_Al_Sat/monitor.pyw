@@ -959,15 +959,51 @@ def _check_active_dip_buy(state: dict, notifier, get_price):
             return
         if stop and price <= stop * 1.01: # stop bölgesi — ekleme yapılmaz
             return
-        # Yapı bozuksa ekleme yok (son sinyal DİKKAT/ÇIK ailesi mi?)
+        # TAZE ZAYIFLAMA KONTROLÜ — bayat (15 dk eski) sinyale güvenme, ŞİMDİ hesapla.
+        # (12.06: EK YAP bildirimi DEVAM'lık eski sinyale bakıp gönderildi, 26 dk
+        # sonra ERKEN ÇIK geldi → kullanıcı tam tepede takviye yaptı. Bir daha olmasın.)
+        # Taze kontrol başarısızsa GÖNDERME (şüphede para riske edilmez); 30 sn
+        # sonra tekrar denenir. Ağır indirme spam'ini önlemek için 120 sn aralık.
+        now = time.time()
+        if now - globals().get("_dip_chk_ts", 0) < 120:
+            return
+        globals()["_dip_chk_ts"] = now
         try:
-            from advisor import RESULT_PATH
-            d = json.loads(RESULT_PATH.read_text(encoding="utf-8"))
-            sig = ((d.get("exit_signal") or {}).get("signal") or "").upper()
-            if "ÇIK" in sig or "DİKKAT" in sig:
+            import advisor
+            import yfinance as yf
+            import pandas as pd
+            raw = yf.download([f"{sym}.IS", "XU100.IS"], period="90d",
+                              auto_adjust=True, progress=False, threads=True)
+            def _gdf(s):
+                t = f"{s}.IS"
+                try:
+                    df = raw.xs(t, axis=1, level=1).dropna(how="all") \
+                        if isinstance(raw.columns, pd.MultiIndex) else raw.dropna(how="all")
+                    return df if len(df) >= 20 else None
+                except Exception:
+                    return None
+            df, xu = _gdf(sym), _gdf("XU100")
+            if df is None:
+                log.info(f"FIRSAT ALIMI ertelendi: {sym} taze veri alınamadı.")
                 return
-        except Exception:
-            pass
+            df.iloc[-1, df.columns.get_loc("Close")] = price   # canlı fiyatı yansıt
+            c = df["Close"]
+            all_returns = {
+                "r5":  {sym: advisor._pct(float(c.iloc[-1]), float(c.iloc[-6]))  if len(c) > 5  else 0},
+                "r20": {sym: advisor._pct(float(c.iloc[-1]), float(c.iloc[-21])) if len(c) > 20 else 0},
+                "r60": {sym: advisor._pct(float(c.iloc[-1]), float(c.iloc[-61])) if len(c) > 60 else 0},
+            }
+            cfg = _load_cfg()
+            score = advisor.score_stock(sym, df, xu, all_returns, cfg["sectors"])
+            sig, _msg, _xp     = advisor.check_exit(active, score)
+            lvl, wmsg, wpts    = advisor.check_early_weakness(active, df, score, xu)
+            if sig in ("ÇIK", "ACİL_ÇIK", "DEĞİŞTİR", "DİKKAT") or wpts >= 3:
+                log.info(f"FIRSAT ALIMI İPTAL: {sym} taze kontrol zayıf "
+                         f"(sinyal={sig}, zayıflama={wpts}p {wmsg}) — ekleme önerilmedi.")
+                return
+        except Exception as e:
+            log.info(f"FIRSAT ALIMI ertelendi: taze kontrol başarısız ({e}).")
+            return
         cap  = state.get("capital", 0) or 0
         lots = int((cap * 0.25) // price) if cap and price else 0
         if lots <= 0:
