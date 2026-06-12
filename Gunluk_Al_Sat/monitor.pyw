@@ -198,6 +198,60 @@ def _hourly_closed_below(sym: str, level: float):
 
 # ── HIZLI DÖNGÜ: Anlık fiyat → Stop / Hedef kontrolü ────────────────────────
 
+# ── GÜN İÇİ MUM BİRİKTİRME (DDE 5 sn örneklerinden 5 dk barlar) ─────────────
+# Yeni veri kaynağı YOK: zaten 5 sn'de bir okunan DDE fiyatından kendi gün-içi
+# barlarımızı üretiriz. Günlük barların göremediği saat-içi momentum (erken
+# çıkış / fırsat alımı zamanlaması) buradan ölçülür.
+_IBARS_PATH  = BASE / "intraday_bars.json"
+_ibars       = None
+_ibars_saved = 0.0
+
+
+def _ibar_add(sym: str, price: float):
+    """5 dk'lık OHLC barına örnek ekle. Periyodik diske yazar (restart dayanıklı)."""
+    global _ibars, _ibars_saved
+    try:
+        if _ibars is None:
+            try:
+                _ibars = json.loads(_IBARS_PATH.read_text(encoding="utf-8"))
+            except Exception:
+                _ibars = {}
+        today  = datetime.now().strftime("%Y-%m-%d")
+        bucket = int(time.time() // 300) * 300
+        rec = _ibars.get(sym)
+        if not rec or rec.get("date") != today:
+            rec = {"date": today, "bars": []}
+            _ibars[sym] = rec
+        bars = rec["bars"]
+        if bars and bars[-1][0] == bucket:
+            b = bars[-1]
+            b[2] = max(b[2], price); b[3] = min(b[3], price); b[4] = price
+        else:
+            bars.append([bucket, price, price, price, price])
+            del bars[:-120]   # en fazla 120 bar (10 saat) tut
+        if time.time() - _ibars_saved > 300:
+            _ibars_saved = time.time()
+            _IBARS_PATH.write_text(json.dumps(_ibars), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def _intraday_chg(sym: str, minutes: int = 30):
+    """Son N dakikadaki % değişim (5 dk barlardan). Yeterli veri yoksa None."""
+    try:
+        rec = (_ibars or {}).get(sym)
+        if not rec or rec.get("date") != datetime.now().strftime("%Y-%m-%d"):
+            return None
+        bars = rec["bars"]
+        need = max(2, minutes // 5)
+        if len(bars) < need:
+            return None
+        c_now, c_old = bars[-1][4], bars[-need][4]
+        return (c_now / c_old - 1) * 100 if c_old else None
+    except Exception:
+        return None
+
+
 def _fast_price_check():
     """
     Excel'den anlık fiyat okur, stop/hedef kontrolü yapar.
@@ -224,6 +278,10 @@ def _fast_price_check():
         price, kaynak = get_price(sym)
         if not price:
             return
+
+        # Gün içi bar biriktir (sadece CANLI DDE fiyatından — gecikmeli Yahoo karışmasın)
+        if kaynak == "excel":
+            _ibar_add(sym, price)
 
         # P&L hesabı
         qty     = active.get("qty", 0)
@@ -331,9 +389,10 @@ def _fast_price_check():
                     f"➤ {qty:,} LOT'U SAT (tam çıkış, kârı al)\n".replace(",", ".") +
                     f"Tahmini kâr: +{kar:,.0f} TL  💰\n".replace(",", ".") +
                     f"━━━━━━━━━━━━━━━━━━━━\n"
-                    f"Sattıktan sonra uygulamadan ✅ 'Sattım'a bas → "
+                    f"Sattıktan sonra bildirimdeki SATTIM butonuna bas → "
                     f"sıradaki öneri anında gelsin.",
-                    priority="urgent", tags="dart", alert=True)
+                    priority="urgent", tags="dart", alert=True,
+                    actions=notifier.action_sold(sym))
             return
 
         # ── Her şey normal: sadece log ─────────────────────────────────────
@@ -432,6 +491,11 @@ def _do_user_sold(state: dict, symbol: str):
     if not active:
         log.info("Sattım: aktif pozisyon yok, atlanıyor.")
         return
+    # BAYAT BUTON KORUMASI: komut belirli bir sembol içinse ve aktif pozisyon
+    # farklıysa (eski bildirimin butonu) → işlem yapma.
+    if symbol and active.get("symbol") != symbol:
+        log.info(f"Sattım: komut {symbol} için ama aktif {active.get('symbol')} — bayat buton, atlandı.")
+        return
     sym   = active["symbol"]
     entry = active.get("entry_price", 0)
     qty   = active.get("qty", 0)
@@ -494,7 +558,8 @@ def _do_user_sold(state: dict, symbol: str):
         lines = notifier._new_pick_lines(new_pick, lot_info, baslik="✅ SIRADAKİ ÖNERİ")
         body += "\n" + "\n".join(lines[1:])
     notifier._send(f"✅ {sym} SATILDI — sıradaki hazır", body,
-                   priority="high", tags="white_check_mark")
+                   priority="high", tags="white_check_mark",
+                   actions=(notifier.action_bought(new_pick["symbol"]) if new_pick else ""))
 
 
 def _do_user_bought(state: dict, symbol: str):
@@ -717,7 +782,11 @@ def _slow_analysis():
         signal, msg, exit_pts = advisor.check_exit(active, score)
 
         # AŞAĞI yönlü erken bozulma dedektörü (vur-kaç: küçük zararla erken çık)
-        ew_level, ew_msg, ew_pts = advisor.check_early_weakness(active, df, score, xu100)
+        # Gün içi ivme (DDE 5dk barlarından): günlük barların göremediği
+        # saat-içi kırılmayı da hesaba kat.
+        chg30 = _intraday_chg(sym, 30)
+        ew_level, ew_msg, ew_pts = advisor.check_early_weakness(
+            active, df, score, xu100, intraday_chg=chg30)
 
         # Nihai sinyal: check_exit ÇIK/ACİL/DEĞİŞTİR öncelikli; yoksa erken-zayıflama
         if signal in ("ÇIK", "ACİL_ÇIK", "DEĞİŞTİR"):
@@ -732,7 +801,8 @@ def _slow_analysis():
             final, final_msg = "DEVAM", ""
 
         log.info(f"{sym}: Skor={score['total_score']:.1f}/10  RSI={score['rsi']:.0f}"
-                 f"  ÇıkışPuan={exit_pts}  Zayıflama={ew_level}({ew_pts})  Sinyal={final}")
+                 f"  ÇıkışPuan={exit_pts}  Zayıflama={ew_level}({ew_pts})"
+                 f"  İvme30dk={f'{chg30:+.2f}%' if chg30 is not None else '—'}  Sinyal={final}")
 
         # State güncelle
         state["active"]["last_score"] = score["total_score"]
@@ -781,7 +851,8 @@ def _slow_analysis():
                 if new_pick:
                     lines += notifier._new_pick_lines(new_pick, lot_info)
                 notifier._send(f"🟠 {sym} — ERKEN ÇIKIŞ — SAT", "\n".join(lines),
-                               priority="urgent", tags="warning", alert=True)
+                               priority="urgent", tags="warning", alert=True,
+                               actions=notifier.action_sold(sym))
         elif final in ("DİKKAT", "ÇIK", "ACİL_ÇIK", "DEĞİŞTİR"):
             if _should_send_state(sym, final):
                 new_pick, lot_info = _get_last_alternative(sym)
@@ -926,7 +997,8 @@ def _check_entry_alerts(pick, lot_info, state, notifier, get_price):
                     f"➤ ANA GİRİŞ: {lots_main:,} lot al (şimdi)\n".replace(",",".")
                     + (f"➤ FIRSAT ALIMI: {lots_dip:,} lot — {_fp(dip_px)} ₺'ye gelirse\n".replace(",",".") if lots_dip else "")
                     + f"Stop: {_fp(pick.get('stop_loss',0))} | Hedef: {_fp(pick.get('target1',0))}",
-                    priority="high", tags="bell")
+                    priority="high", tags="bell",
+                    actions=notifier.action_bought(sym))
     except Exception as e:
         log.debug(f"_check_entry_alerts: {e}")
 
@@ -1003,6 +1075,11 @@ def _check_active_dip_buy(state: dict, notifier, get_price):
                 return
         except Exception as e:
             log.info(f"FIRSAT ALIMI ertelendi: taze kontrol başarısız ({e}).")
+            return
+        # GÜN İÇİ İVME: son 30 dk hâlâ sert aşağıysa düşen bıçak — bekle
+        _c30 = _intraday_chg(sym, 30)
+        if _c30 is not None and _c30 <= -0.6:
+            log.info(f"FIRSAT ALIMI ertelendi: {sym} gün içi ivme aşağı ({_c30:+.1f}%/30dk).")
             return
         cap  = state.get("capital", 0) or 0
         lots = int((cap * 0.25) // price) if cap and price else 0
@@ -1087,7 +1164,8 @@ def _check_pending_entry():
                     + (f"➤ FIRSAT ALIMI: {lots_dip:,} lot — fiyat {_fp(dip_px)} ₺'ye gelirse\n".replace(",",".") if lots_dip else "")
                     + f"━━━━━━━━━━━━━━━━━━━━\n"
                     f"Stop: {_fp(pending.get('stop_loss',0))} | Hedef: {_fp(pending.get('target1',0))}",
-                    priority="high", tags="bell")
+                    priority="high", tags="bell",
+                    actions=notifier.action_bought(psym))
 
         # ── 2. FIRSAT ALIMI: fiyat %3 geri çekildi ───────────────────────
         dip_ref = pending.get("entry_ref_price") or ehigh

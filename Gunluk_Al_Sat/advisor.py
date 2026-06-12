@@ -124,11 +124,16 @@ def _pct(a, b) -> float:
 
 
 def calc_lots(capital: float, price: float, commission_rate: float = 0.0001) -> int:
-    """Sermaye ve fiyatla alınabilecek lot sayısı (komisyon dahil)."""
-    if price <= 0 or capital <= 0:
+    """Sermaye ve fiyatla alınabilecek lot sayısı (komisyon dahil).
+    NaN/geçersiz girdide 0 döner (bozuk veri tüm analizi kırmasın)."""
+    try:
+        if (price != price) or (capital != capital):   # NaN kontrolü
+            return 0
+        if price <= 0 or capital <= 0:
+            return 0
+        return int(capital / (price * (1 + commission_rate)))
+    except (TypeError, ValueError):
         return 0
-    cost_per_lot = price * (1 + commission_rate)
-    return int(capital / cost_per_lot)
 
 
 def calc_capital_after_sell(qty: int, price: float, commission_rate: float = 0.0001) -> float:
@@ -722,7 +727,8 @@ def check_exit(active: dict, score_now: dict) -> tuple[str, str, int]:
 # ─── Erken Zayıflama / Bozulma Dedektörü (AŞAĞI yönlü) ───────────────────────
 
 def check_early_weakness(active: dict, df: pd.DataFrame, score: dict,
-                         xu100: pd.DataFrame = None) -> tuple[str, str, int]:
+                         xu100: pd.DataFrame = None,
+                         intraday_chg: float = None) -> tuple[str, str, int]:
     """
     check_exit yukarı/kâr-al odaklıdır; bu fonksiyon DÜŞÜŞ/kırılma odaklıdır.
     Açık pozisyonda erken bozulma belirtilerini stop'a varmadan yakalar →
@@ -809,6 +815,12 @@ def check_early_weakness(active: dict, df: pd.DataFrame, score: dict,
     if   loss_pct <= -2.5: pts += 2; sig.append(f"Zarar %{loss_pct:.1f}")
     elif loss_pct <= -1.5: pts += 1; sig.append(f"Zarar %{loss_pct:.1f}")
 
+    # 9) GÜN İÇİ İVME (DDE 5dk barlarından, monitor sağlar) — günlük barların
+    # göremediği saat-içi kırılmayı yakalar (ALKIM vakası: tepede takviye).
+    if intraday_chg is not None:
+        if   intraday_chg <= -1.2: pts += 2; sig.append(f"Gün içi sert düşüş ({intraday_chg:+.1f}%/30dk)")
+        elif intraday_chg <= -0.6: pts += 1; sig.append(f"Gün içi ivme aşağı ({intraday_chg:+.1f}%/30dk)")
+
     msg = " | ".join(sig)
     if pts >= 5:
         return "ERKEN_ÇIK", msg, pts
@@ -818,6 +830,128 @@ def check_early_weakness(active: dict, df: pd.DataFrame, score: dict,
 
 
 # ─── Ana Analiz ──────────────────────────────────────────────────────────────
+
+JOURNAL_PATH = BASE / "picks_journal.json"
+
+
+def _journal_record(top_picks, regime: str = ""):
+    """ÖNERİ KARNESİ: günün önerilerini kaydet (alınsın ya da alınmasın).
+    (tarih, sembol) başına TEK kayıt — günün İLK önerisi saklanır, sonraki
+    tazelemeler ezmez. Amaç: 30-50 kayıt sonra hangi skor/koşulların gerçekten
+    tuttuğunu VERİYLE görmek (parametre ayarı hisle değil kanıtla yapılır)."""
+    try:
+        today = datetime.now().strftime("%Y-%m-%d")
+        try:
+            j = json.loads(JOURNAL_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            j = []
+        seen = {(r.get("date"), r.get("symbol")) for r in j}
+        added = 0
+        for p in top_picks or []:
+            if (today, p.get("symbol")) in seen:
+                continue
+            j.append({
+                "date": today, "symbol": p["symbol"], "rank": p.get("rank", 0),
+                "price": p.get("price", 0),
+                "entry_score": p.get("entry_score", 0),
+                "total_score": p.get("total_score", 0),
+                "rr_ratio":  p.get("rr_ratio", 0),
+                "atr_pct":   p.get("atr_pct", 0),
+                "stop_loss": p.get("stop_loss", 0),
+                "target1":   p.get("target1", 0),
+                "timeframe": p.get("timeframe", ""),
+                "mode":      STRATEGY_MODE,
+                "regime":    regime,
+            })
+            added += 1
+        if added:
+            JOURNAL_PATH.write_text(json.dumps(j, ensure_ascii=False, indent=1),
+                                    encoding="utf-8")
+    except Exception as e:
+        print(f"[Advisor] Karne kayıt hatası: {e}")
+
+
+def _journal_evaluate(data: dict):
+    """Karnedeki eski kayıtların SONUÇLARINI doldur: öneri sonrası 1g/3g getiri +
+    3 gün içinde hedef/stop temas etti mi. Veri zaten indirilmiş günlük barlardan —
+    ek indirme YOK. Özet Firebase'e yazılır (kart/inceleme için)."""
+    try:
+        j = json.loads(JOURNAL_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return
+    changed = False
+    for r in j:
+        if r.get("done") or not r.get("price"):
+            continue
+        df = data.get(r.get("symbol"))
+        if df is None or len(df) < 2:
+            continue
+        try:
+            idx = [d.strftime("%Y-%m-%d") for d in df.index]
+            pos = [i for i, d in enumerate(idx) if d <= r["date"]]
+            if not pos:
+                continue
+            i0 = pos[-1]                      # öneri günü (veya öncesindeki son bar)
+            after = df.iloc[i0 + 1:]
+            if len(after) >= 1:
+                r["ret_1d"] = round((float(after["Close"].iloc[0]) / r["price"] - 1) * 100, 2)
+                changed = True
+            if len(after) >= 3:
+                r["ret_3d"] = round((float(after["Close"].iloc[2]) / r["price"] - 1) * 100, 2)
+                w = after.iloc[:3]
+                r["hit_target"] = bool(r.get("target1") and float(w["High"].max()) >= r["target1"])
+                r["hit_stop"]   = bool(r.get("stop_loss") and float(w["Low"].min()) <= r["stop_loss"])
+                r["done"] = True
+                changed = True
+        except Exception:
+            continue
+    if changed:
+        try:
+            JOURNAL_PATH.write_text(json.dumps(j, ensure_ascii=False, indent=1),
+                                    encoding="utf-8")
+        except Exception:
+            pass
+    # Özet → Firebase (advisor/journal)
+    try:
+        import requests as _rq
+        done = [r for r in j if r.get("done")]
+        if done:
+            n = len(done)
+            _rq.patch(f"{FIREBASE_URL}/gridtracker/advisor/journal.json", json={
+                "n": n,
+                "hit_target_pct": round(100 * sum(1 for r in done if r.get("hit_target")) / n),
+                "hit_stop_pct":   round(100 * sum(1 for r in done if r.get("hit_stop")) / n),
+                "avg_ret_1d": round(sum(r.get("ret_1d", 0) for r in done) / n, 2),
+                "avg_ret_3d": round(sum(r.get("ret_3d", 0) for r in done) / n, 2),
+                "ts": time.time(),
+            }, timeout=8)
+    except Exception:
+        pass
+
+
+def _market_regime(xu100) -> tuple[str, str]:
+    """
+    PİYASA REJİMİ: XU100'ün genel sağlığı. Düşen piyasada en iyi hisse de düşer —
+    isabet kaybının ana sebebi. Döner: (seviye, açıklama)
+      RISK_ON  → normal işlem
+      CAUTION  → işlem serbest ama YARIM LOT (lot_info %50 kesilir)
+      RISK_OFF → yeni pozisyon önerilmez (bekleme günü)
+    """
+    try:
+        c     = xu100["Close"]
+        price = float(c.iloc[-1])
+        ma20  = float(c.rolling(20).mean().iloc[-1])
+        ma50  = float(c.rolling(50).mean().iloc[-1]) if len(c) >= 50 else ma20
+        r3    = (price / float(c.iloc[-4]) - 1) * 100 if len(c) > 3 else 0.0
+        below20 = price < ma20
+        if below20 and (ma20 < ma50 or r3 <= -2.0):
+            return "RISK_OFF", f"XU100 MA20 altı + trend aşağı (3g {r3:+.1f}%)"
+        if below20 or r3 <= -1.5:
+            return "CAUTION", f"XU100 zayıf (3g {r3:+.1f}%, MA20 {'altı' if below20 else 'üstü'})"
+        return "RISK_ON", f"XU100 sağlıklı (3g {r3:+.1f}%)"
+    except Exception:
+        return "RISK_ON", "XU100 verisi yok (filtre pasif)"
+
 
 def run_analysis(dry_run: bool = False, quiet: bool = False,
                  refresh_only: bool = False) -> dict:
@@ -834,7 +968,20 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
         print(f"[Advisor] {len(symbols)} hisse analiz ediliyor...")
 
     data = download_all(symbols)
+
+    # ── VERİ TEMİZLİĞİ: Close'u NaN olan barları at ───────────────────────
+    # Düşük likidite/veri boşluğu son barı NaN bırakabiliyor → NaN fiyat
+    # skorlamayı zehirler (sahte yüksek skor) ve Firebase JSON'ını kırar.
+    for _s in list(data.keys()):
+        _df = data[_s]
+        if _df is not None and "Close" in _df:
+            _cln = _df.dropna(subset=["Close"])
+            data[_s] = _cln if len(_cln) >= 2 else None
+
     xu100 = data.get("XU100")
+
+    # ── PİYASA REJİMİ (endeks filtresi) ──────────────────────────────────
+    regime, regime_msg = _market_regime(xu100) if xu100 is not None else ("RISK_ON", "veri yok")
 
     # Getiri hesapla (momentum z-skoru için)
     all_returns = {"r5": {}, "r20": {}, "r60": {}}
@@ -898,7 +1045,9 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
     # Tüm BIST50'de entry_score ≥ 6.5 olan hisse sayısı ≤ 1 ise kaliteli
     # kurulum yok → aktif pozisyon yoksa nakit kal, güce bekle.
     high_quality = [s for s in eligible if s.get("entry_score", 0) >= 6.5]
-    no_trade_today = (not active) and len(high_quality) <= 1
+    # REJİM: RISK_OFF günlerinde yeni pozisyon önerilmez (düşen piyasada
+    # en iyi hisse de düşer — isabet kaybının ana sebebi).
+    no_trade_today = (not active) and (len(high_quality) <= 1 or regime == "RISK_OFF")
 
     # Aktif pozisyon çıkış kontrolü
     exit_signal = {"symbol": None, "signal": "—", "score_now": 0.0, "score_prev": 0.0, "message": ""}
@@ -951,6 +1100,13 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
             act_score = next((s for s in scores if s["symbol"] == active["symbol"]), None)
             if act_score and qty > 0:
                 avail_capital = calc_capital_after_sell(qty, act_score["price"])
+                # NaN/geçersizse tam sermayeye düş (bozuk fiyat hesabı kırmasın)
+                if not avail_capital or avail_capital != avail_capital:
+                    avail_capital = capital
+
+        # REJİM CAUTION: piyasa zayıf → YARIM LOT (after-sell dahil her durumda)
+        if regime == "CAUTION":
+            avail_capital *= 0.5
 
         for p in top_picks:
             lots = calc_lots(avail_capital, p["price"])
@@ -1003,6 +1159,7 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
         "lot_info":       lot_info,
         "no_trade_today": no_trade_today,
         "high_quality_count": len(high_quality),
+        "market_regime":  {"level": regime, "msg": regime_msg},
         "tracker":     tracker_data,
         "score_table": {s["symbol"]: {"total": s["total_score"], "rank": i+1,
                                        "timeframe": s["timeframe"]}
@@ -1017,10 +1174,18 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
         # Firebase'e yaz (telefon erişimi için)
         _firebase_push(result)
 
+        # Öneri karnesi: günün önerilerini kaydet (her çalıştırmada; gün içinde
+        # ilk kayıt korunur, mükerrer yazılmaz)
+        _journal_record(top_picks, regime)
+
         # refresh_only: sadece öneriler tazelendi → state mutasyonu / push /
         # _sync_position'a dokunma, çık.
         if refresh_only:
             return result
+
+        # Karne değerlendirme: eski kayıtların sonuçlarını doldur (akşam koşusunda;
+        # zaten indirilmiş günlük veriyle, ek maliyet yok)
+        _journal_evaluate(data)
 
         # State güncelle
         if active:
@@ -1068,12 +1233,15 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
                     lot_info=lot_info,
                 )
             elif no_trade_today:
-                # Kaliteli kurulum yok → nakit kal, bekleme bildirimi
+                # Kaliteli kurulum yok VEYA piyasa rejimi negatif → nakit kal
+                _why = (f"📉 Piyasa rejimi: {regime_msg}\n"
+                        if regime == "RISK_OFF" else
+                        f"BİST50'de entry_score ≥6.5 olan hisse {len(high_quality)} adet.\n")
                 notifier._send(
                     "⏸ Bugün Bekleme Günü",
-                    f"BİST50'de entry_score ≥6.5 olan hisse {len(high_quality)} adet.\n"
-                    f"Kaliteli kurulum yok — bugün nakit kalmak en doğrusu.\n"
-                    f"Yarın yeni analiz yapılacak.",
+                    _why +
+                    f"Bugün nakit kalmak en doğrusu — düşen piyasada en iyi hisse de düşer.\n"
+                    f"Koşullar düzelince yeni öneri gelecek.",
                     priority="default", tags="hourglass_not_done")
             elif top_picks and not active:
                 # Aktif pozisyon yoksa günlük öneriyi bildir

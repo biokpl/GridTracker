@@ -20,6 +20,29 @@ URL_ALERT = f"https://ntfy.sh/{TOPIC_ALERT}"
 
 from urllib.parse import quote as _quote
 
+FIREBASE_URL = "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app"
+
+
+def _action_cmd(action: str, symbol: str, label: str) -> str:
+    """ntfy bildirimi içine TEK DOKUNUŞ butonu: telefondan doğrudan Firebase'e
+    Sattım/Aldım komutu yazar (monitor 4 sn'de işler). Sayfa açmaya gerek kalmaz.
+    NOT: HTTP header'a gittiği için etiket/ASCII içerik kullanılır."""
+    import time as _t, random, string
+    aid  = f"ntfy-{int(_t.time()*1000)}-{''.join(random.choices(string.ascii_lowercase + string.digits, k=4))}"
+    body = json.dumps({"action": action, "symbol": symbol,
+                       "ts": int(_t.time()*1000), "id": aid})
+    url  = f"{FIREBASE_URL}/gridtracker/advisor/userAction.json"
+    return (f"http, {label}, {url}, method=PUT, "
+            f"headers.Content-Type=application/json, body='{body}', clear=true")
+
+
+def action_sold(symbol: str) -> str:
+    return _action_cmd("sold", symbol, f"SATTIM ({symbol})")
+
+
+def action_bought(symbol: str) -> str:
+    return _action_cmd("bought", symbol, f"ALDIM ({symbol})")
+
 
 def _fp(v) -> str:
     """Fiyatı 2 ondalık (kuruş) biçimler: 2.5 → '2.50', 64 → '64.00'."""
@@ -30,7 +53,7 @@ def _fp(v) -> str:
 
 
 def _send(title: str, body: str, priority: str = "default", tags: str = "",
-          alert: bool = False) -> bool:
+          alert: bool = False, actions: str = "") -> bool:
     try:
         # alert=True → kritik topic (alarm sesi). Aksi halde normal topic.
         base = URL_ALERT if alert else URL
@@ -43,6 +66,8 @@ def _send(title: str, body: str, priority: str = "default", tags: str = "",
         headers = {"Priority": priority, "Content-Type": "text/plain; charset=utf-8"}
         if tags:
             headers["Tags"] = tags
+        if actions:
+            headers["Actions"] = actions   # tek-dokunuş butonu (action_sold/bought)
         r = requests.post(url, data=body.encode("utf-8"), headers=headers, timeout=10)
         ok = r.status_code == 200
         print(f"[Push] {'OK' if ok else 'HATA'}: {title}")
@@ -117,9 +142,10 @@ def send_exit_signal(signal, symbol, score_prev, score_now, message, new_pick, l
         ]
         if new_pick:
             lines += _new_pick_lines(new_pick, lot_info)
-        # Kritik → alarm topic (ayrı ses)
+        # Kritik → alarm topic (ayrı ses) + tek dokunuş SATTIM butonu
         return _send(title, "\n".join(lines), priority="urgent",
-                     tags="rotating_light", alert=True)
+                     tags="rotating_light", alert=True,
+                     actions=action_sold(symbol))
 
     return False
 
@@ -137,7 +163,8 @@ def send_daily_pick(pick, lot=None):
     ]
     if lots:
         lines.append(f"Lot   : {lots:,} lot".replace(",", "."))
-    return _send(title, "\n".join(lines), tags="chart_increasing")
+    return _send(title, "\n".join(lines), tags="chart_increasing",
+                 actions=action_bought(pick["symbol"]))
 
 
 def send_capital_updated(capital):
