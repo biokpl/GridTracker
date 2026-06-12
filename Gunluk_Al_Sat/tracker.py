@@ -173,8 +173,27 @@ def track(state: dict) -> dict:
     wins  = [p for p in pnls if p > 0]
     losss = [p for p in pnls if p < 0]
     n = len(pnls)
+    # İşlem yapılan GÜN sayısı: her kapanmış işlemin giriş→çıkış aralığındaki
+    # iş günlerinin (Pzt-Cum) BİRLEŞİMİ. Pozisyonsuz beklenen günler SAYILMAZ —
+    # "bu kâra kaç günde ulaştım" sorusunun cevabı.
+    from datetime import date as _date, timedelta as _td
+    _days = set()
+    for h in hist:
+        try:
+            _d0 = _date.fromisoformat(h.get("entry_date") or h.get("exit_date"))
+            _d1 = _date.fromisoformat(h.get("exit_date") or h.get("entry_date"))
+            if _d1 < _d0:
+                _d0, _d1 = _d1, _d0
+            _d = _d0
+            while _d <= _d1:
+                if _d.weekday() < 5:
+                    _days.add(_d)
+                _d += _td(days=1)
+        except Exception:
+            pass
     result["perf"] = {
         "trades":    n,
+        "trade_days": len(_days),
         "win_rate":  round(len(wins) / n * 100) if n else 0,
         "wins":      len(wins),
         "losses":    len(losss),

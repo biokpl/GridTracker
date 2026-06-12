@@ -1557,7 +1557,7 @@ select.field-input option{background:var(--surface2);}
     <div id="adv-perf" style="display:none;margin-top:10px;padding-top:9px;border-top:1px dashed rgba(125,163,196,.22)">
       <div style="font-size:8px;color:#5a6b80;letter-spacing:1px;text-transform:uppercase;text-align:center;margin-bottom:7px">◈ Performans Özeti</div>
       <div style="display:flex;gap:5px">
-        <div class="adv-perf-box"><div id="adv-perf-trades" class="adv-perf-v">—</div><div class="adv-perf-l">İşlem</div></div>
+        <div class="adv-perf-box"><div id="adv-perf-trades" class="adv-perf-v">—</div><div class="adv-perf-l" id="adv-perf-trades-lbl">İşlem</div></div>
         <div class="adv-perf-box"><div id="adv-perf-wr" class="adv-perf-v">—</div><div class="adv-perf-l">İsabet</div></div>
         <div class="adv-perf-box"><div id="adv-perf-pf" class="adv-perf-v">—</div><div class="adv-perf-l">K/Z Oranı</div></div>
         <div class="adv-perf-box"><div id="adv-perf-total" class="adv-perf-v">—</div><div class="adv-perf-l">Toplam K/Z</div></div>
@@ -42595,6 +42595,8 @@ function _renderAdvPerf(perf){
   const st=(id,v)=>{const e=$(id); if(e) e.textContent=v;};
   const wr=perf.win_rate||0;
   st('adv-perf-trades', perf.trades);
+  // İşlem yapılan gün sayısı (pozisyonsuz beklenen günler hariç)
+  st('adv-perf-trades-lbl', perf.trade_days ? `İşlem/${perf.trade_days} gün` : 'İşlem');
   const wrEl=$('adv-perf-wr');
   if(wrEl){ wrEl.textContent='%'+wr; wrEl.style.color = wr>=60?'#4ade80':wr>=45?'#fbbf24':'#f87171'; }
   const pfEl=$('adv-perf-pf');
