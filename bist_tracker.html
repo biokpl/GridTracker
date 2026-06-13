@@ -455,10 +455,11 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .pm-spark-bar.pm-bad{--c1:#ff5577;--cb:#c01038;--cbd:#ff8aa5;--cg:rgba(255,85,119,.6);--clb:#ffc0cf;}
 .pm-spark-bar:hover{transform:translateY(-2px) scale(1.04);
   box-shadow:0 0 20px 1px var(--cg),0 4px 10px rgba(0,0,0,.4);}
-.pm-spark-bar.pm-today{border-color:#fff;animation:pmPulse 2.2s ease-in-out infinite;}
+.pm-spark-bar.pm-today{border-width:2px;border-color:var(--clb);transform:scale(1.08);transform-origin:bottom center;z-index:3;animation:pmPulse 1.8s ease-in-out infinite;}
+.pm-spark-bar.pm-today .pm-spark-val{color:#fff;font-size:9px;text-shadow:0 0 7px var(--clb),0 1px 3px rgba(0,0,0,.9);}
 @keyframes pmPulse{
-  0%,100%{box-shadow:0 0 12px -1px var(--cg),0 1px 4px rgba(0,0,0,.35);}
-  50%{box-shadow:0 0 22px 3px var(--cg),0 1px 4px rgba(0,0,0,.35);}}
+  0%,100%{box-shadow:0 0 16px 0 var(--cg),0 0 6px 0 var(--clb),0 2px 5px rgba(0,0,0,.4);}
+  50%{box-shadow:0 0 30px 5px var(--cg),0 0 14px 1px var(--clb),0 2px 5px rgba(0,0,0,.4);}}
 .pm-trend-dates{display:flex;justify-content:space-between;margin-top:3px;}
 .pm-trend-dates span{font-size:8px;color:#4e6080;}
 .pm-divider{height:1px;background:rgba(255,255,255,.05);margin:9px 0;}
