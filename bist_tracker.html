@@ -432,39 +432,46 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .pm-score-big.pm-bad{color:#f87171;}
 .pm-score-info{flex:1;}
 .pm-score-label{font-size:9px;color:#4e6080;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;}
-/* Skor geçmişi — ışıltılı cam (glassmorphism) barlar */
+/* Skor geçmişi — kristal (cut-crystal) barlar */
 .pm-spark{display:flex;align-items:flex-start;gap:6px;height:46px;padding:13px 3px 0;box-sizing:border-box;overflow-x:auto;}
-.pm-spark-bar{position:relative;flex:0 0 44.5px;width:44.5px;min-height:5px;border-radius:6px;
-  background:linear-gradient(165deg,color-mix(in srgb,var(--c1) 85%,transparent) 0%,color-mix(in srgb,var(--c2) 70%,transparent) 100%);
-  -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);
-  border:1px solid color-mix(in srgb,var(--c1) 55%,rgba(255,255,255,.3));
-  box-shadow:0 0 14px -2px var(--c2),0 0 26px -6px var(--c1),0 3px 8px rgba(0,0,0,.4),
-    inset 0 1px 1px rgba(255,255,255,.55),inset 0 -6px 10px -6px var(--c2);
+.pm-spark-bar{position:relative;flex:0 0 44.5px;width:44.5px;min-height:5px;border-radius:4px;
+  /* iki diyagonal faset + dikey kristal çekirdek */
+  background:
+    linear-gradient(115deg,rgba(255,255,255,.45) 0%,rgba(255,255,255,0) 22%),
+    linear-gradient(245deg,rgba(255,255,255,.30) 0%,rgba(255,255,255,0) 24%),
+    linear-gradient(180deg,var(--c1) 0%,var(--c2) 55%,var(--c3) 100%);
+  border:1px solid rgba(255,255,255,.55);
+  box-shadow:
+    0 0 12px -1px var(--c2),0 0 30px -6px var(--c1),0 4px 10px rgba(0,0,0,.45),
+    inset 0 1px 1.5px rgba(255,255,255,.9),
+    inset 1px 0 1px rgba(255,255,255,.35),inset -1px 0 1px rgba(0,0,0,.25),
+    inset 0 -7px 12px -7px var(--c3);
   transition:height .45s cubic-bezier(.34,1.56,.64,1),transform .22s ease,box-shadow .3s ease;
   align-self:flex-start;overflow:hidden;}
-/* üst cam parlaması + dikey ışın hüzmesi */
-.pm-spark-bar::before{content:'';position:absolute;inset:0;border-radius:6px;pointer-events:none;
+/* keskin specular highlight çizgisi (kristal kesim) + üst parlama */
+.pm-spark-bar::before{content:'';position:absolute;inset:0;border-radius:4px;pointer-events:none;
   background:
-    linear-gradient(180deg,rgba(255,255,255,.55) 0%,rgba(255,255,255,.08) 30%,rgba(255,255,255,0) 55%),
-    radial-gradient(120% 60% at 50% -10%,rgba(255,255,255,.45) 0%,rgba(255,255,255,0) 60%);}
-/* kayan ışık parıltısı (shimmer sweep) */
-.pm-spark-bar::after{content:'';position:absolute;top:0;left:-150%;width:80%;height:100%;pointer-events:none;
-  background:linear-gradient(105deg,transparent 0%,rgba(255,255,255,.0) 35%,rgba(255,255,255,.75) 50%,rgba(255,255,255,0) 65%,transparent 100%);
-  transform:skewX(-18deg);
-  animation:pmShimmer 3.4s ease-in-out infinite;}
-@keyframes pmShimmer{0%{left:-150%;}55%,100%{left:150%;}}
-.pm-spark-val{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;color:#f4f8ff;white-space:nowrap;font-family:var(--mono);text-shadow:0 0 6px var(--c2),0 1px 3px rgba(0,0,0,.8);letter-spacing:.2px;z-index:2;}
-.pm-spark-bar.pm-good{--c1:#7df9e0;--c2:#0fbf86;}
-.pm-spark-bar.pm-warn{--c1:#ffe9a3;--c2:#f5a608;}
-.pm-spark-bar.pm-bad{--c1:#ffb4b4;--c2:#f0383b;}
+    linear-gradient(90deg,transparent 0%,transparent 30%,rgba(255,255,255,.85) 38%,rgba(255,255,255,.15) 42%,rgba(255,255,255,0) 46%,transparent 70%),
+    radial-gradient(140% 45% at 50% -5%,rgba(255,255,255,.7) 0%,rgba(255,255,255,0) 55%);}
+/* kayan prizma parıltısı (shimmer sweep) */
+.pm-spark-bar::after{content:'';position:absolute;top:0;left:-160%;width:70%;height:100%;pointer-events:none;
+  background:linear-gradient(100deg,transparent 0%,rgba(255,255,255,0) 38%,rgba(255,255,255,.95) 50%,rgba(255,255,255,0) 62%,transparent 100%);
+  transform:skewX(-20deg);
+  animation:pmShimmer 3.6s cubic-bezier(.5,0,.5,1) infinite;}
+@keyframes pmShimmer{0%{left:-160%;}60%,100%{left:170%;}}
+.pm-spark-val{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;color:#fff;white-space:nowrap;font-family:var(--mono);text-shadow:0 0 7px var(--c2),0 1px 3px rgba(0,0,0,.85);letter-spacing:.2px;z-index:2;}
+/* canlı doygun renkler — açık tepe / ana / koyu dip */
+.pm-spark-bar.pm-good{--c1:#a7ffe9;--c2:#00e6a2;--c3:#00a173;}
+.pm-spark-bar.pm-warn{--c1:#fff1b8;--c2:#ffb300;--c3:#e07b00;}
+.pm-spark-bar.pm-bad{--c1:#ffc2c2;--c2:#ff3b4e;--c3:#d10f30;}
 .pm-spark-bar:hover{transform:translateY(-3px) scale(1.06);
-  box-shadow:0 0 20px 0 var(--c2),0 0 40px -4px var(--c1),0 6px 14px rgba(0,0,0,.45),
-    inset 0 1px 1px rgba(255,255,255,.7),inset 0 -8px 12px -6px var(--c2);}
-.pm-spark-bar.pm-today{border-color:rgba(255,255,255,.85);
-  animation:pmShimmer 3.4s ease-in-out infinite,pmPulse 2s ease-in-out infinite;}
+  box-shadow:0 0 20px 0 var(--c2),0 0 46px -4px var(--c1),0 7px 16px rgba(0,0,0,.5),
+    inset 0 1px 1.5px rgba(255,255,255,1),inset 1px 0 1px rgba(255,255,255,.4),inset -1px 0 1px rgba(0,0,0,.3),inset 0 -8px 14px -7px var(--c3);}
+.pm-spark-bar.pm-today{border-color:rgba(255,255,255,.95);
+  animation:pmShimmer 3.6s cubic-bezier(.5,0,.5,1) infinite,pmPulse 2s ease-in-out infinite;}
 @keyframes pmPulse{
-  0%,100%{box-shadow:0 0 16px 0 var(--c2),0 0 30px -4px var(--c1),0 3px 8px rgba(0,0,0,.4),inset 0 1px 1px rgba(255,255,255,.6),inset 0 -6px 10px -6px var(--c2);}
-  50%{box-shadow:0 0 26px 4px var(--c2),0 0 50px 0 var(--c1),0 3px 8px rgba(0,0,0,.4),inset 0 1px 1px rgba(255,255,255,.75),inset 0 -6px 10px -6px var(--c2);}}
+  0%,100%{box-shadow:0 0 14px 0 var(--c2),0 0 32px -4px var(--c1),0 4px 10px rgba(0,0,0,.45),inset 0 1px 1.5px rgba(255,255,255,.9),inset 0 -7px 12px -7px var(--c3);}
+  50%{box-shadow:0 0 26px 5px var(--c2),0 0 56px 2px var(--c1),0 4px 10px rgba(0,0,0,.45),inset 0 1px 1.5px rgba(255,255,255,1),inset 0 -7px 12px -7px var(--c3);}}
 .pm-trend-dates{display:flex;justify-content:space-between;margin-top:3px;}
 .pm-trend-dates span{font-size:8px;color:#4e6080;}
 .pm-divider{height:1px;background:rgba(255,255,255,.05);margin:9px 0;}
