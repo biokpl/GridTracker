@@ -440,10 +440,10 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
   box-shadow:0 0 10px -1px var(--cg),0 1px 4px rgba(0,0,0,.35);
   transition:height .4s cubic-bezier(.34,1.56,.64,1),transform .2s ease,box-shadow .25s ease;
   align-self:flex-start;overflow:visible;}
-/* üst keskin parlak ışık çizgisi */
-.pm-spark-bar::before{content:'';position:absolute;top:-1px;left:6%;right:6%;height:2px;border-radius:2px;pointer-events:none;
-  background:linear-gradient(90deg,transparent,var(--clb) 30%,#ffffff 50%,var(--clb) 70%,transparent);
-  filter:drop-shadow(0 0 5px var(--clb)) drop-shadow(0 0 2px #fff);}
+/* üst ışın çizgisi — kenarları soluk, ortası tam ışık (kendi renginde) */
+.pm-spark-bar::before{content:'';position:absolute;top:-1px;left:0;right:0;height:3px;pointer-events:none;
+  background:radial-gradient(ellipse 55% 100% at 50% 50%,var(--clb) 0%,var(--clb) 18%,color-mix(in srgb,var(--clb) 55%,transparent) 45%,transparent 75%);
+  filter:drop-shadow(0 0 6px var(--clb)) drop-shadow(0 0 2px var(--clb));}
 /* barın altında rengine göre ışık yansıması */
 .pm-spark-bar::after{content:'';position:absolute;top:100%;left:-10%;right:-10%;height:14px;pointer-events:none;
   background:radial-gradient(ellipse 60% 100% at 50% 0%,var(--cg) 0%,transparent 70%);
