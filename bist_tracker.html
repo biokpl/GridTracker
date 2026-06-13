@@ -445,8 +445,8 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .pm-spark-bar::before{content:'';position:absolute;top:-1px;left:0;right:0;height:3px;pointer-events:none;
   background:radial-gradient(ellipse 55% 100% at 50% 50%,var(--clb) 0%,var(--clb) 18%,color-mix(in srgb,var(--clb) 55%,transparent) 45%,transparent 75%);
   filter:drop-shadow(0 0 6px var(--clb)) drop-shadow(0 0 2px var(--clb));}
-/* barın altında rengine göre ışın çizgisi */
-.pm-spark-bar::after{content:'';position:absolute;top:calc(100% + 3px);left:0;right:0;height:1px;pointer-events:none;
+/* barın alt çizgisinde rengine göre ışın */
+.pm-spark-bar::after{content:'';position:absolute;left:8%;right:8%;bottom:-1px;height:1px;pointer-events:none;
   background:linear-gradient(90deg,transparent 0%,var(--cg) 28%,var(--clb) 50%,var(--cg) 72%,transparent 100%);
   filter:drop-shadow(0 0 4px var(--clb));}
 .pm-spark-val{position:absolute;top:-13px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;color:#f4f8ff;white-space:nowrap;font-family:var(--mono);text-shadow:0 0 6px var(--cg),0 1px 3px rgba(0,0,0,.85);letter-spacing:.2px;z-index:2;}
