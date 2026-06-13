@@ -433,14 +433,25 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .pm-score-info{flex:1;}
 .pm-score-label{font-size:9px;color:#4e6080;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;}
 /* Skor geçmişi — modern dikey sparkline barlar */
-.pm-spark{display:flex;align-items:flex-end;gap:3px;height:46px;padding:13px 1px 0;box-sizing:border-box;overflow-x:auto;}
-.pm-spark-bar{position:relative;flex:0 0 44.5px;width:44.5px;min-height:3px;border-radius:3px 3px 1px 1px;background:currentColor;opacity:1;box-shadow:0 0 8px currentColor;transition:height .35s ease;align-self:flex-start;}
-.pm-spark-val{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;color:#dbe4f0;white-space:nowrap;font-family:var(--mono);text-shadow:0 1px 2px rgba(0,0,0,.6);}
-.pm-spark-bar.pm-good{color:#4ade80;}
-.pm-spark-bar.pm-warn{color:#fbbf24;}
-.pm-spark-bar.pm-bad{color:#f87171;}
-.pm-spark-bar:hover{opacity:.85;}
-.pm-spark-bar.pm-today{box-shadow:0 0 10px currentColor;outline:1.5px solid rgba(255,255,255,.4);outline-offset:1px;}
+.pm-spark{display:flex;align-items:flex-start;gap:5px;height:46px;padding:13px 2px 0;box-sizing:border-box;overflow-x:auto;}
+.pm-spark-bar{position:relative;flex:0 0 44.5px;width:44.5px;min-height:4px;border-radius:5px;
+  background:linear-gradient(180deg,var(--c1) 0%,var(--c2) 100%);
+  box-shadow:0 0 10px -1px var(--c2),0 2px 6px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.35);
+  transition:height .4s cubic-bezier(.34,1.56,.64,1),transform .2s ease,box-shadow .25s ease;
+  align-self:flex-start;overflow:hidden;}
+/* cam parlaması — üstte hafif ışık şeridi */
+.pm-spark-bar::after{content:'';position:absolute;inset:0;border-radius:5px;
+  background:linear-gradient(180deg,rgba(255,255,255,.4) 0%,rgba(255,255,255,.05) 38%,rgba(255,255,255,0) 60%);
+  pointer-events:none;}
+.pm-spark-val{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:800;color:#eef3fb;white-space:nowrap;font-family:var(--mono);text-shadow:0 1px 3px rgba(0,0,0,.7);letter-spacing:.2px;}
+.pm-spark-bar.pm-good{--c1:#5eead4;--c2:#10b981;}
+.pm-spark-bar.pm-warn{--c1:#fde68a;--c2:#f59e0b;}
+.pm-spark-bar.pm-bad{--c1:#fca5a5;--c2:#ef4444;}
+.pm-spark-bar:hover{transform:translateY(-2px) scale(1.04);box-shadow:0 0 16px 0 var(--c2),0 4px 10px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.45);}
+.pm-spark-bar.pm-today{box-shadow:0 0 16px 1px var(--c2),0 2px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.45);
+  outline:1.5px solid rgba(255,255,255,.55);outline-offset:1px;
+  animation:pmPulse 2.2s ease-in-out infinite;}
+@keyframes pmPulse{0%,100%{box-shadow:0 0 14px 0 var(--c2),0 2px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.45);}50%{box-shadow:0 0 22px 3px var(--c2),0 2px 8px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.5);}}
 .pm-trend-dates{display:flex;justify-content:space-between;margin-top:3px;}
 .pm-trend-dates span{font-size:8px;color:#4e6080;}
 .pm-divider{height:1px;background:rgba(255,255,255,.05);margin:9px 0;}
