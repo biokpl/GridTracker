@@ -32,3 +32,7 @@ __pycache__/
 
 backups/
 health_watchdog.log
+
+# Gunluk_Al_Sat runtime verileri (kod degil, her gun degisir)
+Gunluk_Al_Sat/intraday_bars.json
+Gunluk_Al_Sat/picks_journal.json
