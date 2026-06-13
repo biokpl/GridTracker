@@ -433,7 +433,7 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .pm-score-info{flex:1;}
 .pm-score-label{font-size:9px;color:#4e6080;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;}
 /* Skor geçmişi — kart diline uygun ışıklı gradyan barlar */
-.pm-spark{display:flex;align-items:flex-start;gap:6px;height:46px;padding:13px 3px 0;box-sizing:border-box;overflow-x:auto;}
+.pm-spark{display:flex;align-items:flex-start;gap:4px;height:46px;padding:13px 3px 0;box-sizing:border-box;overflow-x:auto;}
 .pm-spark-bar{position:relative;flex:0 0 44.5px;width:44.5px;min-height:5px;border-radius:2px;
   background:linear-gradient(180deg,var(--c1) 0%,var(--cb) 100%);
   border:1.5px solid var(--cbd);
@@ -453,8 +453,8 @@ body{background:var(--bg) radial-gradient(ellipse at 0% 0%,rgba(29,78,216,.2) 0%
 .pm-spark-bar.pm-good{--c1:#22e0a8;--cb:#0c8f63;--cbd:#5cffd0;--cg:rgba(34,224,168,.6);--clb:#9cffe2;}
 .pm-spark-bar.pm-warn{--c1:#ffcb3a;--cb:#c77f06;--cbd:#ffe07a;--cg:rgba(255,203,58,.6);--clb:#fff0b0;}
 .pm-spark-bar.pm-bad{--c1:#ff5577;--cb:#c01038;--cbd:#ff8aa5;--cg:rgba(255,85,119,.6);--clb:#ffc0cf;}
-.pm-spark-bar:hover{transform:translateY(-2px) scale(1.04);border-color:var(--clb);
-  box-shadow:0 0 28px 4px var(--cg),0 0 12px 0 var(--clb),0 6px 14px rgba(0,0,0,.45);}
+.pm-spark-bar:hover{transform:translateY(-2px) scale(1.04);
+  box-shadow:0 0 20px 1px var(--cg),0 4px 10px rgba(0,0,0,.4);}
 .pm-spark-bar.pm-today{border-color:#fff;animation:pmPulse 2.2s ease-in-out infinite;}
 @keyframes pmPulse{
   0%,100%{box-shadow:0 0 12px -1px var(--cg),0 1px 4px rgba(0,0,0,.35);}
