@@ -587,6 +587,21 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
             # (skor sıralaması) + ATR tercihi ile sağlanır.
             timeframe = "ÖNERİLMEZ"
 
+    # ── NEGATİF IRAKSAMA (dağıtım işareti) ─────────────────────────────────
+    # Endeks GÜÇLÜ artarken (≥+1%) hisse DÜŞÜYORSA büyük para o hisseden
+    # çıkıyor demektir — ertesi gün(ler) genelde zayıf. TEMKİNLİ doz: sert
+    # eleme değil, sıralamada geri iten ceza (dar tetik, yanlış pozitif az).
+    _neg_div = False
+    if xu100 is not None and len(xu100) > 1 and len(close) > 1:
+        try:
+            _xu_r1 = _pct(float(xu100["Close"].iloc[-1]), float(xu100["Close"].iloc[-2]))
+            _st_r1 = _pct(price, float(close.iloc[-2]))
+            if _xu_r1 >= 1.0 and _st_r1 <= -0.3:
+                entry_bonus -= 2.0
+                _neg_div = True
+        except Exception:
+            pass
+
     # ── HAFTALIK TREND FİLTRESİ ────────────────────────────────────────────
     # Günlük iyi, haftalık aşağı = büyük para karşı → güçlü ceza
     w_trend, w_slope = _weekly_trend(sym)
@@ -604,6 +619,7 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
     if w_trend == "asagi":  reasoning += f", Haftalık trend aşağı ({w_slope:+.1f}%)"
     elif w_trend == "yukari": reasoning += f", Haftalık trend yukarı ({w_slope:+.1f}%)"
     if evt_tag: reasoning += f", {evt_tag}"
+    if _neg_div: reasoning += ", ⚠ Negatif ıraksama (endeks artarken düştü)"
 
     return {
         "symbol":       sym,
@@ -1013,10 +1029,26 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
     # Halihazırda elimizde olan (aktif) hisse öneri listesinde gösterilmez —
     # zaten alınmış, "şimdi gir" önerisi anlamsız.
     _held = (active or {}).get("symbol")
+    # ZARAR MOLASI: yakın geçmişte (≈5 işlem günü / 7 takvim günü) zararla
+    # kapatılan sembol yeniden ÖNERİLMEZ — "aynı hisseden ikinci kazık" ve
+    # intikam-alımı döngüsünü keser (örn. BIMAS iki kez üst üste).
+    _cooldown = set()
+    _today_d  = datetime.now().date()
+    for _h in state.get("history", []):
+        try:
+            if isinstance(_h, dict) and _h.get("pnl_tl", 0) < 0:
+                _xd = datetime.strptime(_h.get("exit_date", ""), "%Y-%m-%d").date()
+                if (_today_d - _xd).days <= 7:
+                    _cooldown.add(_h.get("symbol"))
+        except Exception:
+            pass
     eligible = [s for s in scores
                 if s["timeframe"] != "ÖNERİLMEZ"
                 and s.get("entry_score", 0) >= 3.5
-                and s["symbol"] != _held]
+                and s["symbol"] != _held
+                and s["symbol"] not in _cooldown]
+    if _cooldown and not quiet:
+        print(f"[Advisor] Zarar molası (7g): {', '.join(sorted(_cooldown))} önerilmeyecek")
     top_picks = [{**s, "rank": i+1} for i, s in enumerate(eligible[:3])]
 
     # ── HİSTEREZİS (gün-içi tazelemede #1 seksek oynamasın) ────────────────
