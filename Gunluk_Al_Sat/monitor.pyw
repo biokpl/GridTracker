@@ -987,9 +987,10 @@ def _check_entry_alerts(pick, lot_info, state, notifier, get_price):
         lots_main = li.get("lots_main") or li.get("lots", 0)
         lots_dip  = li.get("lots_dip", 0)
         dip_px    = li.get("dip_price") or round(price * 0.97, 2)
-        # Giriş bölgesine girdi
+        # Giriş bölgesine girdi — günde BİR kez bildir (saatte bir tekrar etmesin;
+        # zaten haberin olunca her saat 'AL' demek spam oluyordu).
         if elow and price <= ehigh and price >= elow * 0.98:
-            if _should_send(sym, "GİRİŞ_BÖLGE"):
+            if _should_send(sym, "GİRİŞ_BÖLGE", cooldown=86400):
                 notifier._send(
                     f"🟢 {sym} GİRİŞ BÖLGESİNDE — AL",
                     f"Fiyat giriş bölgesine girdi: {_fp(price)} ₺\n"

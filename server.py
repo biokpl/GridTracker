@@ -25,6 +25,7 @@ import urllib.request, json, socket, threading, time, os, logging
 
 FIREBASE_URL = 'https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app'
 NTFY_TOPIC   = 'GridTracker-bkpl-07'
+NTFY_TOPIC_ALERT = NTFY_TOPIC + '-acil'   # kritik (ÇIK) → alarm sesli topic
 PORT = 5050
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ATR_FILE   = os.path.join(BASE_DIR, 'ATR_Sonuc.xlsx')
@@ -440,12 +441,15 @@ def _check_push_queue():
 # ntfy.sh Push
 # ---------------------------------------------------------------------------
 
-def send_ntfy(title, body, priority=3, tags=None):
-    """ntfy.sh üzerinden push bildirimi gönderir (JSON body — Türkçe + emoji destekli)."""
+def send_ntfy(title, body, priority=3, tags=None, alert=False):
+    """ntfy.sh üzerinden push bildirimi gönderir (JSON body — Türkçe + emoji destekli).
+    alert=True → kritik (ÇIK) topic (telefonda alarm sesi). Başlığa [ACİL] eklenir."""
     import http.client, json
     try:
+        if alert and '[ACİL]' not in title:
+            title = f'[ACİL] {title}'
         payload = {
-            'topic':    NTFY_TOPIC,
+            'topic':    NTFY_TOPIC_ALERT if alert else NTFY_TOPIC,
             'title':    title,
             'message':  body,
             'priority': priority,   # 1=min 2=low 3=default 4=high 5=max
@@ -594,6 +598,7 @@ def _verdict_monitor_loop():
                     target=send_ntfy,
                     args=(push_title, push_body,
                           prio_map.get(new_verdict, 3)),
+                    kwargs={'alert': new_verdict == 'cik'},   # ÇIK → ACİL topic
                     daemon=True
                 ).start()
 

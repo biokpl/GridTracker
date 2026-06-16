@@ -119,12 +119,12 @@ def _notify_verdict(cfg, active_r, best_r, active_sym):
     prev_verdict = fb_get('settings/pmVerdict') or ''
     fb_put('settings/pmVerdict', verdict)
 
-    # Sadece kötüleşme varsa bildir: devam→dikkat, devam→cik, dikkat→cik
+    # NOT: Pozisyon verdict bildirimleri artık SADECE server.py'nin gün-içi
+    # gerçek zamanlı verdict izleyicisi (_verdict_monitor_loop, 90 sn) tarafından
+    # gönderiliyor — ÇIK → ACİL topic. Burada akşam toplu işinde tekrar bildirim
+    # gönderilmez (çift/çakışan bildirimi önler). Verdict hesabı + Firebase
+    # (settings/pmVerdict) güncellemesi yine yapılır.
     should_notify = False
-    if verdict == 'cik':
-        should_notify = True
-    elif verdict == 'dikkat' and prev_verdict == 'devam':
-        should_notify = True
 
     if should_notify:
         title_map = {'cik': f'{emoji} {active_sym} — ÇIK',
