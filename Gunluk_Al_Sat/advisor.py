@@ -61,6 +61,12 @@ def _firebase_push(result: dict):
         "exit_signal": result["exit_signal"],
         "lot_info":    result["lot_info"],
         "tracker":     result["tracker"],
+        # Bekleme günü bayrağı + piyasa rejimi — web/mobil kartında "BUGÜN
+        # BEKLEME GÜNÜ" uyarısı bunlara bakıyor (Firebase'e yazılmazsa web'de
+        # uyarı çıkmıyordu).
+        "no_trade_today": bool(result.get("no_trade_today")),
+        "regime":         result.get("regime"),
+        "regime_msg":     result.get("regime_msg"),
     }
     try:
         url = f"{FIREBASE_URL}/gridtracker/advisor.json"
