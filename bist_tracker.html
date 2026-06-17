@@ -1530,7 +1530,7 @@ select.field-input option{background:var(--surface2);}
         ⏸ <b>Bugün Bekleme Günü</b><br>
         <span style="color:#94a3b8;font-size:9px">Kaliteli kurulum yok — nakit kalmak en doğrusu. Yarın yeni analiz.</span>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px">
+      <div id="adv-suggest-head" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px">
         <span style="font-size:9px;color:#4e6080;letter-spacing:.5px;text-transform:uppercase">Pozisyon yok — En iyi fırsat</span>
         <span style="font-size:9px;color:#6b7a92;white-space:nowrap">Toplam K/Z:
           <b id="adv-suggest-total" style="font-size:12px;font-family:var(--mono)">—</b>
@@ -1567,7 +1567,7 @@ select.field-input option{background:var(--surface2);}
 
       <!-- MANUEL ONAY: Aldım → öneriyi aktif pozisyon yap -->
       <button id="adv-btn-bought" onclick="advConfirmBought()" style="width:100%;margin-top:10px;padding:10px;font-size:12px;font-weight:600;color:#5a9e72;background:rgba(50,150,80,.1);border:1px solid rgba(60,150,80,.28);border-radius:8px;cursor:pointer;letter-spacing:.2px;opacity:.75">🟢 ALDIM — Pozisyonu Aç</button>
-      <div style="font-size:8.5px;color:#6b7280;text-align:center;margin-top:4px;opacity:.8">Önerilen hisseyi aldıysan bas → takip başlasın</div>
+      <div id="adv-btn-bought-hint" style="font-size:8.5px;color:#6b7280;text-align:center;margin-top:4px;opacity:.8">Önerilen hisseyi aldıysan bas → takip başlasın</div>
     </div>
 
     <!-- Top 3 -->
@@ -44301,6 +44301,8 @@ async function renderAdvisor(){
         } else if(lotEl){ lotEl.style.display='none'; }
 
         const _bb=$('adv-btn-bought'); if(_bb) _bb.style.display='';
+        const _bh=$('adv-btn-bought-hint'); if(_bh) _bh.style.display='';
+        const _sh=$('adv-suggest-head'); if(_sh) _sh.style.display='';
 
         $('adv-bars-suggest').innerHTML=_renderScoreBars(top.scores||{});
 
@@ -44319,12 +44321,15 @@ async function renderAdvisor(){
         const _lots=$('adv-top1-lots'); if(_lots) _lots.style.display='none';
         const _est=$('adv-entry-status'); if(_est) _est.style.display='none';
         const _bb=$('adv-btn-bought'); if(_bb) _bb.style.display='none';
+        const _bh=$('adv-btn-bought-hint'); if(_bh) _bh.style.display='none';
+        const _sh=$('adv-suggest-head'); if(_sh) _sh.style.display='none';
         $('adv-bars-suggest').innerHTML='';
       }
 
-      // "Bugün Bekleme Günü" uyarısı — öneri olsun olmasın daima değerlendirilir
+      // "Bugün Bekleme Günü" uyarısı — aktif pozisyon yokken: bayrak True ise
+      // VEYA hiç öneri yoksa (bayrak Firebase'e yazılmamış olsa bile) göster.
       const noTradeEl=$('adv-no-trade');
-      if(noTradeEl) noTradeEl.style.display=(d.no_trade_today&&!hasActive)?'block':'none';
+      if(noTradeEl) noTradeEl.style.display=(!hasActive && (d.no_trade_today || !picks[0]))?'block':'none';
     }
 
     if(_advShowDetail) _renderAdvTop3(picks);
