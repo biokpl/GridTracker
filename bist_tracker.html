@@ -44300,15 +44300,31 @@ async function renderAdvisor(){
           lotEl.style.display='block';
         } else if(lotEl){ lotEl.style.display='none'; }
 
-        // "Bugün işlem yok" uyarısı
-        const noTradeEl=$('adv-no-trade');
-        if(noTradeEl) noTradeEl.style.display=(d.no_trade_today&&!hasActive)?'block':'none';
+        const _bb=$('adv-btn-bought'); if(_bb) _bb.style.display='';
 
         $('adv-bars-suggest').innerHTML=_renderScoreBars(top.scores||{});
 
         // Canlı GİRİLEBİLİRLİK — güncel fiyat giriş bölgesinde mi?
         gcCheckEntryStatus(top.symbol, top.entry_zone?.low, top.entry_zone?.high);
+      } else {
+        // Hiç öneri yok (saf bekleme günü) — alanları sıfırla, aksiyonları gizle
+        $('adv-top1').textContent='—';
+        $('adv-top1-tf').textContent='—';
+        $('adv-top1-score').textContent='—';
+        $('adv-top1-reason').textContent='';
+        $('adv-top1-entry').textContent='—';
+        $('adv-top1-stop').textContent='—';
+        $('adv-top1-t1').textContent='—';
+        const _held=$('adv-top1-held'); if(_held) _held.style.display='none';
+        const _lots=$('adv-top1-lots'); if(_lots) _lots.style.display='none';
+        const _est=$('adv-entry-status'); if(_est) _est.style.display='none';
+        const _bb=$('adv-btn-bought'); if(_bb) _bb.style.display='none';
+        $('adv-bars-suggest').innerHTML='';
       }
+
+      // "Bugün Bekleme Günü" uyarısı — öneri olsun olmasın daima değerlendirilir
+      const noTradeEl=$('adv-no-trade');
+      if(noTradeEl) noTradeEl.style.display=(d.no_trade_today&&!hasActive)?'block':'none';
     }
 
     if(_advShowDetail) _renderAdvTop3(picks);
