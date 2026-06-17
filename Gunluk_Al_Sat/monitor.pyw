@@ -1132,7 +1132,8 @@ def _check_pending_entry():
                 d = json.loads(RESULT_PATH.read_text(encoding="utf-8"))
                 picks = d.get("top_picks", [])
                 lot_info = d.get("lot_info", {})
-                if picks:
+                # Bekleme günü → "GİRİŞ BÖLGESİNDE AL" alarmı da gönderilmez.
+                if picks and not d.get("no_trade_today"):
                     _check_entry_alerts(picks[0], lot_info, state, notifier, get_price)
             except Exception:
                 pass
@@ -1309,13 +1310,18 @@ def _picks_refresh_loop():
                     res  = advisor.run_analysis(refresh_only=True, quiet=True)
                     tp   = (res or {}).get("top_picks", [])
                     top1 = tp[0]["symbol"] if tp else None
-                    if top1 and top1 != last_top:
+                    _notrade = bool((res or {}).get("no_trade_today"))
+                    if top1 and top1 != last_top and not _notrade:
                         try:
                             notifier.send_daily_pick(tp[0], (res.get("lot_info") or {}).get(top1))
                         except Exception:
                             pass
                         last_top = top1
                         log.info(f"[Öneri-tazele] Yeni #1 öneri: {top1}")
+                    elif top1 and _notrade:
+                        # Bekleme günü: aday var ama kalite eşiği altında → "AL"
+                        # bildirimi GÖNDERME (kart 'izleme' olarak gösterir).
+                        log.info(f"[Öneri-tazele] {top1} aday ama bekleme günü — bildirim yok")
                     elif top1:
                         log.info(f"[Öneri-tazele] #1 aynı ({top1}) — sessiz güncellendi")
                     # pending_buy'ı KARTLA SENKRON tut: kart top1 gösterirken

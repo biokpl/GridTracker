@@ -1531,7 +1531,7 @@ select.field-input option{background:var(--surface2);}
         <span style="color:#94a3b8;font-size:9px">Kaliteli kurulum yok — Nakit kalmak en doğrusu. Yarın yeni analiz.</span>
       </div>
       <div id="adv-suggest-head" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px">
-        <span style="font-size:9px;color:#4e6080;letter-spacing:.5px;text-transform:uppercase">Pozisyon yok — En iyi fırsat</span>
+        <span id="adv-suggest-head-lbl" style="font-size:9px;color:#4e6080;letter-spacing:.5px;text-transform:uppercase">Pozisyon yok — En iyi fırsat</span>
         <span style="font-size:9px;color:#6b7a92;white-space:nowrap">Toplam K/Z:
           <b id="adv-suggest-total" style="font-size:12px;font-family:var(--mono)">—</b>
         </span>
@@ -47192,8 +47192,14 @@ async function renderAdvisor(){
         $('adv-top1-stop').textContent=_fmtPrice(top.stop_loss);
         $('adv-top1-t1').textContent  =_fmtPrice(top.target1);
 
+        // Bekleme günü: aday var ama kalite eşiği altında → "izleme" olarak
+        // göster; AL aksiyonlarını (lot kutusu, ALDIM, girilebilirlik) gizle ki
+        // banner ile çelişmesin.
+        const _isNoTrade=!!d.no_trade_today;
         const lotEl=$('adv-top1-lots');
-        if(lotEl && li.lots_main>0){
+        if(_isNoTrade){
+          if(lotEl) lotEl.style.display='none';
+        } else if(lotEl && li.lots_main>0){
           // Kademeli pozisyon: %75 ana + %25 fırsat alımı
           lotEl.innerHTML=
             '💰 <span style="font-size:19px;color:#4ade80">'+li.lots_main.toLocaleString('tr-TR')+'</span> LOT AL'
@@ -47212,14 +47218,16 @@ async function renderAdvisor(){
           lotEl.style.display='block';
         } else if(lotEl){ lotEl.style.display='none'; }
 
-        const _bb=$('adv-btn-bought'); if(_bb) _bb.style.display='';
-        const _bh=$('adv-btn-bought-hint'); if(_bh) _bh.style.display='';
+        const _bb=$('adv-btn-bought'); if(_bb) _bb.style.display=_isNoTrade?'none':'';
+        const _bh=$('adv-btn-bought-hint'); if(_bh) _bh.style.display=_isNoTrade?'none':'';
         const _sh=$('adv-suggest-head'); if(_sh) _sh.style.display='';
+        const _shl=$('adv-suggest-head-lbl'); if(_shl) _shl.textContent=_isNoTrade?'İzleme — en iyi aday (kalite düşük)':'Pozisyon yok — En iyi fırsat';
 
         $('adv-bars-suggest').innerHTML=_renderScoreBars(top.scores||{});
 
-        // Canlı GİRİLEBİLİRLİK — güncel fiyat giriş bölgesinde mi?
-        gcCheckEntryStatus(top.symbol, top.entry_zone?.low, top.entry_zone?.high);
+        // Canlı GİRİLEBİLİRLİK — yalnız işlem günü göster (bekleme günü gizli)
+        if(_isNoTrade){ const _est=$('adv-entry-status'); if(_est) _est.style.display='none'; }
+        else gcCheckEntryStatus(top.symbol, top.entry_zone?.low, top.entry_zone?.high);
       } else {
         // Hiç öneri yok (saf bekleme günü) — alanları sıfırla, aksiyonları gizle
         $('adv-top1').textContent='—';
