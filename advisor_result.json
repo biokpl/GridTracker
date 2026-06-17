@@ -1,6 +1,6 @@
 {
-  "ts": 1781710576.677266,
-  "ts_str": "17.06.2026 18:36",
+  "ts": 1781717501.7539742,
+  "ts_str": "17.06.2026 20:31",
   "capital": 135000.0,
   "top_picks": [
     {
@@ -95,7 +95,7 @@
   },
   "score_table": {
     "ULKER": {
-      "total": 5.7,
+      "total": 5.8,
       "rank": 1,
       "timeframe": "ÖNERİLMEZ"
     },
@@ -139,444 +139,439 @@
       "rank": 9,
       "timeframe": "ÖNERİLMEZ"
     },
-    "AKGRT": {
-      "total": 5.6,
+    "ENJSA": {
+      "total": 4.3,
       "rank": 10,
       "timeframe": "ÖNERİLMEZ"
     },
-    "INDES": {
+    "AKGRT": {
       "total": 5.6,
       "rank": 11,
       "timeframe": "ÖNERİLMEZ"
     },
-    "ENJSA": {
-      "total": 4.2,
-      "rank": 12,
-      "timeframe": "ÖNERİLMEZ"
-    },
     "TTKOM": {
       "total": 5.5,
-      "rank": 13,
+      "rank": 12,
       "timeframe": "ÖNERİLMEZ"
     },
     "EREGL": {
       "total": 6.4,
-      "rank": 14,
+      "rank": 13,
       "timeframe": "ÖNERİLMEZ"
     },
     "LOGO": {
       "total": 3.8,
-      "rank": 15,
+      "rank": 14,
       "timeframe": "ÖNERİLMEZ"
     },
     "HATEK": {
       "total": 4.1,
-      "rank": 16,
+      "rank": 15,
       "timeframe": "ÖNERİLMEZ"
     },
     "SARKY": {
       "total": 4.3,
-      "rank": 17,
+      "rank": 16,
       "timeframe": "ÖNERİLMEZ"
     },
     "CCOLA": {
       "total": 4.4,
-      "rank": 18,
+      "rank": 17,
       "timeframe": "ÖNERİLMEZ"
     },
     "AKSEN": {
       "total": 5.3,
-      "rank": 19,
+      "rank": 18,
       "timeframe": "ÖNERİLMEZ"
     },
     "ARASE": {
       "total": 5.3,
-      "rank": 20,
+      "rank": 19,
       "timeframe": "ÖNERİLMEZ"
     },
     "ECZYT": {
       "total": 4.5,
-      "rank": 21,
+      "rank": 20,
       "timeframe": "ÖNERİLMEZ"
     },
     "EPLAS": {
       "total": 5.0,
-      "rank": 22,
+      "rank": 21,
       "timeframe": "ÖNERİLMEZ"
     },
     "GOLTS": {
       "total": 4.4,
-      "rank": 23,
+      "rank": 22,
       "timeframe": "ÖNERİLMEZ"
     },
     "AGHOL": {
       "total": 4.9,
-      "rank": 24,
+      "rank": 23,
       "timeframe": "ÖNERİLMEZ"
     },
     "BERA": {
       "total": 6.3,
-      "rank": 25,
+      "rank": 24,
       "timeframe": "ÖNERİLMEZ"
     },
     "AGYO": {
       "total": 3.6,
-      "rank": 26,
+      "rank": 25,
       "timeframe": "ÖNERİLMEZ"
     },
     "DYOBY": {
       "total": 3.1,
-      "rank": 27,
+      "rank": 26,
       "timeframe": "ÖNERİLMEZ"
     },
     "KARSN": {
       "total": 5.0,
-      "rank": 28,
+      "rank": 27,
       "timeframe": "ÖNERİLMEZ"
     },
     "MGROS": {
       "total": 5.9,
-      "rank": 29,
+      "rank": 28,
       "timeframe": "ÖNERİLMEZ"
     },
     "ASUZU": {
       "total": 3.6,
-      "rank": 30,
+      "rank": 29,
       "timeframe": "ÖNERİLMEZ"
     },
     "BRISA": {
       "total": 4.4,
-      "rank": 31,
+      "rank": 30,
       "timeframe": "ÖNERİLMEZ"
     },
     "HEKTS": {
       "total": 4.0,
-      "rank": 32,
+      "rank": 31,
       "timeframe": "ÖNERİLMEZ"
     },
     "ASELS": {
-      "total": 5.0,
-      "rank": 33,
+      "total": 5.1,
+      "rank": 32,
       "timeframe": "ÖNERİLMEZ"
     },
     "PETKM": {
       "total": 3.5,
-      "rank": 34,
+      "rank": 33,
       "timeframe": "ÖNERİLMEZ"
     },
     "ENKAI": {
       "total": 3.9,
-      "rank": 35,
+      "rank": 34,
       "timeframe": "ÖNERİLMEZ"
     },
     "QUAGR": {
       "total": 6.3,
-      "rank": 36,
+      "rank": 35,
       "timeframe": "ÖNERİLMEZ"
     },
     "REEDR": {
       "total": 3.5,
-      "rank": 37,
+      "rank": 36,
       "timeframe": "ÖNERİLMEZ"
     },
     "KCHOL": {
       "total": 5.6,
-      "rank": 38,
+      "rank": 37,
       "timeframe": "ÖNERİLMEZ"
     },
     "IHLGM": {
       "total": 3.1,
-      "rank": 39,
+      "rank": 38,
       "timeframe": "ÖNERİLMEZ"
     },
     "ISGYO": {
       "total": 5.1,
-      "rank": 40,
+      "rank": 39,
       "timeframe": "KISA_VADE"
     },
     "MAVI": {
       "total": 5.1,
-      "rank": 41,
+      "rank": 40,
       "timeframe": "ÖNERİLMEZ"
     },
     "KZBGY": {
       "total": 5.4,
-      "rank": 42,
+      "rank": 41,
       "timeframe": "ÖNERİLMEZ"
     },
     "RGYAS": {
       "total": 4.9,
-      "rank": 43,
+      "rank": 42,
       "timeframe": "ÖNERİLMEZ"
     },
     "TUPRS": {
       "total": 2.8,
-      "rank": 44,
+      "rank": 43,
       "timeframe": "ÖNERİLMEZ"
     },
     "TKFEN": {
       "total": 4.8,
-      "rank": 45,
+      "rank": 44,
       "timeframe": "ÖNERİLMEZ"
     },
     "TTRAK": {
       "total": 4.5,
-      "rank": 46,
+      "rank": 45,
       "timeframe": "ÖNERİLMEZ"
     },
     "ALFAS": {
       "total": 4.6,
-      "rank": 47,
+      "rank": 46,
       "timeframe": "ÖNERİLMEZ"
     },
     "BFREN": {
       "total": 4.9,
-      "rank": 48,
+      "rank": 47,
       "timeframe": "ÖNERİLMEZ"
     },
     "ZOREN": {
       "total": 3.2,
-      "rank": 49,
+      "rank": 48,
       "timeframe": "ÖNERİLMEZ"
     },
     "DOAS": {
       "total": 5.6,
-      "rank": 50,
+      "rank": 49,
       "timeframe": "ÖNERİLMEZ"
     },
     "NETAS": {
       "total": 6.6,
-      "rank": 51,
+      "rank": 50,
       "timeframe": "ÖNERİLMEZ"
     },
     "KORDS": {
       "total": 3.5,
-      "rank": 52,
+      "rank": 51,
       "timeframe": "ÖNERİLMEZ"
     },
     "EGEEN": {
       "total": 4.5,
-      "rank": 53,
+      "rank": 52,
       "timeframe": "ÖNERİLMEZ"
     },
     "PAPIL": {
       "total": 4.2,
-      "rank": 54,
+      "rank": 53,
       "timeframe": "ÖNERİLMEZ"
     },
     "ALARK": {
       "total": 6.1,
-      "rank": 55,
+      "rank": 54,
       "timeframe": "ÖNERİLMEZ"
     },
     "VESTL": {
       "total": 3.8,
-      "rank": 56,
+      "rank": 55,
       "timeframe": "ÖNERİLMEZ"
     },
     "GSRAY": {
       "total": 4.0,
-      "rank": 57,
+      "rank": 56,
       "timeframe": "ÖNERİLMEZ"
     },
     "GUBRF": {
       "total": 3.8,
-      "rank": 58,
+      "rank": 57,
       "timeframe": "ÖNERİLMEZ"
     },
     "OTKAR": {
       "total": 4.1,
-      "rank": 59,
+      "rank": 58,
       "timeframe": "ÖNERİLMEZ"
     },
     "ARSAN": {
       "total": 3.1,
-      "rank": 60,
+      "rank": 59,
       "timeframe": "ÖNERİLMEZ"
     },
     "OZRDN": {
       "total": 2.7,
-      "rank": 61,
+      "rank": 60,
       "timeframe": "ÖNERİLMEZ"
     },
     "SOKM": {
       "total": 4.4,
-      "rank": 62,
+      "rank": 61,
       "timeframe": "ÖNERİLMEZ"
     },
     "DEVA": {
       "total": 5.9,
-      "rank": 63,
+      "rank": 62,
       "timeframe": "ÖNERİLMEZ"
     },
     "OYAKC": {
       "total": 5.3,
-      "rank": 64,
+      "rank": 63,
       "timeframe": "ÖNERİLMEZ"
     },
     "AGESA": {
       "total": 6.3,
-      "rank": 65,
+      "rank": 64,
       "timeframe": "ÖNERİLMEZ"
     },
     "ATLAS": {
       "total": 2.2,
-      "rank": 66,
+      "rank": 65,
       "timeframe": "ÖNERİLMEZ"
     },
     "HALKB": {
       "total": 6.9,
-      "rank": 67,
+      "rank": 66,
       "timeframe": "ÖNERİLMEZ"
     },
     "AEFES": {
       "total": 6.1,
-      "rank": 68,
+      "rank": 67,
       "timeframe": "ÖNERİLMEZ"
     },
     "TRGYO": {
       "total": 4.7,
-      "rank": 69,
+      "rank": 68,
       "timeframe": "ÖNERİLMEZ"
     },
     "FROTO": {
       "total": 4.6,
-      "rank": 70,
+      "rank": 69,
       "timeframe": "ÖNERİLMEZ"
     },
     "THYAO": {
       "total": 6.0,
-      "rank": 71,
+      "rank": 70,
       "timeframe": "ÖNERİLMEZ"
     },
     "ALGYO": {
       "total": 2.5,
-      "rank": 72,
+      "rank": 71,
       "timeframe": "ÖNERİLMEZ"
     },
     "TCELL": {
       "total": 4.9,
-      "rank": 73,
+      "rank": 72,
       "timeframe": "ÖNERİLMEZ"
     },
     "SASA": {
       "total": 4.3,
-      "rank": 74,
+      "rank": 73,
       "timeframe": "ÖNERİLMEZ"
     },
     "KONTR": {
       "total": 2.4,
-      "rank": 75,
+      "rank": 74,
       "timeframe": "ÖNERİLMEZ"
     },
     "VAKBN": {
       "total": 5.6,
-      "rank": 76,
+      "rank": 75,
       "timeframe": "ÖNERİLMEZ"
     },
     "AKBNK": {
       "total": 5.4,
-      "rank": 77,
+      "rank": 76,
       "timeframe": "ÖNERİLMEZ"
     },
     "EKGYO": {
       "total": 5.7,
-      "rank": 78,
+      "rank": 77,
       "timeframe": "ÖNERİLMEZ"
     },
     "GARAN": {
       "total": 5.3,
-      "rank": 79,
+      "rank": 78,
       "timeframe": "ÖNERİLMEZ"
     },
     "ISCTR": {
       "total": 5.3,
-      "rank": 80,
+      "rank": 79,
       "timeframe": "ÖNERİLMEZ"
     },
     "ODAS": {
       "total": 6.8,
-      "rank": 81,
+      "rank": 80,
       "timeframe": "ÖNERİLMEZ"
     },
     "PGSUS": {
       "total": 5.7,
-      "rank": 82,
+      "rank": 81,
       "timeframe": "ÖNERİLMEZ"
     },
     "SAHOL": {
       "total": 5.1,
-      "rank": 83,
+      "rank": 82,
       "timeframe": "ÖNERİLMEZ"
     },
     "SKBNK": {
       "total": 5.8,
-      "rank": 84,
+      "rank": 83,
       "timeframe": "ÖNERİLMEZ"
     },
     "TAVHL": {
       "total": 5.6,
-      "rank": 85,
+      "rank": 84,
       "timeframe": "ÖNERİLMEZ"
     },
     "TOASO": {
       "total": 6.7,
-      "rank": 86,
+      "rank": 85,
       "timeframe": "ÖNERİLMEZ"
     },
     "YKBNK": {
       "total": 5.7,
-      "rank": 87,
+      "rank": 86,
       "timeframe": "ÖNERİLMEZ"
     },
     "BRSAN": {
       "total": 5.0,
-      "rank": 88,
+      "rank": 87,
       "timeframe": "ÖNERİLMEZ"
     },
     "TRALT": {
       "total": 5.5,
-      "rank": 89,
+      "rank": 88,
       "timeframe": "ÖNERİLMEZ"
     },
     "AKSA": {
       "total": 6.6,
-      "rank": 90,
+      "rank": 89,
       "timeframe": "ÖNERİLMEZ"
     },
     "ALKIM": {
       "total": 4.9,
-      "rank": 91,
+      "rank": 90,
       "timeframe": "ÖNERİLMEZ"
     },
     "FENER": {
       "total": 2.0,
-      "rank": 92,
+      "rank": 91,
       "timeframe": "ÖNERİLMEZ"
     },
     "GLYHO": {
       "total": 6.5,
-      "rank": 93,
+      "rank": 92,
       "timeframe": "ÖNERİLMEZ"
     },
     "NTHOL": {
       "total": 5.9,
-      "rank": 94,
+      "rank": 93,
       "timeframe": "ÖNERİLMEZ"
     },
     "ORGE": {
       "total": 7.2,
-      "rank": 95,
+      "rank": 94,
       "timeframe": "ÖNERİLMEZ"
     },
     "PRKME": {
       "total": 5.5,
-      "rank": 96,
+      "rank": 95,
       "timeframe": "ÖNERİLMEZ"
     },
     "SELEC": {
       "total": 7.2,
-      "rank": 97,
+      "rank": 96,
       "timeframe": "ÖNERİLMEZ"
     }
   }
