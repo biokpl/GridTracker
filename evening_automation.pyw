@@ -188,14 +188,17 @@ def _load_ntfy_topic():
         return ''
 
 
-def _send_notify(title, body, tag='gridtracker', priority='default'):
-    """ntfy.sh üzerinden push bildirimi gönderir."""
+def _send_notify(title, body, tag='gridtracker', priority='default', alert=False):
+    """ntfy.sh üzerinden push bildirimi gönderir.
+    alert=True → kritik (acil) topic — telefonda alarm sesi."""
     import urllib.request as _ur
     import base64 as _b64
     topic = _load_ntfy_topic()
     if not topic:
         log.warning('[Push] ntfy_topic ayarlanmamış, bildirim atlandı.')
         return
+    if alert:
+        topic = topic + '-acil'   # kritik bildirim → alarm sesli topic
     tags_map = {
         'evening-done':  'moon',
         'evening-warn':  'warning',
@@ -268,6 +271,35 @@ def run(mode='normal'):
     click(3220, 256, wait=1)
     click(5106, 12,  wait=1)
     click(2681, 753, wait=0.5)
+
+    # ── Adım 2b: EXPORT DOĞRULAMA — Matriks'ten 1.xlsx/2.xlsx geldi mi? ─────
+    # Kör koordinat tıklamaları Matriks penceresine ıskalarsa dosyalar oluşmaz;
+    # eskiden bu durumda sessizce devam edip "Dosya yok" hatası veriyordu ve
+    # kullanıcı haberdar olmuyordu. Artık dosyalar yoksa/eskiyse ACİL bildirim.
+    import time as _t
+    f1 = SCRIPT_DIR / '1.xlsx'
+    f2 = SCRIPT_DIR / '2.xlsx'
+    _today = datetime.now().date()
+    def _fresh(p):
+        try:
+            return p.exists() and datetime.fromtimestamp(p.stat().st_mtime).date() == _today
+        except Exception:
+            return False
+    # Dosya yazımı tıklamadan birkaç saniye sonra tamamlanabilir → kısa bekleme + tekrar dene
+    for _try in range(6):
+        if _fresh(f1) and _fresh(f2):
+            break
+        _t.sleep(2)
+    if not (_fresh(f1) and _fresh(f2)):
+        eksik = ', '.join([n for n, p in (('1.xlsx', f1), ('2.xlsx', f2)) if not _fresh(p)])
+        log.error(f'[EXPORT] Matriks işlem dosyaları oluşmadı: {eksik} — tıklamalar ıskaladı olabilir.')
+        _send_notify(
+            '⚠️ Akşam Otomasyonu — İşlem verileri ÇEKİLEMEDİ',
+            f"Matriks'ten {eksik} oluşmadı. İşlemler güne işlenmedi.\n"
+            f"MatriksIQ açık kaldı — verileri manuel dışa aktarman gerekebilir.",
+            tag='evening-error', priority='urgent', alert=True)
+    else:
+        log.info('[EXPORT] 1.xlsx + 2.xlsx doğrulandı ✓')
 
     # ── Adım 3: Excel verilerini işle ve Firebase'e yaz ─────
     log.info('Excel verileri işleniyor ve Firebase güncelleniyor...')
