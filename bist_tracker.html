@@ -1530,6 +1530,8 @@ select.field-input option{background:var(--surface2);}
         ⏸ <b>BUGÜN BEKLEME GÜNÜ</b><br>
         <span style="color:#94a3b8;font-size:9px">Kaliteli kurulum yok — Nakit kalmak en doğrusu. Yarın yeni analiz.</span>
       </div>
+      <!-- Pick detayları — bekleme gününde komple gizlenir (sadece banner kalır) -->
+      <div id="adv-suggest-body">
       <div id="adv-suggest-head" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px">
         <span id="adv-suggest-head-lbl" style="font-size:9px;color:#4e6080;letter-spacing:.5px;text-transform:uppercase">Pozisyon yok — En iyi fırsat</span>
         <span style="font-size:9px;color:#6b7a92;white-space:nowrap">Toplam K/Z:
@@ -1568,6 +1570,7 @@ select.field-input option{background:var(--surface2);}
       <!-- MANUEL ONAY: Aldım → öneriyi aktif pozisyon yap -->
       <button id="adv-btn-bought" onclick="advConfirmBought()" style="width:100%;margin-top:10px;padding:10px;font-size:12px;font-weight:600;color:#5a9e72;background:rgba(50,150,80,.1);border:1px solid rgba(60,150,80,.28);border-radius:8px;cursor:pointer;letter-spacing:.2px;opacity:.75">🟢 ALDIM — Pozisyonu Aç</button>
       <div id="adv-btn-bought-hint" style="font-size:8.5px;color:#6b7280;text-align:center;margin-top:4px;opacity:.8">Önerilen hisseyi aldıysan bas → takip başlasın</div>
+      </div><!-- /adv-suggest-body -->
     </div>
 
     <!-- Top 3 -->
@@ -47248,8 +47251,13 @@ async function renderAdvisor(){
 
       // "Bugün Bekleme Günü" uyarısı — aktif pozisyon yokken: bayrak True ise
       // VEYA hiç öneri yoksa (bayrak Firebase'e yazılmamış olsa bile) göster.
+      const _wait=(!hasActive && (d.no_trade_today || !picks[0]));
       const noTradeEl=$('adv-no-trade');
-      if(noTradeEl) noTradeEl.style.display=(!hasActive && (d.no_trade_today || !picks[0]))?'block':'none';
+      if(noTradeEl) noTradeEl.style.display=_wait?'block':'none';
+      // Bekleme günü → düşük kaliteli adayı (örn. ISGYO 4.1) HİÇ gösterme;
+      // sadece bekleme mesajı kalsın (kafa karıştırmasın).
+      const bodyEl=$('adv-suggest-body');
+      if(bodyEl) bodyEl.style.display=_wait?'none':'';
     }
 
     if(_advShowDetail) _renderAdvTop3(picks);
