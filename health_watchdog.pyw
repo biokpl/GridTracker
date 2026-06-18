@@ -46,6 +46,10 @@ SERVICES = {
     "automation_server.pyw":    (ROOT / "automation_server.pyw",                  ROOT),
     "grid_tracker_service.pyw": (ROOT / "grid_tracker_service.pyw",               ROOT),
     "Gunluk_Al_Sat\\monitor.pyw": (ROOT / "Gunluk_Al_Sat" / "monitor.pyw",        ROOT / "Gunluk_Al_Sat"),
+    # Namaz vakti scripti (GridTracker dışında — mutlak yol). Sessizce düşerse
+    # yarım gün ezan/uyarı gelmiyordu; artık watchdog ayakta tutuyor.
+    "vakit_kontrol.py": (Path(r"C:\Users\BioCSI\Documents\Rainmeter\Skins\TestCountdown\vakit_kontrol.py"),
+                         Path(r"C:\Users\BioCSI\Documents\Rainmeter\Skins\TestCountdown")),
 }
 
 logging.basicConfig(
