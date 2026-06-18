@@ -615,6 +615,41 @@ def _verdict_monitor_loop():
         time.sleep(90)
 
 
+def _market_open_now():
+    """BIST açık mı: hafta içi 10:00–18:15 (yaklaşık)."""
+    t = time.localtime()
+    if t.tm_wday >= 5:            # Cmt/Pazar
+        return False
+    mins = t.tm_hour * 60 + t.tm_min
+    return 10 * 60 <= mins <= 18 * 60 + 15
+
+
+def _grid_scan_loop():
+    """Gün içi grid aday taraması — 'En İyi Grid Adayı' kartı dünkü veride
+    kalmasın. Piyasa açıkken her 30 dk grid_analysis_auto.py --force çalıştırır
+    (50 hisseyi yeniden tarar, sonucu json + Firebase'e yazar)."""
+    time.sleep(60)   # server otursun
+    SCAN_MIN = 30
+    last_scan = 0.0
+    script = os.path.join(BASE_DIR, 'grid_analysis_auto.py')
+    while True:
+        try:
+            if _market_open_now() and (time.time() - last_scan >= SCAN_MIN * 60):
+                if os.path.exists(script):
+                    slog.info('[GridScan] Gün içi grid taraması başlıyor...')
+                    r = subprocess.run([sys.executable, script, '--force'],
+                                       cwd=BASE_DIR, capture_output=True, text=True,
+                                       encoding='utf-8', errors='replace', timeout=300)
+                    if r.returncode == 0:
+                        slog.info('[GridScan] tamamlandı ✓')
+                    else:
+                        slog.warning(f'[GridScan] hata: {r.stderr[:200]}')
+                last_scan = time.time()
+        except Exception as e:
+            slog.warning(f'[GridScan] hata: {e}')
+        time.sleep(120)
+
+
 # ---------------------------------------------------------------------------
 # HTTP Handler
 # ---------------------------------------------------------------------------
@@ -1137,6 +1172,8 @@ if __name__ == '__main__':
     threading.Thread(target=_bg_loop,              daemon=True).start()
     # Verdict değişiklik monitörü — push bildirimi gönderir
     threading.Thread(target=_verdict_monitor_loop, daemon=True).start()
+    # Gün içi grid aday taraması (30 dk, piyasa açıkken) — kart güncel kalsın
+    threading.Thread(target=_grid_scan_loop, daemon=True).start()
     # Push queue → automation_server.pyw (port 5051) tarafından işleniyor
     # ThreadingHTTPServer: her istek ayrı thread'de işlenir. Bir istek (örn
     # Excel COM) takılsa bile diğer istekler (health, all-data) çalışmaya devam
