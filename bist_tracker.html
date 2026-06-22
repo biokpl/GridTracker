@@ -47248,7 +47248,12 @@ function go(id,btn){
   if(id==='pg-overall') renderOverall();
   if(id==='pg-trades') renderMonthly();
   if(id==='pg-sermaye') renderSermaye();
-  if(id==='pg-gridcalc'){ renderGridCalcPage(); setTimeout(()=>{const res=$('gc-results');if(res&&!res.classList.contains('on')){const c=$('gc-cap');if(c)c.focus();}},120); }
+  if(id==='pg-gridcalc'){
+    // Sayfaya GİRERKEN kullanıcı yazmıyor → dirty bayrağını sıfırla ki her cihaz
+    // ortak Firebase gridCalc değerini yükleyip AYNI veriyi göstersin (bir cihaz
+    // eski 'dirty' yerel girdide takılı kalıp diğeriyle uyumsuz görünmesin).
+    window._gcDirty=false;
+    renderGridCalcPage(); setTimeout(()=>{const res=$('gc-results');if(res&&!res.classList.contains('on')){const c=$('gc-cap');if(c)c.focus();}},120); }
 }
 
 // ════════════════════════════════════════════════════════
