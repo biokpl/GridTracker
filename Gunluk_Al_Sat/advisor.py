@@ -1051,7 +1051,8 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
             pass
     eligible = [s for s in scores
                 if s["timeframe"] != "ÖNERİLMEZ"
-                and s.get("entry_score", 0) >= 3.5
+                and s.get("entry_score", 0) >= 2.5   # 3.5 fazla katıydı: R/K iyi
+                # ama haftalık-trend cezasıyla entry'si düşen iyi hisseler eleniyordu
                 and s["symbol"] != _held
                 and s["symbol"] not in _cooldown]
     if _cooldown and not quiet:
@@ -1091,8 +1092,11 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
     #   • Eligible içindeki EN İYİ aday bile zayıf (entry_score < 5.0).
     # Aksi halde en iyi skorlu aday önerilir (eligible zaten R/K≥1.2 + entry≥3.5
     # + zarar molası + haftalık trend filtrelerinden geçmiş "şimdi girilebilir"ler).
-    _best_entry = eligible[0].get("entry_score", 0) if eligible else 0.0
-    no_trade_today = (not active) and (regime == "RISK_OFF" or _best_entry < 5.0)
+    # Kalite kapısı TOTAL skor üzerinden (entry_score haftalık-trend cezasıyla
+    # aşırı bastırılıyor; total genel kaliteyi daha sağlıklı yansıtır). En iyi
+    # tradeable adayın total'i <5.5 ise gerçekten zayıf gün → dur.
+    _best_total = eligible[0].get("total_score", 0) if eligible else 0.0
+    no_trade_today = (not active) and (regime == "RISK_OFF" or not eligible or _best_total < 5.5)
 
     # Aktif pozisyon çıkış kontrolü
     exit_signal = {"symbol": None, "signal": "—", "score_now": 0.0, "score_prev": 0.0, "message": ""}
@@ -1207,7 +1211,9 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
         "market_regime":  {"level": regime, "msg": regime_msg},
         "tracker":     tracker_data,
         "score_table": {s["symbol"]: {"total": s["total_score"], "rank": i+1,
-                                       "timeframe": s["timeframe"]}
+                                       "timeframe": s["timeframe"],
+                                       "entry": s.get("entry_score", 0),
+                                       "rr": s.get("rr_ratio", 0)}
                         for i, s in enumerate(scores)},
     }
 
@@ -1281,7 +1287,7 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
                 # Kaliteli kurulum yok VEYA piyasa rejimi negatif → nakit kal
                 _why = (f"📉 Piyasa rejimi: {regime_msg}\n"
                         if regime == "RISK_OFF" else
-                        f"En iyi adayın giriş skoru düşük ({_best_entry:.1f}/10) — zayıf gün.\n")
+                        f"En iyi adayın skoru düşük ({_best_total:.1f}/10) — zayıf gün.\n")
                 notifier._send(
                     "⏸ Bugün Bekleme Günü",
                     _why +
