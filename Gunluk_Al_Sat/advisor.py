@@ -486,13 +486,14 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
         # Hedef = riskin 1.4 katı (reward > risk GARANTİ), taban %1.5,
         # ULAŞILABİLİRLİK TAVANI ~%3.5 (günde-iki günde dönebilsin).
         target1 = price + max(1.4 * _risk, price * 0.015)
-        target1 = min(target1, price * 1.035)
+        target1 = min(target1, price * 1.05)   # tavan %5 (eski %3.5 fazla dardı:
+        # oynak hisselerde R/K<1.2 kalıp HEPSİ ÖNERİLMEZ oluyordu → günlerce işlem yok)
         # Dirençte kapat (takılmadan önce sat)
         if _nearest_res is not None and _nearest_res < target1:
             target1 = max(price * 1.008, _nearest_res - 0.10 * atr_val)
         target1 = round(target1, 4)
-        # target2: riskin ~2 katı, ~%5 tavan
-        target2 = round(min(price + 2.0 * _risk, price * 1.05), 4)
+        # target2: riskin ~2 katı, ~%7 tavan
+        target2 = round(min(price + 2.0 * _risk, price * 1.07), 4)
         if target1 <= price:   target1 = round(price * 1.012, 4)
         if target2 <= target1: target2 = round(target1 * 1.012, 4)
         # NOT: Oynak hisselerde stop büyük → 1.4×risk hedef %3.5 tavanı aşar →
@@ -1083,9 +1084,15 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
     # Tüm BIST50'de entry_score ≥ 6.5 olan hisse sayısı ≤ 1 ise kaliteli
     # kurulum yok → aktif pozisyon yoksa nakit kal, güce bekle.
     high_quality = [s for s in eligible if s.get("entry_score", 0) >= 6.5]
-    # REJİM: RISK_OFF günlerinde yeni pozisyon önerilmez (düşen piyasada
-    # en iyi hisse de düşer — isabet kaybının ana sebebi).
-    no_trade_today = (not active) and (len(high_quality) <= 1 or regime == "RISK_OFF")
+    # GÜNLÜK-AKTİF HEDEF: kullanıcı her gün en iyi skorlu hissede al-sat yapmak
+    # istiyor; günleri boş geçmemek esas. Bu yüzden "entry≥6.5 olan ≥2 hisse"
+    # gibi katı kalite kapısı KALDIRILDI. Artık yalnızca şu iki durumda dur:
+    #   • Piyasa RISK_OFF (düşüşte — en iyi hisse de düşer), VEYA
+    #   • Eligible içindeki EN İYİ aday bile zayıf (entry_score < 5.0).
+    # Aksi halde en iyi skorlu aday önerilir (eligible zaten R/K≥1.2 + entry≥3.5
+    # + zarar molası + haftalık trend filtrelerinden geçmiş "şimdi girilebilir"ler).
+    _best_entry = eligible[0].get("entry_score", 0) if eligible else 0.0
+    no_trade_today = (not active) and (regime == "RISK_OFF" or _best_entry < 5.0)
 
     # Aktif pozisyon çıkış kontrolü
     exit_signal = {"symbol": None, "signal": "—", "score_now": 0.0, "score_prev": 0.0, "message": ""}
@@ -1274,7 +1281,7 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
                 # Kaliteli kurulum yok VEYA piyasa rejimi negatif → nakit kal
                 _why = (f"📉 Piyasa rejimi: {regime_msg}\n"
                         if regime == "RISK_OFF" else
-                        f"BİST50'de entry_score ≥6.5 olan hisse {len(high_quality)} adet.\n")
+                        f"En iyi adayın giriş skoru düşük ({_best_entry:.1f}/10) — zayıf gün.\n")
                 notifier._send(
                     "⏸ Bugün Bekleme Günü",
                     _why +
