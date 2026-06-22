@@ -1027,11 +1027,12 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
         except Exception as e:
             print(f"[Advisor] {sym} hata: {e}")
 
-    # Günlük öneri sıralaması = TOTAL skor (kullanıcı hedefi: "en iyi skorlu"
-    # hisse). Tepe yapmış/extended hisseler entry_score eşiğiyle (entry≥3.0)
-    # eligible'dan ELENİR; kalanların arasından EN GÜÇLÜSÜ (total) öne çıkar.
-    # Eşitlikte entry_score ikincil anahtar (daha temiz giriş tercih edilir).
-    scores.sort(key=lambda x: (x["total_score"], x.get("entry_score", 0)), reverse=True)
+    # Günlük öneri sıralaması = ENTRY skoru birincil (ŞİMDİ GİRİLEBİLİRLİK),
+    # total ikincil. entry_score, üst banda yapışmış (extended) hisseleri
+    # cezalandırır → "alır almaz DİKKAT/tepe" durumunu önler. Pür total-sort
+    # güçlü ama extended hisseyi (bb_pos>1) seçip hemen uyarı veriyordu.
+    # Eşit entry'de daha yüksek total tercih edilir.
+    scores.sort(key=lambda x: (x.get("entry_score", 0), x["total_score"]), reverse=True)
     # Giriş skoru < 3.5 olanları öneriden ELE (tepe yapmış, hacimsiz,
     # üst bant üstü gibi kötü giriş noktaları — ne kadar yüksek total
     # skoru olursa olsun "şimdi girilmez")
@@ -1055,6 +1056,8 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
                 if s["timeframe"] != "ÖNERİLMEZ"
                 and s.get("entry_score", 0) >= 3.0   # extended/aşırı cezalı hisseleri
                 # ele (3.5 fazla katı, 2.5 fazla gevşekti); 3.0 dengeli giriş tabanı
+                and s.get("bb_pos", 0.5) < 1.0       # üst BANDIN ÜSTÜNÜ asla önerme
+                # (tepe — alır almaz DİKKAT verir, yukarı potansiyeli düşük)
                 and s["symbol"] != _held
                 and s["symbol"] not in _cooldown]
     if _cooldown and not quiet:
@@ -1094,11 +1097,11 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
     #   • Eligible içindeki EN İYİ aday bile zayıf (entry_score < 5.0).
     # Aksi halde en iyi skorlu aday önerilir (eligible zaten R/K≥1.2 + entry≥3.5
     # + zarar molası + haftalık trend filtrelerinden geçmiş "şimdi girilebilir"ler).
-    # Kalite kapısı TOTAL skor üzerinden (entry_score haftalık-trend cezasıyla
-    # aşırı bastırılıyor; total genel kaliteyi daha sağlıklı yansıtır). En iyi
-    # tradeable adayın total'i <5.5 ise gerçekten zayıf gün → dur.
-    _best_total = eligible[0].get("total_score", 0) if eligible else 0.0
-    no_trade_today = (not active) and (regime == "RISK_OFF" or not eligible or _best_total < 5.5)
+    # Eligible zaten total≥5.0 (timeframe ÖNERİLMEZ değil) + R/K≥1.0 + entry≥3.0
+    # + bant-içi (bb<1.0) filtrelerinden geçmiş "şimdi girilebilir" hisseler.
+    # Bu yüzden ek total kapısına gerek yok: eligible varsa en iyi-girişli aday
+    # önerilir. Yalnız RISK_OFF'ta veya hiç eligible yoksa dur.
+    no_trade_today = (not active) and (regime == "RISK_OFF" or not eligible)
 
     # Aktif pozisyon çıkış kontrolü
     exit_signal = {"symbol": None, "signal": "—", "score_now": 0.0, "score_prev": 0.0, "message": ""}
@@ -1215,7 +1218,8 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
         "score_table": {s["symbol"]: {"total": s["total_score"], "rank": i+1,
                                        "timeframe": s["timeframe"],
                                        "entry": s.get("entry_score", 0),
-                                       "rr": s.get("rr_ratio", 0)}
+                                       "rr": s.get("rr_ratio", 0),
+                                       "bb": s.get("bb_pos", 0)}
                         for i, s in enumerate(scores)},
     }
 
@@ -1289,7 +1293,7 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
                 # Kaliteli kurulum yok VEYA piyasa rejimi negatif → nakit kal
                 _why = (f"📉 Piyasa rejimi: {regime_msg}\n"
                         if regime == "RISK_OFF" else
-                        f"En iyi adayın skoru düşük ({_best_total:.1f}/10) — zayıf gün.\n")
+                        "Bant-içi (R/K≥1.0, temiz giriş) uygun aday yok — zayıf gün.\n")
                 notifier._send(
                     "⏸ Bugün Bekleme Günü",
                     _why +
