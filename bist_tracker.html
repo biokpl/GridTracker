@@ -49462,7 +49462,7 @@ async function renderAdvisor(){
 
         const _bb=$('adv-btn-bought'); if(_bb) _bb.style.display=_isNoTrade?'none':'';
         const _bh=$('adv-btn-bought-hint'); if(_bh) _bh.style.display=_isNoTrade?'none':'';
-        const _sh=$('adv-suggest-head'); if(_sh) _sh.style.display='';
+        const _sh=$('adv-suggest-head'); if(_sh) _sh.style.display='flex';  // '' inline display:flex'i siler → block'a düşer, K/Z sağa yaslanmaz
         const _shl=$('adv-suggest-head-lbl'); if(_shl) _shl.textContent=_isNoTrade?'İzleme — en iyi aday (kalite düşük)':'Pozisyon yok — En iyi fırsat';
 
         $('adv-bars-suggest').innerHTML=_renderScoreBars(top.scores||{});
