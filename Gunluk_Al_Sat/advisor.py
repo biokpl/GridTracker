@@ -584,9 +584,11 @@ def score_stock(sym: str, df: pd.DataFrame, xu100: pd.DataFrame,
     if timeframe != "ÖNERİLMEZ":
         if _is_daily() and rr_ratio < 1.5:
             timeframe = "ÖNERİLMEZ"
-        elif _is_rk() and 0 < rr_ratio < 1.2:
-            # R/K-ODAKLI: reward, riskin en az 1.2 katı değilse ÖNERME.
-            # (Direnç hedefi yakına çektiyse R/K<1.2 kalabilir → o işlem riske değmez.)
+        elif _is_rk() and 0 < rr_ratio < 1.0:
+            # R/K-ODAKLI (günlük-aktif kalibrasyon 2026-06-22): reward en az risk
+            # kadar olsun (rr≥1.0). 1.2 eşiği mevcut oynak piyasada güçlü hisseleri
+            # de eliyordu; 1.0 ödül≥risk ilkesini korur ama havuzu makul genişletir.
+            # (rr<1.0 = riske değmez: kaybedersen kazancından fazla kaybedersin.)
             timeframe = "ÖNERİLMEZ"
         elif _is_hybrid() and 0 < rr_ratio < 0.5:
             # Sadece BERBAT R/K (risk, kârın 2 katından fazla). İyi-isabetli
@@ -1025,11 +1027,11 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
         except Exception as e:
             print(f"[Advisor] {sym} hata: {e}")
 
-    # Günlük öneri = ŞİMDİ GİRİLECEK hisse → giriş kalitesi (entry_score)
-    # belirleyici. total_score genel kaliteyi zaten entry_score içeriyor
-    # (entry_score = total + giriş bonusu/cezası). Böylece tepe yapmış
-    # (yüksek total ama kötü giriş) hisseler öne çıkmaz.
-    scores.sort(key=lambda x: x.get("entry_score", x["total_score"]), reverse=True)
+    # Günlük öneri sıralaması = TOTAL skor (kullanıcı hedefi: "en iyi skorlu"
+    # hisse). Tepe yapmış/extended hisseler entry_score eşiğiyle (entry≥3.0)
+    # eligible'dan ELENİR; kalanların arasından EN GÜÇLÜSÜ (total) öne çıkar.
+    # Eşitlikte entry_score ikincil anahtar (daha temiz giriş tercih edilir).
+    scores.sort(key=lambda x: (x["total_score"], x.get("entry_score", 0)), reverse=True)
     # Giriş skoru < 3.5 olanları öneriden ELE (tepe yapmış, hacimsiz,
     # üst bant üstü gibi kötü giriş noktaları — ne kadar yüksek total
     # skoru olursa olsun "şimdi girilmez")
@@ -1051,8 +1053,8 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
             pass
     eligible = [s for s in scores
                 if s["timeframe"] != "ÖNERİLMEZ"
-                and s.get("entry_score", 0) >= 2.5   # 3.5 fazla katıydı: R/K iyi
-                # ama haftalık-trend cezasıyla entry'si düşen iyi hisseler eleniyordu
+                and s.get("entry_score", 0) >= 3.0   # extended/aşırı cezalı hisseleri
+                # ele (3.5 fazla katı, 2.5 fazla gevşekti); 3.0 dengeli giriş tabanı
                 and s["symbol"] != _held
                 and s["symbol"] not in _cooldown]
     if _cooldown and not quiet:
