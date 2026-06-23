@@ -626,31 +626,13 @@ def _do_user_bought(state: dict, symbol: str):
     except Exception as e:
         log.debug(f"bought tracker push: {e}")
 
-    # ── GÜVENLİK AĞI: üst banttan alım uyarısı ───────────────────────────────
-    # Kullanıcı şartı: üst banttan ALDIRMA. Öneri filtresi bb<0.70 ama fiyat
-    # öneri ile alım arası bandın üstüne kaçmış olabilir → alım anındaki güncel
-    # bb'yi kontrol et; üst banttaysa (≥0.80) ACİL uyar (çıkışa hazır ol).
-    _bb_warn = ""
-    try:
-        from advisor import RESULT_PATH as _RP
-        if _RP.exists():
-            _st = (json.loads(_RP.read_text(encoding="utf-8")).get("score_table") or {})
-            _bb = (_st.get(sym) or {}).get("bb")
-            if _bb is not None and _bb >= 0.80:
-                _bb_warn = (f"\n⚠️ DİKKAT: {sym} şu an Bollinger ÜST BANDINDA "
-                            f"(bb {_bb:.2f}) — tepe riski. Düşerse stop'a sıkı uy, "
-                            f"ısrar etme.")
-    except Exception:
-        pass
-
     notifier._send(
         f"🟢 {sym} ALINDI",
         f"Pozisyon açıldı (tahmini).\n"
         f"Maliyet: {_fp(entry)} TL | {qty:,} lot\n".replace(",", ".") +
         f"Stop: {_fp(state['active']['stop_loss'])} | Hedef: {_fp(state['active']['target1'])} TL\n"
-        f"Akşam gerçek rakamlarla güncellenecek." + _bb_warn,
-        priority="high", tags="green_circle",
-        alert=bool(_bb_warn))
+        f"Akşam gerçek rakamlarla güncellenecek.",
+        priority="high", tags="green_circle")
 
     # Gerçek sinyali HEMEN hesapla (sadece bu hisse + endeks indirilir, ~5 sn)
     # → kart "DEVAM/DİKKAT" doğru sinyali 15 dk beklemeden gösterir.
