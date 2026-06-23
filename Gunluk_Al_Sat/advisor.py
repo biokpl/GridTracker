@@ -1059,8 +1059,9 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
                 if s["timeframe"] != "ÖNERİLMEZ"
                 and s.get("entry_score", 0) >= 3.0   # extended/aşırı cezalı hisseleri
                 # ele (3.5 fazla katı, 2.5 fazla gevşekti); 3.0 dengeli giriş tabanı
-                and s.get("bb_pos", 0.5) < 0.75      # üst banda YAKIN/üstü önerme:
-                # check_exit bb≥0.80'de DİKKAT veriyor → bb<0.75 = alır almaz uyarı yok
+                and s.get("bb_pos", 0.5) < 0.70      # ÜST BANTTAN ALDIRMA (kullanıcı
+                # şartı): bb<0.70 = bandın alt-orta kısmı, yukarı bol yer, tepe değil.
+                # (>0.70 zaten entry cezası alıyor; check_exit ≥0.80'de DİKKAT verir.)
                 and s.get("rsi", 50) < 70            # RSI≥70 (aşırı alım) önerme:
                 # check_exit RSI≥72'de DİKKAT verir; temiz girişte alım yapılsın
                 and s["symbol"] != _held
