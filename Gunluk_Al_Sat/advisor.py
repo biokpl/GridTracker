@@ -804,8 +804,10 @@ def check_early_weakness(active: dict, df: pd.DataFrame, score: dict,
             if m_prv >= s_prv:
                 pts += 1; sig.append("MACD taze aşağı kesişim")
 
-    # 3) Son 5 günün dibi kırıldı — destek bozulması (GÜÇLÜ sinyal, her zaman sayılır)
-    if len(close) >= 6:
+    # 3) Son 5 günün dibi kırıldı — destek bozulması (yalnız ZARARDA; aksi halde
+    #    desteğe yakın alınan taze pozisyon alır almaz ZAYIFLAMA verir — kullanıcı
+    #    şikayeti: BIMAS aldı, anında "5-gün dibi kırıldı | Endeksten zayıf" DİKKAT.)
+    if _losing and len(close) >= 6:
         low5 = float(close.iloc[-6:-1].min())
         if price < low5:
             pts += 2; sig.append("5-gün dibi kırıldı")
@@ -825,8 +827,9 @@ def check_early_weakness(active: dict, df: pd.DataFrame, score: dict,
     except Exception:
         pass
 
-    # 6) Göreceli zayıflık — son 3 gün endeksten belirgin kötü
-    if xu100 is not None and len(xu100) > 3 and len(close) > 3:
+    # 6) Göreceli zayıflık — son 3 gün endeksten belirgin kötü (yalnız ZARARDA;
+    #    taze pozisyonda anında DİKKAT vermesin)
+    if _losing and xu100 is not None and len(xu100) > 3 and len(close) > 3:
         try:
             stk = (float(close.iloc[-1]) / float(close.iloc[-4]) - 1) * 100
             idx = (float(xu100["Close"].iloc[-1]) / float(xu100["Close"].iloc[-4]) - 1) * 100
