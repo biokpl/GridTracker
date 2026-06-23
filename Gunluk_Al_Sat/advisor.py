@@ -731,10 +731,13 @@ def check_exit(active: dict, score_now: dict) -> tuple[str, str, int]:
         signals.append("Hacim zayıflıyor")
 
     # ── 6. SKOR DÜŞÜŞÜ (2p / 3p) ─────────────────────────────────────────
-    if total < 5.0:
+    # NOT: Öneri barı total≥5.0; bu yüzden çıkış uyarısı da total<5.0'da başlar.
+    # (Eskiden total<6.5→+2 idi; total 5-6.5 önerilen hisse ALIR ALMAZ "skor
+    # zayıf" puanı alıp DİKKAT veriyordu — öneri/çıkış çelişkisi giderildi.)
+    if total < 4.0:
         exit_pts += 3
         signals.append(f"Teknik skor {total:.1f}/10")
-    elif total < 6.5:
+    elif total < 5.0:
         exit_pts += 2
         signals.append(f"Skor zayıflıyor ({total:.1f}/10)")
 
@@ -1056,8 +1059,10 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
                 if s["timeframe"] != "ÖNERİLMEZ"
                 and s.get("entry_score", 0) >= 3.0   # extended/aşırı cezalı hisseleri
                 # ele (3.5 fazla katı, 2.5 fazla gevşekti); 3.0 dengeli giriş tabanı
-                and s.get("bb_pos", 0.5) < 1.0       # üst BANDIN ÜSTÜNÜ asla önerme
-                # (tepe — alır almaz DİKKAT verir, yukarı potansiyeli düşük)
+                and s.get("bb_pos", 0.5) < 0.75      # üst banda YAKIN/üstü önerme:
+                # check_exit bb≥0.80'de DİKKAT veriyor → bb<0.75 = alır almaz uyarı yok
+                and s.get("rsi", 50) < 70            # RSI≥70 (aşırı alım) önerme:
+                # check_exit RSI≥72'de DİKKAT verir; temiz girişte alım yapılsın
                 and s["symbol"] != _held
                 and s["symbol"] not in _cooldown]
     if _cooldown and not quiet:
