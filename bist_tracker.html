@@ -2200,43 +2200,38 @@ async function fbWrite(path,data){
 // ════════════════════════════════════════════════════════
                                 // GRID_DATA_START
         window.__GRID_DATA__ = {
-  "lastUpdated": "2026-06-24 18:35:22",
-  "today": "2026-06-24",
-  "todayOverall": 1363975.74,
+  "lastUpdated": "2026-06-25 18:35:22",
+  "today": "2026-06-25",
+  "todayOverall": 1349936.37,
   "todayProfit": {
     "bySymbol": {
       "TRGYO": {
         "symbol": "TRGYO",
         "buyCount": 0,
-        "sellCount": 0,
-        "pairCount": 0,
+        "sellCount": 1,
+        "pairCount": 1,
         "openBuys": 0,
         "carriedIn": 1050,
         "avgBuy": 0,
-        "avgSell": 0,
-        "grossProfit": 0,
-        "commission": 0,
-        "netProfit": 0,
-        "pairs": [],
-        "openPositions": [
+        "avgSell": 98.75,
+        "grossProfit": 2257.5,
+        "commission": 10.3688,
+        "netProfit": 2247.1312,
+        "pairs": [
           {
-            "amount": 101430.0,
-            "commission": 10.143,
-            "date": "2026-06-23",
-            "datetime": "2026-06-23 16:18:29",
-            "execAmount": 101430.0,
-            "execPrice": 96.6,
-            "execQty": 1050,
-            "price": 96.6,
+            "buyPrice": 96.6,
+            "sellPrice": 98.75,
             "qty": 1050,
-            "referans": "871562092",
-            "status": "Gerçekleşti",
-            "symbol": "TRGYO",
-            "time": "16:18:29",
-            "type": "Alış",
-            "carryover": false
+            "gross": 2257.5,
+            "comm": 10.3688,
+            "net": 2247.1313,
+            "buyTime": "16:18:29",
+            "sellTime": "16:11:58",
+            "buyDate": "2026-06-23",
+            "carryover": true
           }
-        ]
+        ],
+        "openPositions": []
       },
       "TUPRS": {
         "symbol": "TUPRS",
@@ -2541,31 +2536,45 @@ async function fbWrite(path,data){
             "carryover": false
           }
         ]
+      },
+      "ALARK": {
+        "symbol": "ALARK",
+        "buyCount": 1,
+        "sellCount": 0,
+        "pairCount": 0,
+        "openBuys": 760,
+        "carriedIn": 0,
+        "avgBuy": 101.7,
+        "avgSell": 0,
+        "grossProfit": 0,
+        "commission": 7.7292,
+        "netProfit": -7.7292,
+        "pairs": [],
+        "openPositions": [
+          {
+            "symbol": "ALARK",
+            "type": "Alış",
+            "qty": 760,
+            "price": 101.7,
+            "status": "Gerçekleşti",
+            "execQty": 760,
+            "amount": 77292.0,
+            "execPrice": 101.7,
+            "execAmount": 77292.0,
+            "commission": 7.7292,
+            "time": "16:19:04",
+            "date": "2026-06-25",
+            "datetime": "2026-06-25 16:19:04",
+            "referans": "874205635",
+            "carryover": false
+          }
+        ]
       }
     },
-    "totalGross": 0,
-    "totalCommission": 0,
-    "totalNet": 0,
+    "totalGross": 2257.5,
+    "totalCommission": 18.098,
+    "totalNet": 2239.402,
     "openPositions": {
-      "TRGYO": [
-        {
-          "amount": 101430.0,
-          "commission": 10.143,
-          "date": "2026-06-23",
-          "datetime": "2026-06-23 16:18:29",
-          "execAmount": 101430.0,
-          "execPrice": 96.6,
-          "execQty": 1050,
-          "price": 96.6,
-          "qty": 1050,
-          "referans": "871562092",
-          "status": "Gerçekleşti",
-          "symbol": "TRGYO",
-          "time": "16:18:29",
-          "type": "Alış",
-          "carryover": false
-        }
-      ],
       "TUPRS": [
         {
           "amount": 115390.0,
@@ -2841,10 +2850,61 @@ async function fbWrite(path,data){
           "type": "Alış",
           "carryover": false
         }
+      ],
+      "ALARK": [
+        {
+          "symbol": "ALARK",
+          "type": "Alış",
+          "qty": 760,
+          "price": 101.7,
+          "status": "Gerçekleşti",
+          "execQty": 760,
+          "amount": 77292.0,
+          "execPrice": 101.7,
+          "execAmount": 77292.0,
+          "commission": 7.7292,
+          "time": "16:19:04",
+          "date": "2026-06-25",
+          "datetime": "2026-06-25 16:19:04",
+          "referans": "874205635",
+          "carryover": false
+        }
       ]
     }
   },
   "allTrades": [
+    {
+      "symbol": "ALARK",
+      "type": "Alış",
+      "qty": 760,
+      "price": 101.7,
+      "status": "Gerçekleşti",
+      "execQty": 760,
+      "amount": 77292.0,
+      "execPrice": 101.7,
+      "execAmount": 77292.0,
+      "commission": 7.7292,
+      "time": "16:19:04",
+      "date": "2026-06-25",
+      "datetime": "2026-06-25 16:19:04",
+      "referans": "874205635"
+    },
+    {
+      "symbol": "TRGYO",
+      "type": "Satış",
+      "qty": 1050,
+      "price": 98.75,
+      "status": "Gerçekleşti",
+      "execQty": 1050,
+      "amount": 103687.5,
+      "execPrice": 98.75,
+      "execAmount": 103687.5,
+      "commission": 10.36875,
+      "time": "16:11:58",
+      "date": "2026-06-25",
+      "datetime": "2026-06-25 16:11:58",
+      "referans": "873201017"
+    },
     {
       "amount": 101430.0,
       "commission": 10.143,
@@ -46523,31 +46583,87 @@ async function fbWrite(path,data){
       "updatedAt": "2026-06-23 18:35:23"
     },
     "2026-06-24": {
-      "date": "2026-06-24",
-      "trades": 0,
-      "sells": 0,
       "buys": 0,
-      "grossProfit": 0,
-      "commission": 0,
-      "netProfit": 0,
-      "overall": 1363975.74,
       "bySymbol": {
-        "TRGYO": {
-          "symbol": "TRGYO",
-          "buyCount": 0,
-          "sellCount": 0,
-          "pairCount": 0,
-          "openBuys": 0,
-          "carriedIn": 1050,
+        "1SXAAC": {
           "avgBuy": 0,
           "avgSell": 0,
-          "grossProfit": 0,
+          "buyCount": 0,
+          "carriedIn": 140,
           "commission": 0,
+          "grossProfit": 0,
           "netProfit": 0,
-          "pairs": [],
+          "openBuys": 0,
+          "openPositions": [
+            {
+              "amount": 5012.04,
+              "carryover": false,
+              "commission": 0.501204,
+              "date": "2026-04-15",
+              "datetime": "2026-04-15 10:57:22",
+              "execAmount": 5012.04,
+              "execPrice": 113.91,
+              "execQty": 44,
+              "price": 113.91,
+              "qty": 44,
+              "referans": "797183654",
+              "status": "Gerçekleşti",
+              "symbol": "1SXAAC",
+              "time": "10:57:22",
+              "type": "Alış"
+            },
+            {
+              "amount": 5060.0,
+              "carryover": false,
+              "commission": 0.506,
+              "date": "2026-05-15",
+              "datetime": "2026-05-15 10:04:28",
+              "execAmount": 5060.0,
+              "execPrice": 115.0,
+              "execQty": 44,
+              "price": 115.0,
+              "qty": 44,
+              "referans": "829791471",
+              "status": "Gerçekleşti",
+              "symbol": "1SXAAC",
+              "time": "10:04:28",
+              "type": "Alış"
+            },
+            {
+              "amount": 4943.64,
+              "carryover": false,
+              "commission": 0.494364,
+              "date": "2026-06-11",
+              "datetime": "2026-06-11 12:35:09",
+              "execAmount": 4943.64,
+              "execPrice": 95.07,
+              "execQty": 52,
+              "price": 95.07,
+              "qty": 52,
+              "referans": "857735902",
+              "status": "Gerçekleşti",
+              "symbol": "1SXAAC",
+              "time": "12:35:09",
+              "type": "Alış"
+            }
+          ],
+          "pairCount": 0,
+          "sellCount": 0,
+          "symbol": "1SXAAC"
+        },
+        "TRGYO": {
+          "avgBuy": 0,
+          "avgSell": 0,
+          "buyCount": 0,
+          "carriedIn": 1050,
+          "commission": 0,
+          "grossProfit": 0,
+          "netProfit": 0,
+          "openBuys": 0,
           "openPositions": [
             {
               "amount": 101430.0,
+              "carryover": false,
               "commission": 10.143,
               "date": "2026-06-23",
               "datetime": "2026-06-23 16:18:29",
@@ -46560,10 +46676,296 @@ async function fbWrite(path,data){
               "status": "Gerçekleşti",
               "symbol": "TRGYO",
               "time": "16:18:29",
-              "type": "Alış",
-              "carryover": false
+              "type": "Alış"
             }
-          ]
+          ],
+          "pairCount": 0,
+          "sellCount": 0,
+          "symbol": "TRGYO"
+        },
+        "TUPRS": {
+          "avgBuy": 0,
+          "avgSell": 0,
+          "buyCount": 0,
+          "carriedIn": 5425,
+          "commission": 0,
+          "grossProfit": 0,
+          "netProfit": 0,
+          "openBuys": 0,
+          "openPositions": [
+            {
+              "amount": 115390.0,
+              "carryover": false,
+              "commission": 11.539,
+              "date": "2026-05-11",
+              "datetime": "2026-05-11 10:16:35",
+              "execAmount": 115390.0,
+              "execPrice": 262.25,
+              "execQty": 440,
+              "price": 262.25,
+              "qty": 440,
+              "referans": "822251115",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "10:16:35",
+              "type": "Alış"
+            },
+            {
+              "amount": 115390.0,
+              "carryover": false,
+              "commission": 11.539,
+              "date": "2026-05-11",
+              "datetime": "2026-05-11 10:16:36",
+              "execAmount": 115390.0,
+              "execPrice": 262.25,
+              "execQty": 440,
+              "price": 262.25,
+              "qty": 440,
+              "referans": "822251202",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "10:16:36",
+              "type": "Alış"
+            },
+            {
+              "amount": 115390.0,
+              "carryover": false,
+              "commission": 11.539,
+              "date": "2026-05-11",
+              "datetime": "2026-05-11 10:16:36",
+              "execAmount": 115390.0,
+              "execPrice": 262.25,
+              "execQty": 440,
+              "price": 262.25,
+              "qty": 440,
+              "referans": "822251237",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "10:16:36",
+              "type": "Alış"
+            },
+            {
+              "amount": 115390.0,
+              "carryover": false,
+              "commission": 11.539,
+              "date": "2026-05-11",
+              "datetime": "2026-05-11 10:16:36",
+              "execAmount": 115390.0,
+              "execPrice": 262.25,
+              "execQty": 440,
+              "price": 262.25,
+              "qty": 440,
+              "referans": "822251268",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "10:16:36",
+              "type": "Alış"
+            },
+            {
+              "amount": 115390.0,
+              "carryover": false,
+              "commission": 11.539,
+              "date": "2026-05-11",
+              "datetime": "2026-05-11 10:16:37",
+              "execAmount": 115390.0,
+              "execPrice": 262.25,
+              "execQty": 440,
+              "price": 262.25,
+              "qty": 440,
+              "referans": "822251404",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "10:16:37",
+              "type": "Alış"
+            },
+            {
+              "amount": 115500.0,
+              "carryover": false,
+              "commission": 11.55,
+              "date": "2026-05-11",
+              "datetime": "2026-05-11 10:16:38",
+              "execAmount": 115500.0,
+              "execPrice": 262.5,
+              "execQty": 440,
+              "price": 262.5,
+              "qty": 440,
+              "referans": "822251530",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "10:16:38",
+              "type": "Alış"
+            },
+            {
+              "amount": 115500.0,
+              "carryover": false,
+              "commission": 11.55,
+              "date": "2026-05-11",
+              "datetime": "2026-05-11 10:16:38",
+              "execAmount": 115500.0,
+              "execPrice": 262.5,
+              "execQty": 440,
+              "price": 262.5,
+              "qty": 440,
+              "referans": "822251575",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "10:16:38",
+              "type": "Alış"
+            },
+            {
+              "amount": 114400.0,
+              "carryover": false,
+              "commission": 11.44,
+              "date": "2026-05-18",
+              "datetime": "2026-05-18 10:14:05",
+              "execAmount": 114400.0,
+              "execPrice": 260.0,
+              "execQty": 440,
+              "price": 260.0,
+              "qty": 440,
+              "referans": "831401963",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "10:14:05",
+              "type": "Alış"
+            },
+            {
+              "amount": 113300.0,
+              "carryover": false,
+              "commission": 11.33,
+              "date": "2026-05-18",
+              "datetime": "2026-05-18 11:00:23",
+              "execAmount": 113300.0,
+              "execPrice": 257.5,
+              "execQty": 440,
+              "price": 257.5,
+              "qty": 440,
+              "referans": "831387621",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "11:00:23",
+              "type": "Alış"
+            },
+            {
+              "amount": 112310.0,
+              "carryover": false,
+              "commission": 11.231,
+              "date": "2026-05-18",
+              "datetime": "2026-05-18 13:49:39",
+              "execAmount": 112310.0,
+              "execPrice": 255.25,
+              "execQty": 440,
+              "price": 255.25,
+              "qty": 440,
+              "referans": "831378422",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "13:49:39",
+              "type": "Alış"
+            },
+            {
+              "amount": 111210.0,
+              "carryover": false,
+              "commission": 11.121,
+              "date": "2026-05-18",
+              "datetime": "2026-05-18 15:36:48",
+              "execAmount": 111210.0,
+              "execPrice": 252.75,
+              "execQty": 440,
+              "price": 252.75,
+              "qty": 440,
+              "referans": "831378423",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "15:36:48",
+              "type": "Alış"
+            },
+            {
+              "amount": 35032.0,
+              "carryover": false,
+              "commission": 3.5032,
+              "date": "2026-05-22",
+              "datetime": "2026-05-22 11:27:25",
+              "execAmount": 35032.0,
+              "execPrice": 241.6,
+              "execQty": 145,
+              "price": 241.6,
+              "qty": 145,
+              "referans": "836854518",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "11:27:25",
+              "type": "Alış"
+            },
+            {
+              "amount": 105996.0,
+              "carryover": false,
+              "commission": 10.5996,
+              "date": "2026-06-03",
+              "datetime": "2026-06-03 16:18:06",
+              "execAmount": 105996.0,
+              "execPrice": 240.9,
+              "execQty": 440,
+              "price": 240.9,
+              "qty": 440,
+              "referans": "845646742",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "16:18:06",
+              "type": "Alış"
+            }
+          ],
+          "pairCount": 0,
+          "sellCount": 0,
+          "symbol": "TUPRS"
+        }
+      },
+      "commission": 0,
+      "date": "2026-06-24",
+      "grossProfit": 0,
+      "netProfit": 0,
+      "overall": 1363975.74,
+      "sells": 0,
+      "trades": 0,
+      "updatedAt": "2026-06-24 18:35:22"
+    },
+    "2026-06-25": {
+      "date": "2026-06-25",
+      "trades": 2,
+      "sells": 1,
+      "buys": 1,
+      "grossProfit": 2257.5,
+      "commission": 18.098,
+      "netProfit": 2239.402,
+      "overall": 1349936.37,
+      "bySymbol": {
+        "TRGYO": {
+          "symbol": "TRGYO",
+          "buyCount": 0,
+          "sellCount": 1,
+          "pairCount": 1,
+          "openBuys": 0,
+          "carriedIn": 1050,
+          "avgBuy": 0,
+          "avgSell": 98.75,
+          "grossProfit": 2257.5,
+          "commission": 10.3688,
+          "netProfit": 2247.1312,
+          "pairs": [
+            {
+              "buyPrice": 96.6,
+              "sellPrice": 98.75,
+              "qty": 1050,
+              "gross": 2257.5,
+              "comm": 10.3688,
+              "net": 2247.1313,
+              "buyTime": "16:18:29",
+              "sellTime": "16:11:58",
+              "buyDate": "2026-06-23",
+              "carryover": true
+            }
+          ],
+          "openPositions": []
         },
         "TUPRS": {
           "symbol": "TUPRS",
@@ -46868,9 +47270,42 @@ async function fbWrite(path,data){
               "carryover": false
             }
           ]
+        },
+        "ALARK": {
+          "symbol": "ALARK",
+          "buyCount": 1,
+          "sellCount": 0,
+          "pairCount": 0,
+          "openBuys": 760,
+          "carriedIn": 0,
+          "avgBuy": 101.7,
+          "avgSell": 0,
+          "grossProfit": 0,
+          "commission": 7.7292,
+          "netProfit": -7.7292,
+          "pairs": [],
+          "openPositions": [
+            {
+              "symbol": "ALARK",
+              "type": "Alış",
+              "qty": 760,
+              "price": 101.7,
+              "status": "Gerçekleşti",
+              "execQty": 760,
+              "amount": 77292.0,
+              "execPrice": 101.7,
+              "execAmount": 77292.0,
+              "commission": 7.7292,
+              "time": "16:19:04",
+              "date": "2026-06-25",
+              "datetime": "2026-06-25 16:19:04",
+              "referans": "874205635",
+              "carryover": false
+            }
+          ]
         }
       },
-      "updatedAt": "2026-06-24 18:35:22"
+      "updatedAt": "2026-06-25 18:35:22"
     }
   },
   "overallHistory": [
@@ -47170,8 +47605,13 @@ async function fbWrite(path,data){
       "note": "Otomatik - 18:35"
     },
     {
-      "date": "2026-06-24",
       "amount": 1363975.74,
+      "date": "2026-06-24",
+      "note": "Otomatik - 18:35"
+    },
+    {
+      "date": "2026-06-25",
+      "amount": 1349936.37,
       "note": "Otomatik - 18:35"
     }
   ],
@@ -47214,27 +47654,8 @@ async function fbWrite(path,data){
     }
   ],
   "openPositions": {
-    "date": "2026-06-24",
+    "date": "2026-06-25",
     "positions": {
-      "TRGYO": [
-        {
-          "amount": 101430.0,
-          "commission": 10.143,
-          "date": "2026-06-23",
-          "datetime": "2026-06-23 16:18:29",
-          "execAmount": 101430.0,
-          "execPrice": 96.6,
-          "execQty": 1050,
-          "price": 96.6,
-          "qty": 1050,
-          "referans": "871562092",
-          "status": "Gerçekleşti",
-          "symbol": "TRGYO",
-          "time": "16:18:29",
-          "type": "Alış",
-          "carryover": false
-        }
-      ],
       "TUPRS": [
         {
           "amount": 115390.0,
@@ -47510,6 +47931,25 @@ async function fbWrite(path,data){
           "type": "Alış",
           "carryover": false
         }
+      ],
+      "ALARK": [
+        {
+          "symbol": "ALARK",
+          "type": "Alış",
+          "qty": 760,
+          "price": 101.7,
+          "status": "Gerçekleşti",
+          "execQty": 760,
+          "amount": 77292.0,
+          "execPrice": 101.7,
+          "execAmount": 77292.0,
+          "commission": 7.7292,
+          "time": "16:19:04",
+          "date": "2026-06-25",
+          "datetime": "2026-06-25 16:19:04",
+          "referans": "874205635",
+          "carryover": false
+        }
       ]
     }
   },
@@ -47592,7 +48032,7 @@ async function fbWrite(path,data){
     "trackAccum": -1410.2163,
     "trackAccumBase": -1410.2163,
     "trackAlerted": false,
-    "trackLastDate": "2026-06-24",
+    "trackLastDate": "2026-06-25",
     "trackLastSymNet": 0,
     "trackPayAmt": 1000,
     "trackSymbol": "MIATK",
@@ -47936,13 +48376,19 @@ async function fbWrite(path,data){
       "date": "2026-06-22",
       "id": "1782110155583",
       "note": "Kiracının Depozitosu"
+    },
+    {
+      "amount": -27000,
+      "date": "2026-06-25",
+      "id": "1782381124061",
+      "note": "Halka Arz (6 adet)"
     }
   ]
 };
         // GRID_DATA_END
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                // GRID_REC_START
-        window.__GRID_REC__ = {"symbol":"AKSEN","price":81.15,"atr":3.9,"support":78.45,"resistance":85.23,"grid_interval":0.6,"lots":1561,"buy_grids":4,"sell_grids":6,"total_grids":10,"pct_up":5.02,"pct_down":3.33,"daily_profit":5928.0,"capital_used":1259259.0,"grid_score":7.09,"rsi":48.9,"signals":"Osc=7x(aktif), Hold=67%(orta), Vol=4.8%(iyi), Trend=toparlanma-denemesi(egim=2.4%), Tetik=6.5/gun(iyi), Hacim=494M(likit), RSI=49(ideal), Pos=40%(orta-ideal), Giriş=ORTA %40(ideal)","final_score":7.903,"entry_pos":40,"entry_factor":1.0,"updated_at":"2026-06-25 17:30","capital":1400000,"market_status":"Piyasa=yukari-trend"};
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                // GRID_REC_START
+        window.__GRID_REC__ = {"symbol":"BIMAS","price":375.5,"atr":12.32,"support":368.64,"resistance":390.04,"grid_interval":1.75,"lots":305,"buy_grids":3,"sell_grids":8,"total_grids":11,"pct_up":3.87,"pct_down":1.83,"daily_profit":3597.0,"capital_used":1257401.0,"grid_score":8.35,"rsi":47.1,"signals":"Osc=9x(aktif), Hold=87%(guclu), Vol=3.3%(ideal), Trend=hafif-asagi(mom=1.2%), Tetik=7.0/gun(aktif), Hacim=3825M(cok-likit!), RSI=47(ideal), Pos=32%(orta-ideal), Giriş=ORTA %32(ideal)","final_score":8.356,"entry_pos":32,"entry_factor":1.0,"updated_at":"2026-06-25 18:35","capital":1400000,"market_status":"Piyasa=yukari-trend"};
                                 // GRID_REC_END
 
 // ════════════════════════════════════════════════════════
