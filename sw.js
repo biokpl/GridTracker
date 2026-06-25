@@ -1,4 +1,4 @@
-const CACHE = 'gridtracker-v18';
+const CACHE = 'gridtracker-v19';
 const ASSETS = ['./bist_tracker.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

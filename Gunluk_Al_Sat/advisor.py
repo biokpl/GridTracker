@@ -1172,19 +1172,34 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
             avail_capital *= 0.5
 
         for p in top_picks:
-            lots = calc_lots(avail_capital, p["price"])
+            # ── KONVİKSİYON DOZU ──────────────────────────────────────────────
+            # Kurulum kalitesine (R/K + giriş skoru) göre sermaye dozunu ayarla.
+            # Kayıplar genelde MARJİNAL kurulumlarda oluyor → orada az riske et.
+            # Güçlü kurulumda tam doz, zayıfta küçük doz: zararlar küçülür,
+            # risk-ayarlı getiri artar. (Kullanıcı 'fırsat bitmez' diyor → zayıf
+            # kurulumda tam yüklenmek yerine az gir, iyisini bekle.)
+            _rr = p.get("rr_ratio", 1.0) or 1.0
+            _es = p.get("entry_score", 0) or 0
+            if   _rr >= 1.8 and _es >= 5.5: _conv, _clabel = 1.00, "Güçlü"
+            elif _rr >= 1.4 and _es >= 4.5: _conv, _clabel = 0.85, "İyi"
+            elif _rr >= 1.2 and _es >= 4.0: _conv, _clabel = 0.70, "Orta"
+            else:                           _conv, _clabel = 0.55, "Temkinli"
+            _cap = avail_capital * _conv
+            lots = calc_lots(_cap, p["price"])
             # ── KADEMELİ POZİSYON: %75 ana giriş + %25 fırsat (pull-back) ──
             # 1) Ana giriş (%75): giriş bölgesinde hemen
             # 2) Fırsat alımı (%25): geri çekilmede — ortalama maliyet iyileşir
-            lots_main  = calc_lots(avail_capital * 0.75, p["price"])
-            lots_dip   = calc_lots(avail_capital * 0.25, p["price"])
+            lots_main  = calc_lots(_cap * 0.75, p["price"])
+            lots_dip   = calc_lots(_cap * 0.25, p["price"])
             dip_target = round(p["price"] * 0.97, 4)   # %3 geri çekilme hedefi
             lot_info[p["symbol"]] = {
-                "lots":       lots,            # tam sermaye (eski davranış - backward compat)
+                "lots":       lots,            # konviksiyon dozlu toplam
                 "lots_main":  lots_main,       # %75 ana giriş
                 "lots_dip":   lots_dip,        # %25 fırsat alımı
                 "dip_price":  dip_target,      # fırsat alım fiyatı (~%3 düşük)
                 "price":      p["price"],
+                "conviction": _clabel,         # Güçlü/İyi/Orta/Temkinli
+                "conv_factor": _conv,          # 0.55-1.0 doz çarpanı
                 "cost":       round(lots_main * p["price"] * (1 + CFG["commission_rate"]), 2),
                 "cost_total": round(lots * p["price"] * (1 + CFG["commission_rate"]), 2),
             }
