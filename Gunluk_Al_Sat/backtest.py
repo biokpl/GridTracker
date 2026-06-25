@@ -61,7 +61,12 @@ advisor._weekly_trend = _bt_weekly_trend
 advisor._event_risk   = lambda sym, df: (0.0, "")
 
 
+_DATA_CACHE = None
+
 def _download():
+    global _DATA_CACHE
+    if _DATA_CACHE is not None:
+        return _DATA_CACHE
     print(f"[BT] {len(SYMBOLS)} sembol + XU100 indiriliyor (~2 yıl)...")
     tickers = [f"{s}.IS" for s in SYMBOLS] + ["XU100.IS"]
     raw = yf.download(tickers, period="2y", interval="1d",
@@ -80,11 +85,60 @@ def _download():
         except Exception:
             continue
     print(f"[BT] {len(data)-1 if 'XU100' in data else len(data)} sembol verisi hazır.")
+    _DATA_CACHE = data
     return data
 
 
+def _run_quiet(**kw):
+    """Tek satır özet döndürür (tarama için). İndirme cache'ten."""
+    trades = run(quiet=True, _return_only=True, **kw)
+    if not trades:
+        return {"trades": 0}
+    pnls = [t["pnl_pct"] for t in trades]
+    wins = [p for p in pnls if p > 0]; loss = [p for p in pnls if p <= 0]
+    comp = 1.0
+    for p in pnls: comp *= (1 + p / 100)
+    pf = (sum(wins) / abs(sum(loss))) if loss and sum(loss) != 0 else 99.0
+    return {"trades": len(trades), "wr": len(wins)/len(trades)*100,
+            "pf": pf, "comp": (comp-1)*100, "avg": float(np.mean(pnls))}
+
+
+def sweep():
+    """Eşik taraması — veri bir kez indirilir, tüm kombinasyonlar denenir."""
+    _download()  # cache'i doldur
+    print("\n" + "#" * 78)
+    print("# EŞİK TARAMASI (her satır ~2 yıllık simülasyon)")
+    print("#" * 78)
+    def line(tag, r):
+        if r.get("trades", 0) == 0:
+            print(f"{tag:30s} | işlem yok"); return
+        print(f"{tag:30s} | {r['trades']:3d} işlem | isabet {r['wr']:4.1f}% "
+              f"| PF {r['pf']:4.2f} | ort {r['avg']:+5.2f}% | bileşik {r['comp']:+7.1f}%")
+
+    print("\n— BOLLINGER eşiği (bb<X) —")
+    for v in [0.55, 0.60, 0.65, 0.70, 0.80, 0.90]:
+        line(f"bb<{v}", _run_quiet(bb_max=v))
+    print("\n— RİSK/KAZANÇ eşiği (R/K≥X) —")
+    for v in [1.0, 1.1, 1.2, 1.3, 1.5]:
+        line(f"rr>={v}", _run_quiet(rr_min=v))
+    print("\n— GİRİŞ skoru eşiği (entry≥X) —")
+    for v in [3.0, 3.5, 4.0, 4.5]:
+        line(f"entry>={v}", _run_quiet(entry_min=v))
+    print("\n— RSI tavanı (rsi<X) —")
+    for v in [65, 70, 75]:
+        line(f"rsi<{v}", _run_quiet(rsi_max=v))
+    print("\n— TUTMA süresi (max_hold gün) —")
+    for v in [3, 4, 5, 7, 10]:
+        line(f"hold={v}", _run_quiet(max_hold=v))
+    print("\n— REJİM filtresi —")
+    line("rejim AÇIK (RISK_OFF=dur)", _run_quiet(use_regime=True))
+    line("rejim KAPALI", _run_quiet(use_regime=False))
+    print("#" * 78)
+
+
 def run(bb_max=0.70, rsi_max=70.0, rr_min=1.0, entry_min=3.0,
-        total_no_trade=5.0, max_hold=5, use_regime=True, use_conv=True, quiet=False):
+        total_no_trade=5.0, max_hold=5, use_regime=True, use_conv=True,
+        quiet=False, _return_only=False):
     data = _download()
     xu = data.get("XU100")
     if xu is None:
@@ -180,8 +234,9 @@ def run(bb_max=0.70, rsi_max=70.0, rr_min=1.0, entry_min=3.0,
                "stop": best["stop_loss"], "target1": best["target1"],
                "conv": _conv_label(best)}
 
-    _report(trades, dict(bb_max=bb_max, rsi_max=rsi_max, rr_min=rr_min,
-                         entry_min=entry_min, max_hold=max_hold, use_regime=use_regime))
+    if not _return_only:
+        _report(trades, dict(bb_max=bb_max, rsi_max=rsi_max, rr_min=rr_min,
+                             entry_min=entry_min, max_hold=max_hold, use_regime=use_regime))
     return trades
 
 
@@ -241,6 +296,10 @@ if __name__ == "__main__":
     ap.add_argument("--entry", type=float, default=3.0)
     ap.add_argument("--hold", type=int, default=5)
     ap.add_argument("--noregime", action="store_true")
+    ap.add_argument("--sweep", action="store_true", help="tüm eşikleri tara")
     args = ap.parse_args()
-    run(bb_max=args.bb, rsi_max=args.rsi, rr_min=args.rr, entry_min=args.entry,
-        max_hold=args.hold, use_regime=not args.noregime)
+    if args.sweep:
+        sweep()
+    else:
+        run(bb_max=args.bb, rsi_max=args.rsi, rr_min=args.rr, entry_min=args.entry,
+            max_hold=args.hold, use_regime=not args.noregime)
