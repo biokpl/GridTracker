@@ -49682,19 +49682,18 @@ function renderPositionMonitor() {
   const card = $('pm-card');
   if (!card) return;
 
-  // Aktif hisse: en fazla açık pozisyonu (en yüksek lot) olan sembol —
-  // TÜM açık pozisyonlar arasından (botSymbols filtresine BAĞLI DEĞİL).
-  // Eskiden sadece botSymbols dolaşılıyordu → botSymbols eksik/değişikse
-  // (ör. yalnız MIATK) gerçek büyük pozisyon (TUPRS) "veri yok" görünüyordu.
+  // Aktif hisse: botSymbols'den en fazla açık pozisyonu (en yüksek lot) olan sembol
+  // Grid Hesaplayıcı'dan tamamen bağımsız — başka hisse hesaplarken kayma olmaz
   let activeSym = '';
   if (D) {
+    const botList = (S.settings.botSymbols || []).map(s => s.toUpperCase());
     const openPos = (D.todayProfit && D.todayProfit.openPositions) || {};
     let maxQty = 0;
-    for (const sym in openPos) {
+    for (const sym of botList) {
       const posList = openPos[sym];
       if (!posList || !posList.length) continue;
       const qty = posList.reduce((s, p) => s + (p.execQty || p.qty || 0), 0);
-      if (qty > maxQty) { maxQty = qty; activeSym = sym.toUpperCase(); }
+      if (qty > maxQty) { maxQty = qty; activeSym = sym; }
     }
     // Fallback: gridCalc.symbol (açık pozisyon yoksa)
     if (!activeSym) activeSym = ((S.settings && S.settings.gridCalc && S.settings.gridCalc.symbol) || '').toUpperCase().trim();

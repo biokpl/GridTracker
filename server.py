@@ -920,22 +920,16 @@ class Handler(SimpleHTTPRequestHandler):
                                 open_count = sum(len(v) for v in open_pos.values())
                                 data['openPosCount'] = open_count
 
-                                # posMonitor — en fazla lotlu AÇIK POZİSYON (TÜM
-                                # pozisyonlar arasından; botSymbols filtresine
-                                # BAĞLI DEĞİL). Eskiden open_pos (botSymbols ile
-                                # filtreli) kullanılıyordu → botSymbols eksik/
-                                # değişikse (ör. sadece MIATK) gerçek büyük pozisyon
-                                # (TUPRS) "veri yok" görünüyordu. Artık en büyük
-                                # açık pozisyon her zaman bulunur.
+                                # posMonitor — en fazla lotlu botSymbol (LCD 5. sayfa)
                                 pos_mon = {'symbol': '', 'qty': 0, 'avgCost': 0.0,
                                            'curPrice': 0.0, 'unrealPnl': 0.0, 'posCount': 0}
                                 best_sym, best_qty = '', 0
-                                for sym, pl in open_pos_all.items():
+                                for sym, pl in open_pos.items():
                                     q = sum(p.get('execQty', 0) for p in pl)
                                     if q > best_qty:
                                         best_qty, best_sym = q, sym
                                 if best_sym and best_qty > 0:
-                                    pl = open_pos_all[best_sym]
+                                    pl = open_pos[best_sym]
                                     avg_c = sum(p.get('execQty', 0) * p.get('execPrice', 0) for p in pl) / best_qty
                                     c_px = stocks_raw.get(best_sym, {}).get('price', 0) if stocks_raw else 0
                                     cr = 0.0001
