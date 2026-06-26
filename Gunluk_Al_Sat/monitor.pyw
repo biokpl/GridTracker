@@ -636,8 +636,19 @@ def _do_user_bought(state: dict, symbol: str):
 
     # Gerçek sinyali HEMEN hesapla (sadece bu hisse + endeks indirilir, ~5 sn)
     # → kart "DEVAM/DİKKAT" doğru sinyali 15 dk beklemeden gösterir.
+    # AYRICA: top_picks'i tazele → ELDEKİ hisse (yeni alınan) öneri listesinden
+    # düşer, yerine SIRADAKİ taze adaylar gelir ("Top 3"te aldığın hisseyi tekrar
+    # gösterme" + sıradakileri öner). Pozisyon varken 10dk döngüsü atladığı için
+    # burada bir kez tetiklenmesi şart.
     if _is_market_open():
-        threading.Thread(target=_slow_analysis, daemon=True).start()
+        def _post_buy_refresh():
+            try:
+                import advisor
+                advisor.run_analysis(refresh_only=True, quiet=True)
+            except Exception as e:
+                log.debug(f"bought refresh: {e}")
+            _slow_analysis()
+        threading.Thread(target=_post_buy_refresh, daemon=True).start()
 
 
 def _do_set_capital(state: dict, capital):
