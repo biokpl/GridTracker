@@ -471,21 +471,33 @@ def send_ntfy(title, body, priority=3, tags=None, alert=False):
 # Pozisyon Verdict Hesaplama (paylaşılan fonksiyon)
 # ---------------------------------------------------------------------------
 
-def _grid_verdict(gs, trend_dir, price, g_sup, g_res):
+def _grid_verdict(gs, trend_dir, price, g_sup, g_res, atr=0.0):
     """Grid pozisyon kararı (ortak mantık).
     Kullanıcı kuralı: GRID BİR ROTASYON STRATEJİSİ DEĞİL — taahhüt + zaman ister.
-    Bu yüzden 'başkası daha iyi → değiştir' dürtüsü KALDIRILDI. Değiştir/çık
-    sinyali YALNIZCA: (a) fiyat grid aralığını kırdı, (b) grid skoru çöktü.
+    'Başkası daha iyi → değiştir' dürtüsü KALDIRILDI. Değiştir/çık sinyali
+    YALNIZCA: (a) fiyat grid aralığını KESİN kırdı, (b) grid skoru çöktü.
+
+    DESTEK BÖLGESİ (ATR tamponu): fiyat desteğe değmek grid'in dipten alması =
+    NORMAL → hemen çıkma. Sadece destek − 1×ATR ALTINA inerse (kesin kırılım,
+    dönüş zayıf) ÇIK. Destek bölgesi içinde (değip dönebilir) → DİKKAT, bekle.
     Döner: (verdict, title, reason)"""
     if gs <= 0:
         return 'dikkat', 'VERI YOK', 'Analiz bekleniyor...'
-    # 1) Fiyat grid aralığının ALTINDA → grid kırıldı (düşüşte sıkıştı, TUPRS gibi)
-    if g_sup > 0 and 0 < price < g_sup:
-        return ('cik', 'ÇIK',
-                f'Fiyat grid aralığının ALTINA indi ({price:.2f} < destek '
-                f'{g_sup:.2f}). Grid kırıldı — çık, yeni grid kur.')
-    # 2) Fiyat grid aralığının ÜSTÜNDE → grid tamamlandı (yukarı kaçtı = kâr)
-    if g_res > 0 and price > g_res:
+    # Tampon: 1 ATR (yoksa desteğin %2'si)
+    buf = atr if atr > 0 else (g_sup * 0.02 if g_sup else 0.0)
+    # 1) ALT — destek bölgesi vs kesin kırılım
+    if g_sup > 0 and price > 0:
+        if price < g_sup - buf:
+            return ('cik', 'ÇIK',
+                    f'Destek KESİN kırıldı ({price:.2f} < {g_sup - buf:.2f} = '
+                    f'destek {g_sup:.2f} − 1 ATR). Dönüş zayıf — çık, yeni grid kur.')
+        elif price < g_sup:
+            return ('dikkat', 'DESTEK TESTİ',
+                    f'Fiyat destek bölgesinde ({price:.2f}, destek {g_sup:.2f}). '
+                    f'Grid dipten alıyor — sıçrarsa BEKLE; {g_sup - buf:.2f} altına '
+                    f'inerse çık.')
+    # 2) ÜST — grid tamamlandı (yukarı kaçtı = kâr); küçük tampon
+    if g_res > 0 and price > g_res + buf * 0.5:
         return ('dikkat', 'DEĞİŞTİR',
                 f'Fiyat grid aralığının ÜSTÜNE çıktı ({price:.2f} > direnç '
                 f'{g_res:.2f}). Grid tamamlandı — kârı al, yeni grid kur.')
@@ -495,7 +507,7 @@ def _grid_verdict(gs, trend_dir, price, g_sup, g_res):
     # 4) Zayıflama → İZLE (switch DEĞİL; grid'e zaman ver, aralığı bekle)
     if gs < 4 or (trend_dir == 'falling' and gs < 5):
         return ('dikkat', 'DİKKAT',
-                f'Grid skoru zayıfladı ({gs:.1f}/10). İzle — aralık kırılırsa çık.')
+                f'Grid skoru zayıfladı ({gs:.1f}/10). İzle — destek kesin kırılırsa çık.')
     # 5) Sağlıklı
     t = ' Skor yükseliyor.' if trend_dir == 'rising' else ''
     return 'devam', 'DEVAM ET', f'Skor iyi ({gs:.1f}/10), fiyat grid aralığında.{t}'
@@ -554,7 +566,9 @@ def compute_pos_verdict():
 
         # GRID ARALIĞI: kullanıcının kurduğu grid (gridCalc) öncelikli; yoksa
         # sistemin hesapladığı destek/direnç (gridRecActive).
-        price = float(stocks_raw.get(pv_sym, {}).get('price', 0) or 0)
+        _strow = stocks_raw.get(pv_sym, {})
+        price = float(_strow.get('price', 0) or 0)
+        atr   = float(_strow.get('atr_gunluk', 0) or _strow.get('atr_ort', 0) or 0)
         gc = settings_fb.get('gridCalc') or {}
         if (gc.get('symbol', '') or '').upper() == pv_sym and gc.get('support') and gc.get('resistance'):
             g_sup, g_res = float(gc.get('support') or 0), float(gc.get('resistance') or 0)
@@ -562,7 +576,7 @@ def compute_pos_verdict():
             g_sup = float(gr_active.get('support', 0) or 0)
             g_res = float(gr_active.get('resistance', 0) or 0)
 
-        verdict, title, reason = _grid_verdict(gs, trend_dir, price, g_sup, g_res)
+        verdict, title, reason = _grid_verdict(gs, trend_dir, price, g_sup, g_res, atr)
 
         return {'symbol': pv_sym, 'gridScore': round(gs, 1), 'finalScore': round(fs, 3),
                 'verdict': verdict, 'title': title, 'reason': reason, 'trend': trend_dir}
