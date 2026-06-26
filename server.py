@@ -471,6 +471,36 @@ def send_ntfy(title, body, priority=3, tags=None, alert=False):
 # Pozisyon Verdict Hesaplama (paylaşılan fonksiyon)
 # ---------------------------------------------------------------------------
 
+def _grid_verdict(gs, trend_dir, price, g_sup, g_res):
+    """Grid pozisyon kararı (ortak mantık).
+    Kullanıcı kuralı: GRID BİR ROTASYON STRATEJİSİ DEĞİL — taahhüt + zaman ister.
+    Bu yüzden 'başkası daha iyi → değiştir' dürtüsü KALDIRILDI. Değiştir/çık
+    sinyali YALNIZCA: (a) fiyat grid aralığını kırdı, (b) grid skoru çöktü.
+    Döner: (verdict, title, reason)"""
+    if gs <= 0:
+        return 'dikkat', 'VERI YOK', 'Analiz bekleniyor...'
+    # 1) Fiyat grid aralığının ALTINDA → grid kırıldı (düşüşte sıkıştı, TUPRS gibi)
+    if g_sup > 0 and 0 < price < g_sup:
+        return ('cik', 'ÇIK',
+                f'Fiyat grid aralığının ALTINA indi ({price:.2f} < destek '
+                f'{g_sup:.2f}). Grid kırıldı — çık, yeni grid kur.')
+    # 2) Fiyat grid aralığının ÜSTÜNDE → grid tamamlandı (yukarı kaçtı = kâr)
+    if g_res > 0 and price > g_res:
+        return ('dikkat', 'DEĞİŞTİR',
+                f'Fiyat grid aralığının ÜSTÜNE çıktı ({price:.2f} > direnç '
+                f'{g_res:.2f}). Grid tamamlandı — kârı al, yeni grid kur.')
+    # 3) Grid skoru çöktü → hisse salınmayı bıraktı / trende girdi
+    if gs < 3.5:
+        return 'cik', 'ÇIK', f'Grid skoru çok düşük ({gs:.1f}/10). Hisse grid için verimsiz.'
+    # 4) Zayıflama → İZLE (switch DEĞİL; grid'e zaman ver, aralığı bekle)
+    if gs < 4 or (trend_dir == 'falling' and gs < 5):
+        return ('dikkat', 'DİKKAT',
+                f'Grid skoru zayıfladı ({gs:.1f}/10). İzle — aralık kırılırsa çık.')
+    # 5) Sağlıklı
+    t = ' Skor yükseliyor.' if trend_dir == 'rising' else ''
+    return 'devam', 'DEVAM ET', f'Skor iyi ({gs:.1f}/10), fiyat grid aralığında.{t}'
+
+
 def compute_pos_verdict():
     """
     Firebase verilerinden aktif açık pozisyonun karar skorunu hesaplar.
@@ -522,34 +552,17 @@ def compute_pos_verdict():
             if   delta >  0.5: trend_dir = 'rising'
             elif delta < -0.5: trend_dir = 'falling'
 
-        # score_diff — en iyi öneri ile fark
-        gr_best    = firebase_get('gridtracker/gridRec') or {}
-        best_s     = (gr_best.get('symbol') or '').replace('.IS', '').upper()
-        best_fs    = float(gr_best.get('final_score', 0) or 0)
-        score_diff = (best_fs - fs) if (best_s and best_s != pv_sym and best_fs > 0 and fs > 0) else 0.0
-
-        # Karar mantığı (JS ile birebir)
-        if gs <= 0:
-            verdict, title = 'dikkat', 'VERI YOK'
-            reason = 'Analiz bekleniyor...'
-        elif gs < 3.5:
-            verdict, title = 'cik', 'ÇIK'
-            reason = f'Skor çok düşük ({gs:.1f}/10). Grid bot bu hissede verimsiz.'
-        elif trend_dir == 'falling' and gs < 5 and score_diff > 2.5:
-            verdict, title = 'cik', 'ÇIK'
-            reason = f'Skor düşüyor ({gs:.1f}/10), {best_s} {score_diff:.1f} puan daha iyi. Alternatif var.'
-        elif gs < 4 or (trend_dir == 'falling' and gs < 5):
-            verdict, title = 'dikkat', 'DİKKAT'
-            reason = (f'Skor zayıfladı ({gs:.1f}/10). Pozisyonu izle, çıkışa hazır ol.'
-                      if gs < 4 else
-                      f'Skor düşüyor ({gs:.1f}/10). Pozisyonu izle, çıkışa hazır ol.')
-        elif score_diff > 2.5:
-            verdict, title = 'dikkat', 'DEĞİŞTİR?'
-            reason = f'{best_s} {score_diff:.1f} puan daha iyi. Kârdaysan geçişi değerlendir.'
+        # GRID ARALIĞI: kullanıcının kurduğu grid (gridCalc) öncelikli; yoksa
+        # sistemin hesapladığı destek/direnç (gridRecActive).
+        price = float(stocks_raw.get(pv_sym, {}).get('price', 0) or 0)
+        gc = settings_fb.get('gridCalc') or {}
+        if (gc.get('symbol', '') or '').upper() == pv_sym and gc.get('support') and gc.get('resistance'):
+            g_sup, g_res = float(gc.get('support') or 0), float(gc.get('resistance') or 0)
         else:
-            verdict, title = 'devam', 'DEVAM ET'
-            t = (' Skor yükseliyor.' if trend_dir == 'rising' else '')
-            reason = f'Skor iyi ({gs:.1f}/10). Grid bot verimli çalışıyor.{t}'
+            g_sup = float(gr_active.get('support', 0) or 0)
+            g_res = float(gr_active.get('resistance', 0) or 0)
+
+        verdict, title, reason = _grid_verdict(gs, trend_dir, price, g_sup, g_res)
 
         return {'symbol': pv_sym, 'gridScore': round(gs, 1), 'finalScore': round(fs, 3),
                 'verdict': verdict, 'title': title, 'reason': reason, 'trend': trend_dir}
@@ -941,66 +954,13 @@ class Handler(SimpleHTTPRequestHandler):
                                                'unrealPnl': round(u_pnl, 0), 'posCount': len(pl)}
                                 data['posMonitor'] = pos_mon
 
-                                # posVerdict — karar sistemi (LCD 5. sayfa ana içerik)
+                                # posVerdict — ortak compute_pos_verdict ile (grid
+                                # aralığı kuralı + 'başkası daha iyi' dürtüsü yok).
                                 pv_sym = pos_mon.get('symbol', '')
-                                pv = {'symbol': pv_sym, 'gridScore': 0.0, 'finalScore': 0.0,
-                                      'verdict': 'dikkat', 'title': 'VERI YOK',
-                                      'reason': 'Analiz bekleniyor...', 'trend': 'stable'}
-                                if pv_sym:
-                                    try:
-                                        # gridRecActive — aktif sembol analiz verisi
-                                        gr_active = firebase_get('gridtracker/gridRecActive') or {}
-                                        rec_sym = (gr_active.get('symbol') or '').replace('.IS', '').upper()
-                                        if rec_sym != pv_sym:
-                                            # Fallback: gridRec (en iyi öneri)
-                                            gr_active = firebase_get('gridtracker/gridRec') or {}
-                                            rec_sym = (gr_active.get('symbol') or '').replace('.IS', '').upper()
-                                        gs  = float(gr_active.get('grid_score', 0) or 0) if rec_sym == pv_sym else 0.0
-                                        fs  = float(gr_active.get('final_score', 0) or 0) if rec_sym == pv_sym else 0.0
-
-                                        # scoreHistory — trend hesapla (son 3 gün)
-                                        trend_dir = 'stable'
-                                        hist = firebase_get(f'gridtracker/scoreHistory/{pv_sym}') or []
-                                        if isinstance(hist, list) and len(hist) >= 3:
-                                            last3 = [float(h.get('gs', 0) or 0) for h in hist[-3:]]
-                                            delta = last3[2] - last3[0]
-                                            if delta > 0.5:   trend_dir = 'rising'
-                                            elif delta < -0.5: trend_dir = 'falling'
-
-                                        # gridRec — en iyi öneri (skor farkı için)
-                                        gr_best = firebase_get('gridtracker/gridRec') or {}
-                                        best_s = (gr_best.get('symbol') or '').replace('.IS', '').upper()
-                                        best_fs = float(gr_best.get('final_score', 0) or 0)
-                                        score_diff = (best_fs - fs) if (best_s and best_s != pv_sym and best_fs > 0 and fs > 0) else 0.0
-
-                                        # Karar mantığı (JS ile birebir)
-                                        if gs <= 0:
-                                            verdict, title = 'dikkat', 'VERI YOK'
-                                            reason = 'Analiz bekleniyor...'
-                                        elif gs < 3.5:
-                                            verdict, title = 'cik', 'CIK'
-                                            reason = f'Skor çok düşük ({gs:.1f}/10). Grid bot bu hissede verimsiz.'
-                                        elif trend_dir == 'falling' and gs < 5 and score_diff > 2.5:
-                                            verdict, title = 'cik', 'CIK'
-                                            reason = f'Skor düşüyor ({gs:.1f}/10), {best_s} {score_diff:.1f} puan daha iyi. Alternatif var.'
-                                        elif gs < 4 or (trend_dir == 'falling' and gs < 5):
-                                            verdict, title = 'dikkat', 'DIKKAT'
-                                            reason = (f'Skor zayıfladı ({gs:.1f}/10). Pozisyonu izle, çıkışa hazır ol.'
-                                                      if gs < 4 else
-                                                      f'Skor düşüyor ({gs:.1f}/10). Pozisyonu izle, çıkışa hazır ol.')
-                                        elif score_diff > 2.5:
-                                            verdict, title = 'dikkat', 'DEGISTIR?'
-                                            reason = f'{best_s} {score_diff:.1f} puan daha iyi. Kârdaysan geçişi değerlendir.'
-                                        else:
-                                            verdict, title = 'devam', 'DEVAM ET'
-                                            t = (' Skor yükseliyor.' if trend_dir == 'rising' else '')
-                                            reason = f'Skor iyi ({gs:.1f}/10). Grid bot verimli çalışıyor.{t}'
-
-                                        pv = {'symbol': pv_sym, 'gridScore': round(gs, 1),
-                                              'finalScore': round(fs, 3), 'verdict': verdict,
-                                              'title': title, 'reason': reason, 'trend': trend_dir}
-                                    except Exception as e:
-                                        slog.warning(f'[posVerdict] hata: {e}')
+                                pv = compute_pos_verdict() or {
+                                    'symbol': pv_sym, 'gridScore': 0.0, 'finalScore': 0.0,
+                                    'verdict': 'dikkat', 'title': 'VERI YOK',
+                                    'reason': 'Analiz bekleniyor...', 'trend': 'stable'}
                                 data['posVerdict'] = pv
                             else:
                                 data['realNet'] = gd.get('realNet', 0.0)
