@@ -1167,24 +1167,23 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
                 if not avail_capital or avail_capital != avail_capital:
                     avail_capital = capital
 
-        # REJİM CAUTION: piyasa zayıf → YARIM LOT (after-sell dahil her durumda)
-        if regime == "CAUTION":
-            avail_capital *= 0.5
+        # REJİM çarpanı (RISK_OFF zaten no_trade; CAUTION=zayıf piyasa)
+        _regime_factor = 0.5 if regime == "CAUTION" else 1.0
 
         for p in top_picks:
-            # ── KONVİKSİYON DOZU ──────────────────────────────────────────────
-            # Kurulum kalitesine (R/K + giriş skoru) göre sermaye dozunu ayarla.
-            # Kayıplar genelde MARJİNAL kurulumlarda oluyor → orada az riske et.
-            # Güçlü kurulumda tam doz, zayıfta küçük doz: zararlar küçülür,
-            # risk-ayarlı getiri artar. (Kullanıcı 'fırsat bitmez' diyor → zayıf
-            # kurulumda tam yüklenmek yerine az gir, iyisini bekle.)
+            # ── DOZLAMA: min(rejim, konviksiyon) — ÇİFT CEZA YOK ──────────────
+            # Eskiden rejim × konviksiyon ÇARPILIYORDU (0.5×0.55=0.275) → çok
+            # nakit boşta kalıyordu. Artık BAĞLAYICI KISIT (min) kullanılır:
+            # zayıf piyasada VEYA zayıf kurulumda hangisi daha kısıtlıysa o.
+            # Kurulum kalitesi (R/K + giriş skoru) → konviksiyon dozu.
             _rr = p.get("rr_ratio", 1.0) or 1.0
             _es = p.get("entry_score", 0) or 0
             if   _rr >= 1.8 and _es >= 5.5: _conv, _clabel = 1.00, "Güçlü"
             elif _rr >= 1.4 and _es >= 4.5: _conv, _clabel = 0.85, "İyi"
             elif _rr >= 1.2 and _es >= 4.0: _conv, _clabel = 0.70, "Orta"
             else:                           _conv, _clabel = 0.55, "Temkinli"
-            _cap = avail_capital * _conv
+            _factor = min(_regime_factor, _conv)
+            _cap = avail_capital * _factor
             lots = calc_lots(_cap, p["price"])
             # ── KADEMELİ POZİSYON: %75 ana giriş + %25 fırsat (pull-back) ──
             # 1) Ana giriş (%75): giriş bölgesinde hemen

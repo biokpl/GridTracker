@@ -151,8 +151,11 @@ def send_exit_signal(signal, symbol, score_prev, score_now, message, new_pick, l
 
 
 def send_daily_pick(pick, lot=None):
-    li   = lot or {}
-    lots = li.get("lots", 0)
+    li        = lot or {}
+    # KARTLA AYNI: ana giriş (lots_main) baş rakam; fırsat alımı (dip) ayrı satır.
+    # (Eskiden 'lots'=toplam gösteriliyordu → bildirimdeki sayı kartla uyuşmuyordu.)
+    lots_main = li.get("lots_main") or li.get("lots", 0)
+    lots_dip  = li.get("lots_dip", 0)
     title = f"📊 {pick['symbol']} — Günün Önerisi"
     lines = [
         f"Skor  : {pick['total_score']:.1f} / 10",
@@ -161,8 +164,12 @@ def send_daily_pick(pick, lot=None):
         f"Stop  : {_fp(pick['stop_loss'])} TL",
         f"Hedef : {_fp(pick['target1'])} → {_fp(pick['target2'])} TL",
     ]
-    if lots:
-        lines.append(f"Lot   : {lots:,} lot".replace(",", "."))
+    if lots_main:
+        _conv = li.get("conviction")
+        lines.append(f"Ana giriş: {lots_main:,} lot".replace(",", ".") +
+                     (f"  ({_conv})" if _conv else ""))
+    if lots_dip:
+        lines.append(f"Fırsat alımı: {lots_dip:,} lot — {_fp(li.get('dip_price', 0))} TL'ye gelirse".replace(",", "."))
     return _send(title, "\n".join(lines), tags="chart_increasing",
                  actions=action_bought(pick["symbol"]))
 
