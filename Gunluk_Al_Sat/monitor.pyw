@@ -517,6 +517,12 @@ def _do_user_sold(state: dict, symbol: str):
         "provisional": True,
     })
     state["active"] = None
+    # KRİTİK: flat durumu refresh'ten ÖNCE diske yaz. run_analysis state'i
+    # DİSKTEN okuyor; burada kaydetmezsek refresh hâlâ ESKİ aktif pozisyonu
+    # görüp lotu "tutuyormuş gibi" (yanlış sermaye bazıyla) hesaplıyor →
+    # SATTIM sonrası AZ lot, ALDIM sonrası lot zıplaması. Şimdi flat kaydedip
+    # refresh tam sermaye bazıyla doğru lotu üretiyor.
+    _save_state(state)
 
     # SATTIĞIN AN TAZE ÖNERİ: sıradaki hisseyi eski (saatlerce önceki) top_picks'ten
     # değil, ŞİMDİ yeniden üretilen analizden seç. ~30-60 sn sürer ama satıştan
