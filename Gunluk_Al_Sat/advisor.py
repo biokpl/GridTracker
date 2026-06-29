@@ -1154,17 +1154,22 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
     # Lot hesapları (önerilen hisseler için)
     lot_info = {}
     if capital > 0:
-        # Mevcut pozisyon varsa önce satış sermayesi hesapla
+        # Kullanılabilir sermaye = TOPLAM sermaye ± gerçekleşmemiş K/Z.
+        # (Kullanıcı tek pozisyonla rotasyon yapıyor: sıradaki hisseyi almak için
+        # mevcudu satar → eline ~tam sermaye geçer. ESKİ HATA: avail = sadece
+        # pozisyonun değeri [qty×fiyat] alınıyordu → boştaki nakit sayılmıyor,
+        # pozisyon tutarken öneri AZ lot çıkıyor, satıp flat olunca lot ZIPLIYOR.)
         avail_capital = capital
         if active:
-            qty  = active.get("qty", 0)
-            price_now = scores[0]["price"] if scores else 0
-            # Aktif sembolün güncel fiyatını bul
+            qty   = active.get("qty", 0)
+            entry = active.get("entry_price", 0) or 0
             act_score = next((s for s in scores if s["symbol"] == active["symbol"]), None)
-            if act_score and qty > 0:
-                avail_capital = calc_capital_after_sell(qty, act_score["price"])
-                # NaN/geçersizse tam sermayeye düş (bozuk fiyat hesabı kırmasın)
-                if not avail_capital or avail_capital != avail_capital:
+            if act_score and qty > 0 and entry > 0:
+                _unreal = qty * (act_score["price"] - entry)   # +kâr / −zarar
+                avail_capital = capital + _unreal
+                # NaN/geçersiz/negatifse tam sermayeye düş
+                if (not avail_capital or avail_capital != avail_capital
+                        or avail_capital <= 0):
                     avail_capital = capital
 
         # REJİM çarpanı (RISK_OFF zaten no_trade; CAUTION=zayıf piyasa)
