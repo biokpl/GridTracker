@@ -852,6 +852,25 @@ def check_early_weakness(active: dict, df: pd.DataFrame, score: dict,
         if   intraday_chg <= -1.2: pts += 2; sig.append(f"Gün içi sert düşüş ({intraday_chg:+.1f}%/30dk)")
         elif intraday_chg <= -0.6: pts += 1; sig.append(f"Gün içi ivme aşağı ({intraday_chg:+.1f}%/30dk)")
 
+    # ── DİP/DESTEK KORUMASI ───────────────────────────────────────────────────
+    # Fiyat yakın swing-dibinde (destek) ve dibi HENÜZ kesin kırmadıysa,
+    # buradaki "zayıflık" sinyalleri (MA altı, 5-gün dibi, gün içi düşüş) çoğu
+    # zaman bounce ÖNCESİ gürültüdür → ERKEN_ÇIK'a YÜKSELTME (dibi sattırma!).
+    # Sadece destek − 1 ATR altına KESİN inerse erken çıkışa izin ver.
+    # (Kullanıcı vakası: MGROS dip desteğindeyken erken çık verdi, çıkmadı,
+    #  sonra DEVAM'a döndü — haklıydı. Grid'deki destek-bölgesi mantığıyla aynı.)
+    try:
+        if pts >= 5 and len(close) >= 6:
+            _swing = float(close.iloc[-10:].min()) if len(close) >= 10 else float(close.iloc[-6:].min())
+            _atr   = price * (float(score.get("atr_pct", 2.0) or 2.0) / 100.0)
+            _at_support    = _swing <= price <= _swing + 1.0 * _atr
+            _broke_support = price < _swing - 1.0 * _atr
+            if _at_support and not _broke_support:
+                sig.append("⚓ Dip desteğinde — sat-ma, kesin kırılırsa çık")
+                pts = 4   # ERKEN_ÇIK'a yükseltme; en fazla ZAYIFLAMA (izle)
+    except Exception:
+        pass
+
     msg = " | ".join(sig)
     if pts >= 5:
         return "ERKEN_ÇIK", msg, pts
