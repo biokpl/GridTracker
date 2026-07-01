@@ -80,7 +80,11 @@ def _send(title: str, body: str, priority: str = "default", tags: str = "",
 def _new_pick_lines(new_pick, lot_info, baslik="✅ YENİ HİSSE"):
     """Yeni hisse öneri satırlarını oluşturur."""
     li        = (lot_info or {}).get(new_pick["symbol"], {})
-    lots      = li.get("lots", 0)
+    # KARTLA AYNI: ana giriş (lots_main) baş rakam, fırsat alımı ayrı.
+    # (Eskiden 'lots'=toplam gösteriliyordu → bildirim kartla uyuşmuyordu:
+    #  bildirim 346, kart 285.)
+    lots_main = li.get("lots_main") or li.get("lots", 0)
+    lots_dip  = li.get("lots_dip", 0)
     rr        = new_pick.get("rr_ratio", 0)
     escore    = new_pick.get("entry_score", new_pick.get("total_score", 0))
     price     = new_pick["price"]
@@ -94,9 +98,13 @@ def _new_pick_lines(new_pick, lot_info, baslik="✅ YENİ HİSSE"):
         f"{baslik}: {new_pick['symbol']}",
     ]
     # Lot üste, altı çizili görünüm
-    if lots:
+    if lots_main:
         lines.append(f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
-        lines.append(f"Giriş Lot Miktarı : {lots:,} lot".replace(",", "."))
+        _conv = li.get("conviction")
+        lines.append(f"Ana Giriş (%75) : {lots_main:,} lot".replace(",", ".") +
+                     (f"  ({_conv})" if _conv else ""))
+        if lots_dip:
+            lines.append(f"Fırsat Alımı (%25): {lots_dip:,} lot".replace(",", "."))
         lines.append(f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
     lines += [
         f"Giriş Skoru : {escore:.1f} / 10",
