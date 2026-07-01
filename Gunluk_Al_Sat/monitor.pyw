@@ -535,7 +535,17 @@ def _do_user_sold(state: dict, symbol: str):
         except Exception as e:
             log.warning(f"Satış sonrası refresh başarısız, mevcut öneriler kullanılacak: {e}")
 
-    new_pick, lot_info = _get_last_alternative(sym)
+    # no_trade GUARD: RISK_OFF veya kaliteli aday yoksa SIRADAKİ öneri VERME.
+    # (Kart 'uygun hisse yok/bekleme' derken bildirim 'X al' demesin — bu
+    #  tutarsızlıktı. Kart doğru: zayıf piyasada yeni pozisyon açılmaz.)
+    _no_trade = False
+    try:
+        from advisor import RESULT_PATH as _RP
+        _no_trade = bool(json.loads(_RP.read_text(encoding="utf-8")).get("no_trade_today"))
+    except Exception:
+        pass
+
+    new_pick, lot_info = ((None, {}) if _no_trade else _get_last_alternative(sym))
     if new_pick:
         state["pending_buy"] = {
             "symbol":     new_pick["symbol"],
@@ -563,9 +573,12 @@ def _do_user_sold(state: dict, symbol: str):
     if new_pick:
         lines = notifier._new_pick_lines(new_pick, lot_info, baslik="✅ SIRADAKİ ÖNERİ")
         body += "\n" + "\n".join(lines[1:])
-    notifier._send(f"✅ {sym} SATILDI — sıradaki hazır", body,
-                   priority="high", tags="white_check_mark",
-                   actions=(notifier.action_bought(new_pick["symbol"]) if new_pick else ""))
+    elif _no_trade:
+        body += "\n\n⏳ Şu an uygun hisse yok (piyasa zayıf) — bekle. Fırsat çıkınca bildireceğim."
+    notifier._send(
+        (f"✅ {sym} SATILDI — sıradaki hazır" if new_pick else f"✅ {sym} SATILDI — bekleme"),
+        body, priority="high", tags="white_check_mark",
+        actions=(notifier.action_bought(new_pick["symbol"]) if new_pick else ""))
 
 
 def _do_user_bought(state: dict, symbol: str):
