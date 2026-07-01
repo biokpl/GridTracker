@@ -1,6 +1,6 @@
 {
-  "ts": 1782920183.5861206,
-  "ts_str": "01.07.2026 18:36",
+  "ts": 1782921368.6370313,
+  "ts_str": "01.07.2026 18:56",
   "capital": 135000.0,
   "top_picks": [
     {
@@ -114,7 +114,7 @@
     "signal": "DEVAM",
     "exit_pts": 0,
     "score_now": 5.0,
-    "score_prev": 4.8,
+    "score_prev": 5.0,
     "message": ""
   },
   "lot_info": {
@@ -149,10 +149,10 @@
   },
   "tracker": {
     "active_symbol": "AGESA",
-    "avg_cost": 248.9,
-    "total_qty": 285,
+    "avg_cost": 248.907,
+    "total_qty": 346,
     "current_price": 244.8,
-    "unrealized_pnl": -1168.5,
+    "unrealized_pnl": -1421.02,
     "unrealized_pct": -1.65,
     "realized_pnl": 0.0,
     "history_pnl_total": 11470.04,
@@ -175,8 +175,8 @@
       "total": 11470,
       "pf": 5.96
     },
-    "open_qty": 285,
-    "data_source": "manual"
+    "open_qty": 346,
+    "data_source": "excel"
   },
   "score_table": {
     "ASELS": {
