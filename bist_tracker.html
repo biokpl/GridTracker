@@ -2200,38 +2200,43 @@ async function fbWrite(path,data){
 // ════════════════════════════════════════════════════════
                                 // GRID_DATA_START
         window.__GRID_DATA__ = {
-  "lastUpdated": "2026-07-03 18:35:23",
-  "today": "2026-07-03",
-  "todayOverall": 1505947.94,
+  "lastUpdated": "2026-07-06 18:35:22",
+  "today": "2026-07-06",
+  "todayOverall": 1501117.4,
   "todayProfit": {
     "bySymbol": {
-      "AGESA": {
-        "symbol": "AGESA",
+      "TOASO": {
+        "symbol": "TOASO",
         "buyCount": 0,
-        "sellCount": 1,
-        "pairCount": 1,
+        "sellCount": 0,
+        "pairCount": 0,
         "openBuys": 0,
-        "carriedIn": 346,
+        "carriedIn": 183,
         "avgBuy": 0,
-        "avgSell": 241.1,
-        "grossProfit": -2692.6066,
-        "commission": 8.3421,
-        "netProfit": -2700.9487,
-        "pairs": [
+        "avgSell": 0,
+        "grossProfit": 0,
+        "commission": 0,
+        "netProfit": 0,
+        "pairs": [],
+        "openPositions": [
           {
-            "buyPrice": 248.8821,
-            "sellPrice": 241.1,
-            "qty": 346,
-            "gross": -2692.6066,
-            "comm": 8.3421,
-            "net": -2700.9487,
-            "buyTime": "13:21:51",
-            "sellTime": "10:21:23",
-            "buyDate": "2026-07-01",
-            "carryover": true
+            "amount": 55586.25,
+            "commission": 5.558625,
+            "date": "2026-07-03",
+            "datetime": "2026-07-03 12:13:08",
+            "execAmount": 55586.25,
+            "execPrice": 303.75,
+            "execQty": 183,
+            "price": 303.75,
+            "qty": 183,
+            "referans": "882899044",
+            "status": "Gerçekleşti",
+            "symbol": "TOASO",
+            "time": "12:13:08",
+            "type": "Alış",
+            "carryover": false
           }
-        ],
-        "openPositions": []
+        ]
       },
       "TUPRS": {
         "symbol": "TUPRS",
@@ -2536,73 +2541,31 @@ async function fbWrite(path,data){
             "carryover": false
           }
         ]
-      },
-      "AKSA": {
-        "symbol": "AKSA",
-        "buyCount": 1,
-        "sellCount": 1,
-        "pairCount": 1,
-        "openBuys": 0,
-        "carriedIn": 0,
-        "avgBuy": 11.97,
-        "avgSell": 12.3,
-        "grossProfit": 1968.45,
-        "commission": 14.4771,
-        "netProfit": 1953.9729,
-        "pairs": [
-          {
-            "buyPrice": 11.97,
-            "sellPrice": 12.3,
-            "qty": 5965,
-            "gross": 1968.45,
-            "comm": 14.4771,
-            "net": 1953.9729,
-            "buyTime": "10:23:04",
-            "sellTime": "11:52:21",
-            "buyDate": "2026-07-03",
-            "carryover": false
-          }
-        ],
-        "openPositions": []
-      },
-      "TOASO": {
-        "symbol": "TOASO",
-        "buyCount": 1,
-        "sellCount": 0,
-        "pairCount": 0,
-        "openBuys": 183,
-        "carriedIn": 0,
-        "avgBuy": 303.75,
-        "avgSell": 0,
-        "grossProfit": 0,
-        "commission": 5.5586,
-        "netProfit": -5.5586,
-        "pairs": [],
-        "openPositions": [
-          {
-            "symbol": "TOASO",
-            "type": "Alış",
-            "qty": 183,
-            "price": 303.75,
-            "status": "Gerçekleşti",
-            "execQty": 183,
-            "amount": 55586.25,
-            "execPrice": 303.75,
-            "execAmount": 55586.25,
-            "commission": 5.558625,
-            "time": "12:13:08",
-            "date": "2026-07-03",
-            "datetime": "2026-07-03 12:13:08",
-            "referans": "882899044",
-            "carryover": false
-          }
-        ]
       }
     },
-    "totalGross": -724.1566,
-    "totalCommission": 28.3778,
-    "totalNet": -752.5344,
+    "totalGross": 0,
+    "totalCommission": 0,
+    "totalNet": 0,
     "openPositions": {
+      "TOASO": [
+        {
+          "amount": 55586.25,
+          "commission": 5.558625,
+          "date": "2026-07-03",
+          "datetime": "2026-07-03 12:13:08",
+          "execAmount": 55586.25,
+          "execPrice": 303.75,
+          "execQty": 183,
+          "price": 303.75,
+          "qty": 183,
+          "referans": "882899044",
+          "status": "Gerçekleşti",
+          "symbol": "TOASO",
+          "time": "12:13:08",
+          "type": "Alış",
+          "carryover": false
+        }
+      ],
       "TUPRS": [
         {
           "amount": 115390.0,
@@ -2878,92 +2841,73 @@ async function fbWrite(path,data){
           "type": "Alış",
           "carryover": false
         }
-      ],
-      "TOASO": [
-        {
-          "symbol": "TOASO",
-          "type": "Alış",
-          "qty": 183,
-          "price": 303.75,
-          "status": "Gerçekleşti",
-          "execQty": 183,
-          "amount": 55586.25,
-          "execPrice": 303.75,
-          "execAmount": 55586.25,
-          "commission": 5.558625,
-          "time": "12:13:08",
-          "date": "2026-07-03",
-          "datetime": "2026-07-03 12:13:08",
-          "referans": "882899044",
-          "carryover": false
-        }
       ]
     }
   },
   "allTrades": [
     {
-      "symbol": "TOASO",
-      "type": "Alış",
-      "qty": 183,
-      "price": 303.75,
-      "status": "Gerçekleşti",
-      "execQty": 183,
       "amount": 55586.25,
-      "execPrice": 303.75,
-      "execAmount": 55586.25,
       "commission": 5.558625,
-      "time": "12:13:08",
       "date": "2026-07-03",
       "datetime": "2026-07-03 12:13:08",
-      "referans": "882899044"
+      "execAmount": 55586.25,
+      "execPrice": 303.75,
+      "execQty": 183,
+      "price": 303.75,
+      "qty": 183,
+      "referans": "882899044",
+      "status": "Gerçekleşti",
+      "symbol": "TOASO",
+      "time": "12:13:08",
+      "type": "Alış"
     },
     {
-      "symbol": "AKSA",
-      "type": "Satış",
-      "qty": 5965,
-      "price": 12.3,
-      "status": "Gerçekleşti",
-      "execQty": 5965,
       "amount": 73369.5,
-      "execPrice": 12.3,
-      "execAmount": 73369.5,
       "commission": 7.33695,
-      "time": "11:52:21",
       "date": "2026-07-03",
       "datetime": "2026-07-03 11:52:21",
-      "referans": "882438077"
+      "execAmount": 73369.5,
+      "execPrice": 12.3,
+      "execQty": 5965,
+      "price": 12.3,
+      "qty": 5965,
+      "referans": "882438077",
+      "status": "Gerçekleşti",
+      "symbol": "AKSA",
+      "time": "11:52:21",
+      "type": "Satış"
     },
     {
-      "symbol": "AKSA",
-      "type": "Alış",
-      "qty": 5965,
-      "price": 11.97,
-      "status": "Gerçekleşti",
-      "execQty": 5965,
       "amount": 71401.05,
-      "execPrice": 11.97,
-      "execAmount": 71401.05,
       "commission": 7.140105,
-      "time": "10:23:04",
       "date": "2026-07-03",
       "datetime": "2026-07-03 10:23:04",
-      "referans": "882413724"
+      "execAmount": 71401.05,
+      "execPrice": 11.97,
+      "execQty": 5965,
+      "price": 11.97,
+      "qty": 5965,
+      "referans": "882413724",
+      "status": "Gerçekleşti",
+      "symbol": "AKSA",
+      "time": "10:23:04",
+      "type": "Alış"
     },
     {
-      "symbol": "AGESA",
-      "type": "Satış",
-      "qty": 346,
-      "price": 241.1,
-      "status": "Gerçekleşti",
-      "execQty": 346,
       "amount": 83420.6,
-      "execPrice": 241.1,
-      "execAmount": 83420.6,
       "commission": 8.34206,
-      "time": "10:21:23",
       "date": "2026-07-03",
       "datetime": "2026-07-03 10:21:23",
-      "referans": "882401851"
+      "execAmount": 83420.6,
+      "execPrice": 241.1,
+      "execQty": 346,
+      "price": 241.1,
+      "qty": 346,
+      "referans": "882401851",
+      "status": "Gerçekleşti",
+      "symbol": "AGESA",
+      "time": "10:21:23",
+      "type": "Satış"
     },
     {
       "amount": 86119.4,
@@ -49370,42 +49314,448 @@ async function fbWrite(path,data){
       "updatedAt": "2026-07-02 18:35:23"
     },
     "2026-07-03": {
-      "date": "2026-07-03",
-      "trades": 4,
-      "sells": 2,
       "buys": 2,
-      "grossProfit": -724.1566,
-      "commission": 28.3778,
-      "netProfit": -752.5344,
-      "overall": 1505947.94,
       "bySymbol": {
-        "AGESA": {
-          "symbol": "AGESA",
-          "buyCount": 0,
-          "sellCount": 1,
-          "pairCount": 1,
-          "openBuys": 0,
-          "carriedIn": 346,
+        "1SXAAC": {
           "avgBuy": 0,
-          "avgSell": 241.1,
-          "grossProfit": -2692.6066,
-          "commission": 8.3421,
-          "netProfit": -2700.9487,
-          "pairs": [
+          "avgSell": 0,
+          "buyCount": 0,
+          "carriedIn": 140,
+          "commission": 0,
+          "grossProfit": 0,
+          "netProfit": 0,
+          "openBuys": 0,
+          "openPositions": [
             {
-              "buyPrice": 248.8821,
-              "sellPrice": 241.1,
-              "qty": 346,
-              "gross": -2692.6066,
-              "comm": 8.3421,
-              "net": -2700.9487,
-              "buyTime": "13:21:51",
-              "sellTime": "10:21:23",
-              "buyDate": "2026-07-01",
-              "carryover": true
+              "amount": 5012.04,
+              "carryover": false,
+              "commission": 0.501204,
+              "date": "2026-04-15",
+              "datetime": "2026-04-15 10:57:22",
+              "execAmount": 5012.04,
+              "execPrice": 113.91,
+              "execQty": 44,
+              "price": 113.91,
+              "qty": 44,
+              "referans": "797183654",
+              "status": "Gerçekleşti",
+              "symbol": "1SXAAC",
+              "time": "10:57:22",
+              "type": "Alış"
+            },
+            {
+              "amount": 5060.0,
+              "carryover": false,
+              "commission": 0.506,
+              "date": "2026-05-15",
+              "datetime": "2026-05-15 10:04:28",
+              "execAmount": 5060.0,
+              "execPrice": 115.0,
+              "execQty": 44,
+              "price": 115.0,
+              "qty": 44,
+              "referans": "829791471",
+              "status": "Gerçekleşti",
+              "symbol": "1SXAAC",
+              "time": "10:04:28",
+              "type": "Alış"
+            },
+            {
+              "amount": 4943.64,
+              "carryover": false,
+              "commission": 0.494364,
+              "date": "2026-06-11",
+              "datetime": "2026-06-11 12:35:09",
+              "execAmount": 4943.64,
+              "execPrice": 95.07,
+              "execQty": 52,
+              "price": 95.07,
+              "qty": 52,
+              "referans": "857735902",
+              "status": "Gerçekleşti",
+              "symbol": "1SXAAC",
+              "time": "12:35:09",
+              "type": "Alış"
             }
           ],
-          "openPositions": []
+          "pairCount": 0,
+          "sellCount": 0,
+          "symbol": "1SXAAC"
+        },
+        "AGESA": {
+          "avgBuy": 0,
+          "avgSell": 241.1,
+          "buyCount": 0,
+          "carriedIn": 346,
+          "commission": 8.3421,
+          "grossProfit": -2692.6066,
+          "netProfit": -2700.9487,
+          "openBuys": 0,
+          "pairCount": 1,
+          "pairs": [
+            {
+              "buyDate": "2026-07-01",
+              "buyPrice": 248.8821,
+              "buyTime": "13:21:51",
+              "carryover": true,
+              "comm": 8.3421,
+              "gross": -2692.6066,
+              "net": -2700.9487,
+              "qty": 346,
+              "sellPrice": 241.1,
+              "sellTime": "10:21:23"
+            }
+          ],
+          "sellCount": 1,
+          "symbol": "AGESA"
+        },
+        "AKSA": {
+          "avgBuy": 11.97,
+          "avgSell": 12.3,
+          "buyCount": 1,
+          "carriedIn": 0,
+          "commission": 14.4771,
+          "grossProfit": 1968.45,
+          "netProfit": 1953.9729,
+          "openBuys": 0,
+          "pairCount": 1,
+          "pairs": [
+            {
+              "buyDate": "2026-07-03",
+              "buyPrice": 11.97,
+              "buyTime": "10:23:04",
+              "carryover": false,
+              "comm": 14.4771,
+              "gross": 1968.45,
+              "net": 1953.9729,
+              "qty": 5965,
+              "sellPrice": 12.3,
+              "sellTime": "11:52:21"
+            }
+          ],
+          "sellCount": 1,
+          "symbol": "AKSA"
+        },
+        "TOASO": {
+          "avgBuy": 303.75,
+          "avgSell": 0,
+          "buyCount": 1,
+          "carriedIn": 0,
+          "commission": 5.5586,
+          "grossProfit": 0,
+          "netProfit": -5.5586,
+          "openBuys": 183,
+          "openPositions": [
+            {
+              "amount": 55586.25,
+              "carryover": false,
+              "commission": 5.558625,
+              "date": "2026-07-03",
+              "datetime": "2026-07-03 12:13:08",
+              "execAmount": 55586.25,
+              "execPrice": 303.75,
+              "execQty": 183,
+              "price": 303.75,
+              "qty": 183,
+              "referans": "882899044",
+              "status": "Gerçekleşti",
+              "symbol": "TOASO",
+              "time": "12:13:08",
+              "type": "Alış"
+            }
+          ],
+          "pairCount": 0,
+          "sellCount": 0,
+          "symbol": "TOASO"
+        },
+        "TUPRS": {
+          "avgBuy": 0,
+          "avgSell": 0,
+          "buyCount": 0,
+          "carriedIn": 5425,
+          "commission": 0,
+          "grossProfit": 0,
+          "netProfit": 0,
+          "openBuys": 0,
+          "openPositions": [
+            {
+              "amount": 115390.0,
+              "carryover": false,
+              "commission": 11.539,
+              "date": "2026-05-11",
+              "datetime": "2026-05-11 10:16:35",
+              "execAmount": 115390.0,
+              "execPrice": 262.25,
+              "execQty": 440,
+              "price": 262.25,
+              "qty": 440,
+              "referans": "822251115",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "10:16:35",
+              "type": "Alış"
+            },
+            {
+              "amount": 115390.0,
+              "carryover": false,
+              "commission": 11.539,
+              "date": "2026-05-11",
+              "datetime": "2026-05-11 10:16:36",
+              "execAmount": 115390.0,
+              "execPrice": 262.25,
+              "execQty": 440,
+              "price": 262.25,
+              "qty": 440,
+              "referans": "822251202",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "10:16:36",
+              "type": "Alış"
+            },
+            {
+              "amount": 115390.0,
+              "carryover": false,
+              "commission": 11.539,
+              "date": "2026-05-11",
+              "datetime": "2026-05-11 10:16:36",
+              "execAmount": 115390.0,
+              "execPrice": 262.25,
+              "execQty": 440,
+              "price": 262.25,
+              "qty": 440,
+              "referans": "822251237",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "10:16:36",
+              "type": "Alış"
+            },
+            {
+              "amount": 115390.0,
+              "carryover": false,
+              "commission": 11.539,
+              "date": "2026-05-11",
+              "datetime": "2026-05-11 10:16:36",
+              "execAmount": 115390.0,
+              "execPrice": 262.25,
+              "execQty": 440,
+              "price": 262.25,
+              "qty": 440,
+              "referans": "822251268",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "10:16:36",
+              "type": "Alış"
+            },
+            {
+              "amount": 115390.0,
+              "carryover": false,
+              "commission": 11.539,
+              "date": "2026-05-11",
+              "datetime": "2026-05-11 10:16:37",
+              "execAmount": 115390.0,
+              "execPrice": 262.25,
+              "execQty": 440,
+              "price": 262.25,
+              "qty": 440,
+              "referans": "822251404",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "10:16:37",
+              "type": "Alış"
+            },
+            {
+              "amount": 115500.0,
+              "carryover": false,
+              "commission": 11.55,
+              "date": "2026-05-11",
+              "datetime": "2026-05-11 10:16:38",
+              "execAmount": 115500.0,
+              "execPrice": 262.5,
+              "execQty": 440,
+              "price": 262.5,
+              "qty": 440,
+              "referans": "822251530",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "10:16:38",
+              "type": "Alış"
+            },
+            {
+              "amount": 115500.0,
+              "carryover": false,
+              "commission": 11.55,
+              "date": "2026-05-11",
+              "datetime": "2026-05-11 10:16:38",
+              "execAmount": 115500.0,
+              "execPrice": 262.5,
+              "execQty": 440,
+              "price": 262.5,
+              "qty": 440,
+              "referans": "822251575",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "10:16:38",
+              "type": "Alış"
+            },
+            {
+              "amount": 114400.0,
+              "carryover": false,
+              "commission": 11.44,
+              "date": "2026-05-18",
+              "datetime": "2026-05-18 10:14:05",
+              "execAmount": 114400.0,
+              "execPrice": 260.0,
+              "execQty": 440,
+              "price": 260.0,
+              "qty": 440,
+              "referans": "831401963",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "10:14:05",
+              "type": "Alış"
+            },
+            {
+              "amount": 113300.0,
+              "carryover": false,
+              "commission": 11.33,
+              "date": "2026-05-18",
+              "datetime": "2026-05-18 11:00:23",
+              "execAmount": 113300.0,
+              "execPrice": 257.5,
+              "execQty": 440,
+              "price": 257.5,
+              "qty": 440,
+              "referans": "831387621",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "11:00:23",
+              "type": "Alış"
+            },
+            {
+              "amount": 112310.0,
+              "carryover": false,
+              "commission": 11.231,
+              "date": "2026-05-18",
+              "datetime": "2026-05-18 13:49:39",
+              "execAmount": 112310.0,
+              "execPrice": 255.25,
+              "execQty": 440,
+              "price": 255.25,
+              "qty": 440,
+              "referans": "831378422",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "13:49:39",
+              "type": "Alış"
+            },
+            {
+              "amount": 111210.0,
+              "carryover": false,
+              "commission": 11.121,
+              "date": "2026-05-18",
+              "datetime": "2026-05-18 15:36:48",
+              "execAmount": 111210.0,
+              "execPrice": 252.75,
+              "execQty": 440,
+              "price": 252.75,
+              "qty": 440,
+              "referans": "831378423",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "15:36:48",
+              "type": "Alış"
+            },
+            {
+              "amount": 35032.0,
+              "carryover": false,
+              "commission": 3.5032,
+              "date": "2026-05-22",
+              "datetime": "2026-05-22 11:27:25",
+              "execAmount": 35032.0,
+              "execPrice": 241.6,
+              "execQty": 145,
+              "price": 241.6,
+              "qty": 145,
+              "referans": "836854518",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "11:27:25",
+              "type": "Alış"
+            },
+            {
+              "amount": 105996.0,
+              "carryover": false,
+              "commission": 10.5996,
+              "date": "2026-06-03",
+              "datetime": "2026-06-03 16:18:06",
+              "execAmount": 105996.0,
+              "execPrice": 240.9,
+              "execQty": 440,
+              "price": 240.9,
+              "qty": 440,
+              "referans": "845646742",
+              "status": "Gerçekleşti",
+              "symbol": "TUPRS",
+              "time": "16:18:06",
+              "type": "Alış"
+            }
+          ],
+          "pairCount": 0,
+          "sellCount": 0,
+          "symbol": "TUPRS"
+        }
+      },
+      "commission": 28.3778,
+      "date": "2026-07-03",
+      "grossProfit": -724.1566,
+      "netProfit": -752.5344,
+      "overall": 1505947.94,
+      "sells": 2,
+      "trades": 4,
+      "updatedAt": "2026-07-03 18:35:23"
+    },
+    "2026-07-06": {
+      "date": "2026-07-06",
+      "trades": 0,
+      "sells": 0,
+      "buys": 0,
+      "grossProfit": 0,
+      "commission": 0,
+      "netProfit": 0,
+      "overall": 1501117.4,
+      "bySymbol": {
+        "TOASO": {
+          "symbol": "TOASO",
+          "buyCount": 0,
+          "sellCount": 0,
+          "pairCount": 0,
+          "openBuys": 0,
+          "carriedIn": 183,
+          "avgBuy": 0,
+          "avgSell": 0,
+          "grossProfit": 0,
+          "commission": 0,
+          "netProfit": 0,
+          "pairs": [],
+          "openPositions": [
+            {
+              "amount": 55586.25,
+              "commission": 5.558625,
+              "date": "2026-07-03",
+              "datetime": "2026-07-03 12:13:08",
+              "execAmount": 55586.25,
+              "execPrice": 303.75,
+              "execQty": 183,
+              "price": 303.75,
+              "qty": 183,
+              "referans": "882899044",
+              "status": "Gerçekleşti",
+              "symbol": "TOASO",
+              "time": "12:13:08",
+              "type": "Alış",
+              "carryover": false
+            }
+          ]
         },
         "TUPRS": {
           "symbol": "TUPRS",
@@ -49710,70 +50060,9 @@ async function fbWrite(path,data){
               "carryover": false
             }
           ]
-        },
-        "AKSA": {
-          "symbol": "AKSA",
-          "buyCount": 1,
-          "sellCount": 1,
-          "pairCount": 1,
-          "openBuys": 0,
-          "carriedIn": 0,
-          "avgBuy": 11.97,
-          "avgSell": 12.3,
-          "grossProfit": 1968.45,
-          "commission": 14.4771,
-          "netProfit": 1953.9729,
-          "pairs": [
-            {
-              "buyPrice": 11.97,
-              "sellPrice": 12.3,
-              "qty": 5965,
-              "gross": 1968.45,
-              "comm": 14.4771,
-              "net": 1953.9729,
-              "buyTime": "10:23:04",
-              "sellTime": "11:52:21",
-              "buyDate": "2026-07-03",
-              "carryover": false
-            }
-          ],
-          "openPositions": []
-        },
-        "TOASO": {
-          "symbol": "TOASO",
-          "buyCount": 1,
-          "sellCount": 0,
-          "pairCount": 0,
-          "openBuys": 183,
-          "carriedIn": 0,
-          "avgBuy": 303.75,
-          "avgSell": 0,
-          "grossProfit": 0,
-          "commission": 5.5586,
-          "netProfit": -5.5586,
-          "pairs": [],
-          "openPositions": [
-            {
-              "symbol": "TOASO",
-              "type": "Alış",
-              "qty": 183,
-              "price": 303.75,
-              "status": "Gerçekleşti",
-              "execQty": 183,
-              "amount": 55586.25,
-              "execPrice": 303.75,
-              "execAmount": 55586.25,
-              "commission": 5.558625,
-              "time": "12:13:08",
-              "date": "2026-07-03",
-              "datetime": "2026-07-03 12:13:08",
-              "referans": "882899044",
-              "carryover": false
-            }
-          ]
         }
       },
-      "updatedAt": "2026-07-03 18:35:23"
+      "updatedAt": "2026-07-06 18:35:22"
     }
   },
   "overallHistory": [
@@ -50108,8 +50397,13 @@ async function fbWrite(path,data){
       "note": "Otomatik - 18:35"
     },
     {
-      "date": "2026-07-03",
       "amount": 1505947.94,
+      "date": "2026-07-03",
+      "note": "Otomatik - 18:35"
+    },
+    {
+      "date": "2026-07-06",
+      "amount": 1501117.4,
       "note": "Otomatik - 18:35"
     }
   ],
@@ -50156,8 +50450,27 @@ async function fbWrite(path,data){
     }
   ],
   "openPositions": {
-    "date": "2026-07-03",
+    "date": "2026-07-06",
     "positions": {
+      "TOASO": [
+        {
+          "amount": 55586.25,
+          "commission": 5.558625,
+          "date": "2026-07-03",
+          "datetime": "2026-07-03 12:13:08",
+          "execAmount": 55586.25,
+          "execPrice": 303.75,
+          "execQty": 183,
+          "price": 303.75,
+          "qty": 183,
+          "referans": "882899044",
+          "status": "Gerçekleşti",
+          "symbol": "TOASO",
+          "time": "12:13:08",
+          "type": "Alış",
+          "carryover": false
+        }
+      ],
       "TUPRS": [
         {
           "amount": 115390.0,
@@ -50433,25 +50746,6 @@ async function fbWrite(path,data){
           "type": "Alış",
           "carryover": false
         }
-      ],
-      "TOASO": [
-        {
-          "symbol": "TOASO",
-          "type": "Alış",
-          "qty": 183,
-          "price": 303.75,
-          "status": "Gerçekleşti",
-          "execQty": 183,
-          "amount": 55586.25,
-          "execPrice": 303.75,
-          "execAmount": 55586.25,
-          "commission": 5.558625,
-          "time": "12:13:08",
-          "date": "2026-07-03",
-          "datetime": "2026-07-03 12:13:08",
-          "referans": "882899044",
-          "carryover": false
-        }
       ]
     }
   },
@@ -50533,7 +50827,7 @@ async function fbWrite(path,data){
     "trackAccum": -1410.2163,
     "trackAccumBase": -1410.2163,
     "trackAlerted": false,
-    "trackLastDate": "2026-07-03",
+    "trackLastDate": "2026-07-06",
     "trackLastSymNet": 0,
     "trackPayAmt": 1000,
     "trackSymbol": "MIATK",
@@ -50900,8 +51194,8 @@ async function fbWrite(path,data){
 };
         // GRID_DATA_END
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                // GRID_REC_START
-        window.__GRID_REC__ = {"symbol":"VAKBN","price":31.88,"atr":1.09,"support":30.86,"resistance":34.14,"grid_interval":0.16,"lots":1985,"buy_grids":6,"sell_grids":14,"total_grids":20,"pct_up":7.08,"pct_down":3.21,"daily_profit":2071.0,"capital_used":1259919.0,"grid_score":8.71,"rsi":43.9,"signals":"Osc=10x(cok-aktif!), Hold=90%(guclu), Vol=3.4%(ideal), Trend=toparlanma-denemesi(egim=2.2%), Tetik=6.8/gun(iyi), Hacim=1297M(cok-likit!), RSI=44(ideal), Pos=31%(orta-ideal), Giriş=ORTA %31(ideal)","final_score":8.369,"entry_pos":31,"entry_factor":1.0,"updated_at":"2026-07-03 18:35","capital":1400000,"market_status":"Piyasa=yukari-trend"};
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                // GRID_REC_START
+        window.__GRID_REC__ = {"symbol":"VAKBN","price":31.94,"atr":1.06,"support":30.86,"resistance":34.14,"grid_interval":0.16,"lots":2086,"buy_grids":6,"sell_grids":13,"total_grids":19,"pct_up":6.88,"pct_down":3.39,"daily_profit":2122.0,"capital_used":1259902.0,"grid_score":8.41,"rsi":44.3,"signals":"Osc=10x(cok-aktif!), Hold=90%(guclu), Vol=3.3%(ideal), Trend=hafif-asagi(mom=-1.1%), Tetik=6.6/gun(iyi), Hacim=1316M(cok-likit!), RSI=44(ideal), Pos=33%(orta-ideal), Giriş=ORTA %33(ideal)","final_score":8.475,"entry_pos":33,"entry_factor":1.0,"updated_at":"2026-07-06 18:35","capital":1400000,"market_status":"Piyasa=yukselis(+)"};
                                 // GRID_REC_END
 
 // ════════════════════════════════════════════════════════
