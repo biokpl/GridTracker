@@ -12,7 +12,7 @@ Stdlib only + openpyxl (otomatik install edilir)
 """
 import subprocess, sys
 
-for _pkg in ['openpyxl', 'pywebpush']:
+for _pkg in ['openpyxl', 'pywebpush', 'psutil']:
     try:
         __import__(_pkg.replace('-', '_'))
     except ImportError:
@@ -677,6 +677,37 @@ def _grid_scan_loop():
         time.sleep(120)
 
 
+def _watchdog_guard_loop():
+    """KARŞILIKLI GÖZETİM: health_watchdog düşükse yeniden başlat.
+    Sebep: watchdog'un Run kaydı (GridTrackerHealth) boot'ta ateşlenmiyor
+    (Kaspersky), bu yüzden her reboot sonrası watchdog ölü kalıyor ve hiçbir
+    servisi kurtaramıyordu. server.py güvenilir başladığı için (Logon görevi)
+    bekçiyi o bekliyor: server → watchdog → diğer her şey."""
+    import psutil
+    wd_path = os.path.join(BASE_DIR, 'health_watchdog.pyw')
+    pythonw = sys.executable.replace('python.exe', 'pythonw.exe')
+    time.sleep(90)   # boot fırtınası geçsin
+    while True:
+        try:
+            alive = False
+            for p in psutil.process_iter(['name', 'cmdline']):
+                try:
+                    if 'python' in (p.info.get('name') or '').lower():
+                        cl = ' '.join(p.info.get('cmdline') or [])
+                        if 'health_watchdog' in cl:
+                            alive = True
+                            break
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+            if not alive and os.path.exists(wd_path):
+                slog.warning('[WatchdogGuard] health_watchdog düşük → başlatılıyor')
+                subprocess.Popen([pythonw, wd_path], cwd=BASE_DIR,
+                                 creationflags=0x08000000 | 0x00000008)  # NO_WINDOW|DETACHED
+        except Exception as e:
+            slog.warning(f'[WatchdogGuard] hata: {e}')
+        time.sleep(600)   # 10 dk'da bir kontrol
+
+
 # ---------------------------------------------------------------------------
 # HTTP Handler
 # ---------------------------------------------------------------------------
@@ -1148,6 +1179,8 @@ if __name__ == '__main__':
     threading.Thread(target=_verdict_monitor_loop, daemon=True).start()
     # Gün içi grid aday taraması (30 dk, piyasa açıkken) — kart güncel kalsın
     threading.Thread(target=_grid_scan_loop, daemon=True).start()
+    # health_watchdog bekçisi — reboot sonrası watchdog ölü kalmasın
+    threading.Thread(target=_watchdog_guard_loop, daemon=True).start()
     # Push queue → automation_server.pyw (port 5051) tarafından işleniyor
     # ThreadingHTTPServer: her istek ayrı thread'de işlenir. Bir istek (örn
     # Excel COM) takılsa bile diğer istekler (health, all-data) çalışmaya devam
