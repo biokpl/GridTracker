@@ -88,16 +88,37 @@ def _notify(title, body, priority="high", tags="warning"):
 
 
 # ── SERVİS KONTROL ───────────────────────────────────────────────────────────
-def _proc_running(match):
+def _proc_list(match):
+    """match ile eşleşen TÜM süreçleri döner (pid, create_time)."""
     m = match.replace("/", "\\").lower()
-    for p in psutil.process_iter(["name", "cmdline"]):
+    found = []
+    for p in psutil.process_iter(["name", "cmdline", "create_time"]):
         try:
             cl = " ".join(p.info.get("cmdline") or []).replace("/", "\\").lower()
             if m in cl:
-                return True
+                found.append(p)
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
-    return False
+    return found
+
+def _proc_running(match):
+    return len(_proc_list(match)) > 0
+
+def _dedup(match):
+    """ÇİFT KOPYA TEMİZLİĞİ: aynı servisten 2+ kopya varsa (boot yarışı:
+    Run kaydı + watchdog + server bekçisi aynı anda başlatabiliyor) en
+    ESKİSİNİ tutar, gerisini kapatır. Kim başlatırsa başlatsın 60 sn
+    içinde teke iner."""
+    procs = _proc_list(match)
+    if len(procs) <= 1:
+        return
+    procs.sort(key=lambda p: p.info.get("create_time") or 0)
+    for p in procs[1:]:
+        try:
+            log.warning(f"ÇİFT KOPYA: {match} (PID {p.pid}) → fazlası kapatılıyor")
+            p.kill()
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
 
 def _launch(script, cwd):
     subprocess.Popen([PYTHONW, str(script)], cwd=str(cwd),
@@ -109,6 +130,7 @@ def check_services():
     for match, (script, cwd) in SERVICES.items():
         if not script.exists():
             continue
+        _dedup(match)          # fazla kopya varsa en eskisi kalır
         if _proc_running(match):
             continue
         # Cooldown: aynı servisi 5 dk içinde tekrar başlatma (restart loop önle)
