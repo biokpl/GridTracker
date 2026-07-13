@@ -54,27 +54,38 @@ def _fp(v) -> str:
 
 def _send(title: str, body: str, priority: str = "default", tags: str = "",
           alert: bool = False, actions: str = "") -> bool:
-    try:
-        # alert=True → kritik topic (alarm sesi). Aksi halde normal topic.
-        base = URL_ALERT if alert else URL
-        # Kritik bildirimlerin başına benzersiz [ACİL] etiketi — MacroDroid/Tasker
-        # gibi araçlar tek kuralla (içinde "[ACİL]" geçenler) alarm sesi çalabilir.
-        if alert and "[ACİL]" not in title:
-            title = f"[ACİL] {title}"
-        # Başlık URL parametresi olarak geçiliyor — Türkçe karakter + emoji destekli
-        url = f"{base}?title={_quote(title)}"
-        headers = {"Priority": priority, "Content-Type": "text/plain; charset=utf-8"}
-        if tags:
-            headers["Tags"] = tags
-        if actions:
-            headers["Actions"] = actions   # tek-dokunuş butonu (action_sold/bought)
-        r = requests.post(url, data=body.encode("utf-8"), headers=headers, timeout=10)
-        ok = r.status_code == 200
-        print(f"[Push] {'OK' if ok else 'HATA'}: {title}")
-        return ok
-    except Exception as e:
-        print(f"[Push] Bağlantı hatası: {e}")
-        return False
+    # alert=True → kritik topic (alarm sesi). Aksi halde normal topic.
+    base = URL_ALERT if alert else URL
+    # Kritik bildirimlerin başına benzersiz [ACİL] etiketi — MacroDroid/Tasker
+    # gibi araçlar tek kuralla (içinde "[ACİL]" geçenler) alarm sesi çalabilir.
+    if alert and "[ACİL]" not in title:
+        title = f"[ACİL] {title}"
+    # Başlık URL parametresi olarak geçiliyor — Türkçe karakter + emoji destekli
+    url = f"{base}?title={_quote(title)}"
+    headers = {"Priority": priority, "Content-Type": "text/plain; charset=utf-8"}
+    if tags:
+        headers["Tags"] = tags
+    if actions:
+        headers["Actions"] = actions   # tek-dokunuş butonu (action_sold/bought)
+    data = body.encode("utf-8")
+    # TEKRAR DENEME: anlık internet/ntfy.sh takılmasında mesaj (özellikle
+    # kritik ÇIK!) sessizce kaybolmasın — 3 deneme, artan bekleme (0/3/8 sn).
+    import time as _t
+    last_err = None
+    for attempt, wait_s in enumerate((0, 3, 8)):
+        if wait_s:
+            _t.sleep(wait_s)
+        try:
+            r = requests.post(url, data=data, headers=headers, timeout=10)
+            if r.status_code == 200:
+                print(f"[Push] OK: {title}")
+                return True
+            last_err = f"HTTP {r.status_code}"
+        except Exception as e:
+            last_err = e
+        print(f"[Push] deneme {attempt + 1}/3 başarısız: {last_err}")
+    print(f"[Push] GÖNDERİLEMEDİ (3 deneme): {title}")
+    return False
 
 
 def _new_pick_lines(new_pick, lot_info, baslik="✅ YENİ HİSSE"):
