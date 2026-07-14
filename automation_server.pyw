@@ -29,28 +29,22 @@ if sys.platform == 'win32':
     if sys.stderr is not None:
         sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
-for _pkg in ['flask', 'holidays', 'openpyxl']:
+for _pkg in ['holidays', 'openpyxl']:
     try:
         __import__(_pkg)
     except ImportError:
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', _pkg])
 
-from flask import Flask, request, jsonify, Response
+# FLASK KALDIRILDI (2026-07-14): Kaspersky davranış koruması, werkzeug tabanlı
+# headless sunucuyu bind'dan ~10 sn sonra iz bırakmadan öldürüyordu. server.py
+# aynı makinede stdlib http.server ile (0.0.0.0:5050) aylardır sorunsuz →
+# aynı sisteme geçirildi (ThreadingHTTPServer + Handler).
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 
 SCRIPT_DIR  = Path(__file__).parent
 CONFIG_FILE = SCRIPT_DIR / 'morning_config.ini'
 TASK_NAME   = 'MatriksIQ_Sabah_Otomasyonu'
 PORT        = 5051
-
-app = Flask(__name__)
-
-
-def _cors(resp):
-    resp.headers['Access-Control-Allow-Origin']         = '*'
-    resp.headers['Access-Control-Allow-Headers']        = 'Content-Type'
-    resp.headers['Access-Control-Allow-Methods']        = 'GET,POST,OPTIONS'
-    resp.headers['Access-Control-Allow-Private-Network'] = 'true'
-    return resp
 
 
 def _read_cfg():
@@ -96,36 +90,26 @@ def _update_task(time_str):
     return result.returncode == 0, result.stdout + result.stderr
 
 
-# ── OPTIONS (preflight) ────────────────────────────────────
-@app.route('/api/morning-settings', methods=['OPTIONS'])
-def options_settings():
-    return _cors(Response('', 204))
-
-
-# ── GET /api/morning-settings ─────────────────────────────
-@app.route('/api/morning-settings', methods=['GET'])
-def get_settings():
+# ── API işleyicileri (framework'süz; her biri (status, payload) döner) ──────
+def api_get_settings():
     cfg = _read_cfg()
     time_str = cfg.get('schedule', 'time', fallback='09:15')
-    return _cors(jsonify({
+    return 200, {
         'time': time_str,
         'wake_time': _wake_time(time_str),
         'task_name': TASK_NAME,
-    }))
+    }
 
 
-# ── POST /api/morning-settings ────────────────────────────
-@app.route('/api/morning-settings', methods=['POST'])
-def save_settings():
-    data = request.get_json(force=True)
+def api_save_settings(data):
     time_str = (data or {}).get('time', '').strip()
 
     if not re.match(r'^\d{2}:\d{2}$', time_str):
-        return _cors(jsonify({'error': 'Geçersiz saat formatı (HH:MM bekleniyor)'})), 400
+        return 400, {'error': 'Geçersiz saat formatı (HH:MM bekleniyor)'}
 
     h, m = map(int, time_str.split(':'))
     if not (0 <= h <= 23 and 0 <= m <= 59):
-        return _cors(jsonify({'error': 'Saat değeri geçersiz'})), 400
+        return 400, {'error': 'Saat değeri geçersiz'}
 
     # Config güncelle
     cfg = _read_cfg()
@@ -138,30 +122,24 @@ def save_settings():
     ok, msg = _update_task(time_str)
     wake = _wake_time(time_str)
 
-    return _cors(jsonify({
+    return 200, {
         'success': True,
         'time': time_str,
         'wake_time': wake,
         'task_ok': ok,
         'task_msg': msg.strip(),
-    }))
+    }
 
 
-# ── GET /api/holidays/<year> ───────────────────────────────
-@app.route('/api/holidays/<int:year>', methods=['GET'])
-def get_holidays(year):
+def api_holidays(year):
     import holidays as _hol
     tr = _hol.Turkey(years=year)
     items = sorted([{'date': str(d), 'name': name} for d, name in tr.items()],
                    key=lambda x: x['date'])
-    return _cors(jsonify(items))
+    return 200, items
 
 
-# ── GET /api/sr/<symbol> ──────────────────────────────────
-@app.route('/api/sr/<symbol>', methods=['GET', 'OPTIONS'])
-def get_sr(symbol):
-    if request.method == 'OPTIONS':
-        return _cors(Response('', 204))
+def api_sr(symbol, mode='main'):
     try:
         ticker = symbol.upper() + '.IS'
         url = f'https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=60d'
@@ -171,9 +149,8 @@ def get_sr(symbol):
         q = data['chart']['result'][0]['indicators']['quote'][0]
         prices = [(h, l, c) for h, l, c in zip(q['high'], q['low'], q['close']) if h and l and c]
         if len(prices) < 10:
-            return _cors(jsonify({'error': 'Yetersiz veri'})), 400
+            return 400, {'error': 'Yetersiz veri'}
         current = prices[-1][2]
-        mode = request.args.get('mode', 'main')
         if mode in ('swing', 'swing3', 'swing5'):
             # Swing low/high tespiti
             W, n = 2, len(prices)
@@ -192,20 +169,16 @@ def get_sr(symbol):
         else:
             support    = round(min(p[1] for p in prices), 2)
             resistance = round(max(p[0] for p in prices), 2)
-        return _cors(jsonify({
+        return 200, {
             'support': support, 'resistance': resistance,
             'current': round(current, 2),
             'supports': [support], 'resistances': [resistance],
-        }))
+        }
     except Exception as e:
-        return _cors(jsonify({'error': str(e)})), 500
+        return 500, {'error': str(e)}
 
 
-# ── GET /api/atr/<symbol> ─────────────────────────────────
-@app.route('/api/atr/<symbol>', methods=['GET', 'OPTIONS'])
-def get_atr(symbol):
-    if request.method == 'OPTIONS':
-        return _cors(Response('', 204))
+def api_atr(symbol):
     try:
         import urllib.request as ur, json as _json
         ticker = symbol.upper() + '.IS'
@@ -221,7 +194,7 @@ def get_atr(symbol):
         closes = [v for v in quote['close'] if v is not None]
         n = min(len(highs), len(lows))
         if n < 1:
-            return _cors(jsonify({'error': 'Yetersiz veri'})), 400
+            return 400, {'error': 'Yetersiz veri'}
         atr = sum(highs[i] - lows[i] for i in range(n)) / n
         # regularMarketPrice güncel fiyat (piyasa açıksa anlık, kapalıysa son kapanış)
         price = meta.get('regularMarketPrice') or (closes[-1] if closes else None)
@@ -236,9 +209,9 @@ def get_atr(symbol):
                     ur.urlopen(rq, timeout=5)
                 except: pass
             threading.Thread(target=_push, daemon=True).start()
-        return _cors(jsonify({'atr': round(atr, 4), 'price': round(price, 2) if price else None, 'days': n}))
+        return 200, {'atr': round(atr, 4), 'price': round(price, 2) if price else None, 'days': n}
     except Exception as e:
-        return _cors(jsonify({'error': str(e)})), 500
+        return 500, {'error': str(e)}
 
 
 # ── Task Scheduler setup ───────────────────────────────────
@@ -250,6 +223,17 @@ def setup_autostart():
     value   = f'"{pythonw}" "{script}"'
     key_path = r'Software\Microsoft\Windows\CurrentVersion\Run'
     try:
+        # KOŞULLU YAZ: değer zaten doğruysa DOKUNMA. Her açılışta Run kaydı
+        # yazmak + saniyeler içinde port açmak = zararlı-davranış imzası →
+        # Kaspersky süreci ~10 sn'de öldürüyordu (2026-07-14 tespiti).
+        try:
+            rk = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ)
+            cur, _ = winreg.QueryValueEx(rk, 'GridTrackerServer')
+            winreg.CloseKey(rk)
+        except Exception:
+            cur = None
+        if cur == value:
+            return   # kayıt güncel — yazma, Kaspersky'yi tetikleme
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_SET_VALUE)
         winreg.SetValueEx(key, 'GridTrackerServer', 0, winreg.REG_SZ, value)
         winreg.CloseKey(key)
@@ -349,23 +333,83 @@ def _check_push_queue():
         pass
 
 
-# ── /api/health endpoint ──────────────────────────────
-@app.route('/api/health', methods=['GET'])
-def api_health():
-    return _cors(jsonify({'ok': True, 'port': PORT}))
+# ── HTTP Handler (server.py ile aynı düzen: stdlib, CORS'lu JSON) ──────────
+class Handler(BaseHTTPRequestHandler):
+    def log_message(self, fmt, *args):
+        pass
 
+    def _cors_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
+        self.send_header('Access-Control-Allow-Private-Network', 'true')
 
-# ── /api/notify endpoint ──────────────────────────────
-@app.route('/api/notify', methods=['POST', 'OPTIONS'])
-def api_notify():
-    if request.method == 'OPTIONS':
-        return _cors(Response('', 204))
-    data  = request.get_json(force=True) or {}
-    title = data.get('title', 'GridTracker')
-    body  = data.get('body', '')
-    tag   = data.get('tag', 'gridtracker')
-    threading.Thread(target=send_push_to_all, args=(title, body, tag), daemon=True).start()
-    return _cors(jsonify({'ok': True}))
+    def send_json(self, code, obj):
+        body = json.dumps(obj, ensure_ascii=False).encode('utf-8')
+        self.send_response(code)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self._cors_headers()
+        self.send_header('Content-Length', str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self._cors_headers()
+        self.end_headers()
+
+    def do_GET(self):
+        from urllib.parse import urlparse, parse_qs
+        u     = urlparse(self.path)
+        path  = u.path
+        qs    = parse_qs(u.query)
+        parts = path.strip('/').split('/')
+        try:
+            if path == '/api/health':
+                return self.send_json(200, {'ok': True, 'port': PORT})
+            if path == '/api/morning-settings':
+                return self.send_json(*api_get_settings())
+            if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'holidays':
+                try:
+                    year = int(parts[2])
+                except ValueError:
+                    return self.send_json(400, {'error': 'Geçersiz yıl'})
+                return self.send_json(*api_holidays(year))
+            if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'sr':
+                mode = (qs.get('mode') or ['main'])[0]
+                return self.send_json(*api_sr(parts[2], mode))
+            if len(parts) == 3 and parts[0] == 'api' and parts[1] == 'atr':
+                return self.send_json(*api_atr(parts[2]))
+            return self.send_json(404, {'error': 'Bulunamadı'})
+        except Exception as e:
+            try:
+                self.send_json(500, {'error': str(e)})
+            except Exception:
+                pass
+
+    def do_POST(self):
+        try:
+            ln   = int(self.headers.get('Content-Length') or 0)
+            raw  = self.rfile.read(ln) if ln else b''
+            try:
+                data = json.loads(raw.decode('utf-8')) if raw else {}
+            except Exception:
+                data = {}
+            if self.path.split('?')[0] == '/api/morning-settings':
+                return self.send_json(*api_save_settings(data))
+            if self.path.split('?')[0] == '/api/notify':
+                title = data.get('title', 'GridTracker')
+                body  = data.get('body', '')
+                tag   = data.get('tag', 'gridtracker')
+                threading.Thread(target=send_push_to_all,
+                                 args=(title, body, tag), daemon=True).start()
+                return self.send_json(200, {'ok': True})
+            return self.send_json(404, {'error': 'Bulunamadı'})
+        except Exception as e:
+            try:
+                self.send_json(500, {'error': str(e)})
+            except Exception:
+                pass
 
 
 def fb_write(path, data):
@@ -619,21 +663,21 @@ if __name__ == '__main__':
     if args.setup:
         setup_autostart()
     else:
-        # Port 5050'de eski instance varsa kapat
+        # Port doluysa SESSİZCE çık — eski instance çalışıyor demektir.
+        # (Eski netstat|taskkill shell komutu KALDIRILDI: süreç öldürme +
+        # Registry yazma + port açma üçlüsü Kaspersky davranış imzasıydı.
+        # Çift kopya yönetimi artık health_watchdog dedup'ında.)
         try:
             import socket as _sock
             with _sock.socket(_sock.AF_INET, _sock.SOCK_STREAM) as _s:
                 if _s.connect_ex(('127.0.0.1', PORT)) == 0:
-                    # Port kullanımda — o PID'i bul ve kapat
-                    result = subprocess.run(
-                        f'for /f "tokens=5" %a in (\'netstat -ano ^| findstr "127.0.0.1:{PORT}"\') do taskkill /PID %a /F',
-                        shell=True, capture_output=True
-                    )
-                    time.sleep(1)
-                    print(f'[Başlangıç] Eski instance kapatıldı.')
+                    print(f'[Başlangıç] Port {PORT} zaten kullanımda — çıkılıyor.')
+                    sys.exit(0)
+        except SystemExit:
+            raise
         except Exception:
             pass
-        # Windows oturumunda otomatik başlat (her çalışmada güncelle)
+        # Windows oturumunda otomatik başlat (yalnız kayıt eksik/yanlışsa yazar)
         setup_autostart()
         # Firebase izleyiciyi arka planda başlat
         t = threading.Thread(target=firebase_watcher, daemon=True)
@@ -665,4 +709,5 @@ if __name__ == '__main__':
             print(f'[Firebase] IP yazılamadı: {e}')
         print(f'Otomasyon ayarlar sunucusu başlatılıyor: http://0.0.0.0:{PORT}')
         print(f'Firebase izleyici aktif (10s aralık)')
-        app.run(host='0.0.0.0', port=PORT, debug=False)
+        server = ThreadingHTTPServer(('0.0.0.0', PORT), Handler)
+        server.serve_forever()
