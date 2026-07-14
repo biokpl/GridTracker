@@ -89,8 +89,11 @@ def _notify(title, body, priority="high", tags="warning"):
 
 # ── SERVİS KONTROL ───────────────────────────────────────────────────────────
 def _proc_list(match):
-    """match ile eşleşen TÜM süreçleri döner (pid, create_time)."""
-    m = match.replace("/", "\\").lower()
+    """match ile eşleşen TÜM süreçleri döner (pid, create_time).
+    DİKKAT: eşleşme YOL AYRACIYLA yapılır ('\\server.py') — düz alt-dizgi
+    'server.py', automation_SERVER.PYw'yi de yakalıyordu → dedup,
+    automation_server'ı 'server.py çift kopyası' sanıp ÖLDÜRÜYORDU."""
+    m = "\\" + match.replace("/", "\\").lower().lstrip("\\")
     found = []
     for p in psutil.process_iter(["name", "cmdline", "create_time"]):
         try:
