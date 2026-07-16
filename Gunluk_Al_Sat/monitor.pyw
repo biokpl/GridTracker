@@ -128,6 +128,21 @@ def _is_market_open() -> bool:
     if now.weekday() not in WEEKDAYS: return False
     return MARKET_OPEN <= now.time() <= MARKET_CLOSE
 
+
+def _sleep_until_open_sec() -> int:
+    """Bir sonraki borsa açılışına kalan saniye (en fazla 30 dk'lık dilim).
+    Eski davranış körlemesine 30 dk uyumaktı → 09:41'de uyuyan monitor
+    10:11'e kadar uyanmıyor, açılış sonrası kart ~11-30 dk donuk kalıyordu.
+    Artık açılışa yakınken tam açılış anına (+5 sn) kadar uyur."""
+    now = datetime.now()
+    if now.weekday() in WEEKDAYS and now.time() < MARKET_OPEN:
+        open_dt = now.replace(hour=MARKET_OPEN.hour, minute=MARKET_OPEN.minute,
+                              second=0, microsecond=0)
+        secs = int((open_dt - now).total_seconds()) + 5
+        return max(10, min(secs, OFF_HOURS_SLEEP_MIN * 60))
+    # Kapanış sonrası / hafta sonu: 30 dk dilimler yeterli
+    return OFF_HOURS_SLEEP_MIN * 60
+
 def _should_send(sym: str, signal: str, cooldown: int = 3600) -> bool:
     """Olay bazlı: aynı olay cooldown sn içinde tekrar gönderilmez (varsayılan 60 dk)."""
     key = f"{sym}:{signal}"
@@ -1423,8 +1438,10 @@ def main():
 
             else:
                 now = datetime.now()
-                log.info(f"Piyasa kapalı ({now.strftime('%H:%M')}). {OFF_HOURS_SLEEP_MIN}dk uyuyor.")
-                time.sleep(OFF_HOURS_SLEEP_MIN * 60)
+                _zzz = _sleep_until_open_sec()
+                log.info(f"Piyasa kapalı ({now.strftime('%H:%M')}). "
+                         f"{_zzz // 60}dk {_zzz % 60}sn uyuyor (açılışa göre).")
+                time.sleep(_zzz)
 
         except Exception as e:
             log.error(f"Ana döngü hatası: {e}")
