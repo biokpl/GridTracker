@@ -2200,38 +2200,43 @@ async function fbWrite(path,data){
 // ════════════════════════════════════════════════════════
                                 // GRID_DATA_START
         window.__GRID_DATA__ = {
-  "lastUpdated": "2026-07-20 18:35:23",
-  "today": "2026-07-20",
-  "todayOverall": 1470410.02,
+  "lastUpdated": "2026-07-21 18:35:22",
+  "today": "2026-07-21",
+  "todayOverall": 1473851.28,
   "todayProfit": {
     "bySymbol": {
-      "TRGYO": {
-        "symbol": "TRGYO",
+      "TCELL": {
+        "symbol": "TCELL",
         "buyCount": 0,
-        "sellCount": 1,
-        "pairCount": 1,
+        "sellCount": 0,
+        "pairCount": 0,
         "openBuys": 0,
-        "carriedIn": 569,
+        "carriedIn": 520,
         "avgBuy": 0,
-        "avgSell": 98.45,
-        "grossProfit": -227.6,
-        "commission": 5.6018,
-        "netProfit": -233.2018,
-        "pairs": [
+        "avgSell": 0,
+        "grossProfit": 0,
+        "commission": 0,
+        "netProfit": 0,
+        "pairs": [],
+        "openPositions": [
           {
-            "buyPrice": 98.85,
-            "sellPrice": 98.45,
-            "qty": 569,
-            "gross": -227.6,
-            "comm": 5.6018,
-            "net": -233.2018,
-            "buyTime": "17:09:05",
-            "sellTime": "10:18:04",
-            "buyDate": "2026-07-17",
-            "carryover": true
+            "amount": 56628.0,
+            "commission": 5.6628,
+            "date": "2026-07-20",
+            "datetime": "2026-07-20 10:19:11",
+            "execAmount": 56628.0,
+            "execPrice": 108.9,
+            "execQty": 520,
+            "price": 108.9,
+            "qty": 520,
+            "referans": "896017480",
+            "status": "Gerçekleşti",
+            "symbol": "TCELL",
+            "time": "10:19:11",
+            "type": "Alış",
+            "carryover": false
           }
-        ],
-        "openPositions": []
+        ]
       },
       "1SXAAC": {
         "symbol": "1SXAAC",
@@ -2299,45 +2304,31 @@ async function fbWrite(path,data){
             "carryover": false
           }
         ]
-      },
-      "TCELL": {
-        "symbol": "TCELL",
-        "buyCount": 1,
-        "sellCount": 0,
-        "pairCount": 0,
-        "openBuys": 520,
-        "carriedIn": 0,
-        "avgBuy": 108.9,
-        "avgSell": 0,
-        "grossProfit": 0,
-        "commission": 5.6628,
-        "netProfit": -5.6628,
-        "pairs": [],
-        "openPositions": [
-          {
-            "symbol": "TCELL",
-            "type": "Alış",
-            "qty": 520,
-            "price": 108.9,
-            "status": "Gerçekleşti",
-            "execQty": 520,
-            "amount": 56628.0,
-            "execPrice": 108.9,
-            "execAmount": 56628.0,
-            "commission": 5.6628,
-            "time": "10:19:11",
-            "date": "2026-07-20",
-            "datetime": "2026-07-20 10:19:11",
-            "referans": "896017480",
-            "carryover": false
-          }
-        ]
       }
     },
-    "totalGross": -227.6,
-    "totalCommission": 11.2646,
-    "totalNet": -238.8646,
+    "totalGross": 0,
+    "totalCommission": 0,
+    "totalNet": 0,
     "openPositions": {
+      "TCELL": [
+        {
+          "amount": 56628.0,
+          "commission": 5.6628,
+          "date": "2026-07-20",
+          "datetime": "2026-07-20 10:19:11",
+          "execAmount": 56628.0,
+          "execPrice": 108.9,
+          "execQty": 520,
+          "price": 108.9,
+          "qty": 520,
+          "referans": "896017480",
+          "status": "Gerçekleşti",
+          "symbol": "TCELL",
+          "time": "10:19:11",
+          "type": "Alış",
+          "carryover": false
+        }
+      ],
       "1SXAAC": [
         {
           "amount": 5012.04,
@@ -2390,60 +2381,41 @@ async function fbWrite(path,data){
           "type": "Alış",
           "carryover": false
         }
-      ],
-      "TCELL": [
-        {
-          "symbol": "TCELL",
-          "type": "Alış",
-          "qty": 520,
-          "price": 108.9,
-          "status": "Gerçekleşti",
-          "execQty": 520,
-          "amount": 56628.0,
-          "execPrice": 108.9,
-          "execAmount": 56628.0,
-          "commission": 5.6628,
-          "time": "10:19:11",
-          "date": "2026-07-20",
-          "datetime": "2026-07-20 10:19:11",
-          "referans": "896017480",
-          "carryover": false
-        }
       ]
     }
   },
   "allTrades": [
     {
-      "symbol": "TCELL",
-      "type": "Alış",
-      "qty": 520,
-      "price": 108.9,
-      "status": "Gerçekleşti",
-      "execQty": 520,
       "amount": 56628.0,
-      "execPrice": 108.9,
-      "execAmount": 56628.0,
       "commission": 5.6628,
-      "time": "10:19:11",
       "date": "2026-07-20",
       "datetime": "2026-07-20 10:19:11",
-      "referans": "896017480"
+      "execAmount": 56628.0,
+      "execPrice": 108.9,
+      "execQty": 520,
+      "price": 108.9,
+      "qty": 520,
+      "referans": "896017480",
+      "status": "Gerçekleşti",
+      "symbol": "TCELL",
+      "time": "10:19:11",
+      "type": "Alış"
     },
     {
-      "symbol": "TRGYO",
-      "type": "Satış",
-      "qty": 569,
-      "price": 98.45,
-      "status": "Gerçekleşti",
-      "execQty": 569,
       "amount": 56018.05,
-      "execPrice": 98.45,
-      "execAmount": 56018.05,
       "commission": 5.601805,
-      "time": "10:18:04",
       "date": "2026-07-20",
       "datetime": "2026-07-20 10:18:04",
-      "referans": "896008223"
+      "execAmount": 56018.05,
+      "execPrice": 98.45,
+      "execQty": 569,
+      "price": 98.45,
+      "qty": 569,
+      "referans": "896008223",
+      "status": "Gerçekleşti",
+      "symbol": "TRGYO",
+      "time": "10:18:04",
+      "type": "Satış"
     },
     {
       "amount": 56245.65,
@@ -52271,42 +52243,185 @@ async function fbWrite(path,data){
       "updatedAt": "2026-07-17 18:35:22"
     },
     "2026-07-20": {
-      "date": "2026-07-20",
-      "trades": 2,
-      "sells": 1,
       "buys": 1,
-      "grossProfit": -227.6,
-      "commission": 11.2646,
-      "netProfit": -238.8646,
-      "overall": 1470410.02,
       "bySymbol": {
-        "TRGYO": {
-          "symbol": "TRGYO",
-          "buyCount": 0,
-          "sellCount": 1,
-          "pairCount": 1,
-          "openBuys": 0,
-          "carriedIn": 569,
+        "1SXAAC": {
           "avgBuy": 0,
-          "avgSell": 98.45,
-          "grossProfit": -227.6,
-          "commission": 5.6018,
-          "netProfit": -233.2018,
-          "pairs": [
+          "avgSell": 0,
+          "buyCount": 0,
+          "carriedIn": 140,
+          "commission": 0,
+          "grossProfit": 0,
+          "netProfit": 0,
+          "openBuys": 0,
+          "openPositions": [
             {
-              "buyPrice": 98.85,
-              "sellPrice": 98.45,
-              "qty": 569,
-              "gross": -227.6,
-              "comm": 5.6018,
-              "net": -233.2018,
-              "buyTime": "17:09:05",
-              "sellTime": "10:18:04",
-              "buyDate": "2026-07-17",
-              "carryover": true
+              "amount": 5012.04,
+              "carryover": false,
+              "commission": 0.501204,
+              "date": "2026-04-15",
+              "datetime": "2026-04-15 10:57:22",
+              "execAmount": 5012.04,
+              "execPrice": 113.91,
+              "execQty": 44,
+              "price": 113.91,
+              "qty": 44,
+              "referans": "797183654",
+              "status": "Gerçekleşti",
+              "symbol": "1SXAAC",
+              "time": "10:57:22",
+              "type": "Alış"
+            },
+            {
+              "amount": 5060.0,
+              "carryover": false,
+              "commission": 0.506,
+              "date": "2026-05-15",
+              "datetime": "2026-05-15 10:04:28",
+              "execAmount": 5060.0,
+              "execPrice": 115.0,
+              "execQty": 44,
+              "price": 115.0,
+              "qty": 44,
+              "referans": "829791471",
+              "status": "Gerçekleşti",
+              "symbol": "1SXAAC",
+              "time": "10:04:28",
+              "type": "Alış"
+            },
+            {
+              "amount": 4943.64,
+              "carryover": false,
+              "commission": 0.494364,
+              "date": "2026-06-11",
+              "datetime": "2026-06-11 12:35:09",
+              "execAmount": 4943.64,
+              "execPrice": 95.07,
+              "execQty": 52,
+              "price": 95.07,
+              "qty": 52,
+              "referans": "857735902",
+              "status": "Gerçekleşti",
+              "symbol": "1SXAAC",
+              "time": "12:35:09",
+              "type": "Alış"
             }
           ],
-          "openPositions": []
+          "pairCount": 0,
+          "sellCount": 0,
+          "symbol": "1SXAAC"
+        },
+        "TCELL": {
+          "avgBuy": 108.9,
+          "avgSell": 0,
+          "buyCount": 1,
+          "carriedIn": 0,
+          "commission": 5.6628,
+          "grossProfit": 0,
+          "netProfit": -5.6628,
+          "openBuys": 520,
+          "openPositions": [
+            {
+              "amount": 56628.0,
+              "carryover": false,
+              "commission": 5.6628,
+              "date": "2026-07-20",
+              "datetime": "2026-07-20 10:19:11",
+              "execAmount": 56628.0,
+              "execPrice": 108.9,
+              "execQty": 520,
+              "price": 108.9,
+              "qty": 520,
+              "referans": "896017480",
+              "status": "Gerçekleşti",
+              "symbol": "TCELL",
+              "time": "10:19:11",
+              "type": "Alış"
+            }
+          ],
+          "pairCount": 0,
+          "sellCount": 0,
+          "symbol": "TCELL"
+        },
+        "TRGYO": {
+          "avgBuy": 0,
+          "avgSell": 98.45,
+          "buyCount": 0,
+          "carriedIn": 569,
+          "commission": 5.6018,
+          "grossProfit": -227.6,
+          "netProfit": -233.2018,
+          "openBuys": 0,
+          "pairCount": 1,
+          "pairs": [
+            {
+              "buyDate": "2026-07-17",
+              "buyPrice": 98.85,
+              "buyTime": "17:09:05",
+              "carryover": true,
+              "comm": 5.6018,
+              "gross": -227.6,
+              "net": -233.2018,
+              "qty": 569,
+              "sellPrice": 98.45,
+              "sellTime": "10:18:04"
+            }
+          ],
+          "sellCount": 1,
+          "symbol": "TRGYO"
+        }
+      },
+      "commission": 11.2646,
+      "date": "2026-07-20",
+      "grossProfit": -227.6,
+      "netProfit": -238.8646,
+      "overall": 1470410.02,
+      "sells": 1,
+      "trades": 2,
+      "updatedAt": "2026-07-20 18:35:23"
+    },
+    "2026-07-21": {
+      "date": "2026-07-21",
+      "trades": 0,
+      "sells": 0,
+      "buys": 0,
+      "grossProfit": 0,
+      "commission": 0,
+      "netProfit": 0,
+      "overall": 1473851.28,
+      "bySymbol": {
+        "TCELL": {
+          "symbol": "TCELL",
+          "buyCount": 0,
+          "sellCount": 0,
+          "pairCount": 0,
+          "openBuys": 0,
+          "carriedIn": 520,
+          "avgBuy": 0,
+          "avgSell": 0,
+          "grossProfit": 0,
+          "commission": 0,
+          "netProfit": 0,
+          "pairs": [],
+          "openPositions": [
+            {
+              "amount": 56628.0,
+              "commission": 5.6628,
+              "date": "2026-07-20",
+              "datetime": "2026-07-20 10:19:11",
+              "execAmount": 56628.0,
+              "execPrice": 108.9,
+              "execQty": 520,
+              "price": 108.9,
+              "qty": 520,
+              "referans": "896017480",
+              "status": "Gerçekleşti",
+              "symbol": "TCELL",
+              "time": "10:19:11",
+              "type": "Alış",
+              "carryover": false
+            }
+          ]
         },
         "1SXAAC": {
           "symbol": "1SXAAC",
@@ -52374,42 +52489,9 @@ async function fbWrite(path,data){
               "carryover": false
             }
           ]
-        },
-        "TCELL": {
-          "symbol": "TCELL",
-          "buyCount": 1,
-          "sellCount": 0,
-          "pairCount": 0,
-          "openBuys": 520,
-          "carriedIn": 0,
-          "avgBuy": 108.9,
-          "avgSell": 0,
-          "grossProfit": 0,
-          "commission": 5.6628,
-          "netProfit": -5.6628,
-          "pairs": [],
-          "openPositions": [
-            {
-              "symbol": "TCELL",
-              "type": "Alış",
-              "qty": 520,
-              "price": 108.9,
-              "status": "Gerçekleşti",
-              "execQty": 520,
-              "amount": 56628.0,
-              "execPrice": 108.9,
-              "execAmount": 56628.0,
-              "commission": 5.6628,
-              "time": "10:19:11",
-              "date": "2026-07-20",
-              "datetime": "2026-07-20 10:19:11",
-              "referans": "896017480",
-              "carryover": false
-            }
-          ]
         }
       },
-      "updatedAt": "2026-07-20 18:35:23"
+      "updatedAt": "2026-07-21 18:35:22"
     }
   },
   "overallHistory": [
@@ -52794,8 +52876,13 @@ async function fbWrite(path,data){
       "note": "Otomatik - 18:35"
     },
     {
-      "date": "2026-07-20",
       "amount": 1470410.02,
+      "date": "2026-07-20",
+      "note": "Otomatik - 18:35"
+    },
+    {
+      "date": "2026-07-21",
+      "amount": 1473851.28,
       "note": "Otomatik - 18:35"
     }
   ],
@@ -52842,8 +52929,27 @@ async function fbWrite(path,data){
     }
   ],
   "openPositions": {
-    "date": "2026-07-20",
+    "date": "2026-07-21",
     "positions": {
+      "TCELL": [
+        {
+          "amount": 56628.0,
+          "commission": 5.6628,
+          "date": "2026-07-20",
+          "datetime": "2026-07-20 10:19:11",
+          "execAmount": 56628.0,
+          "execPrice": 108.9,
+          "execQty": 520,
+          "price": 108.9,
+          "qty": 520,
+          "referans": "896017480",
+          "status": "Gerçekleşti",
+          "symbol": "TCELL",
+          "time": "10:19:11",
+          "type": "Alış",
+          "carryover": false
+        }
+      ],
       "1SXAAC": [
         {
           "amount": 5012.04,
@@ -52894,25 +53000,6 @@ async function fbWrite(path,data){
           "symbol": "1SXAAC",
           "time": "12:35:09",
           "type": "Alış",
-          "carryover": false
-        }
-      ],
-      "TCELL": [
-        {
-          "symbol": "TCELL",
-          "type": "Alış",
-          "qty": 520,
-          "price": 108.9,
-          "status": "Gerçekleşti",
-          "execQty": 520,
-          "amount": 56628.0,
-          "execPrice": 108.9,
-          "execAmount": 56628.0,
-          "commission": 5.6628,
-          "time": "10:19:11",
-          "date": "2026-07-20",
-          "datetime": "2026-07-20 10:19:11",
-          "referans": "896017480",
           "carryover": false
         }
       ]
@@ -52976,7 +53063,7 @@ async function fbWrite(path,data){
     "trackAccum": -1410.2163,
     "trackAccumBase": -1410.2163,
     "trackAlerted": false,
-    "trackLastDate": "2026-07-20",
+    "trackLastDate": "2026-07-21",
     "trackLastSymNet": 0,
     "trackPayAmt": 1000,
     "trackSymbol": "MIATK",
@@ -53361,8 +53448,8 @@ async function fbWrite(path,data){
 };
         // GRID_DATA_END
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                // GRID_REC_START
-        window.__GRID_REC__ = {"symbol":"TCELL","price":109.6,"atr":3.14,"support":105.49,"resistance":114.92,"grid_interval":0.5,"lots":643,"buy_grids":8,"sell_grids":10,"total_grids":18,"pct_up":4.85,"pct_down":3.75,"daily_profit":1932.0,"capital_used":1258222.0,"grid_score":8.12,"rsi":51.1,"signals":"Osc=4x(orta), Hold=90%(guclu), Vol=2.9%(ideal), Trend=yukari-yatay(egim=-1.1%,mom=-3.4%), Tetik=6.3/gun(iyi), Hacim=2645M(cok-likit!), RSI=51(ideal), Pos=44%(orta-ideal), Giriş=ORTA %44(ideal)","final_score":7.392,"entry_pos":44,"entry_factor":1.0,"updated_at":"2026-07-20 18:35","capital":1400000,"market_status":"Piyasa=notr"};
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                // GRID_REC_START
+        window.__GRID_REC__ = {"symbol":"BRSAN","price":564.0,"atr":20.18,"support":517.6,"resistance":616.38,"grid_interval":3.0,"lots":71,"buy_grids":15,"sell_grids":17,"total_grids":32,"pct_up":9.29,"pct_down":8.23,"daily_profit":1379.0,"capital_used":1257446.0,"grid_score":9.0,"rsi":51.2,"signals":"Osc=7x(aktif), Hold=90%(guclu), Vol=3.6%(ideal), Trend=yukari-yatay(egim=-6.0%,mom=-7.8%), Tetik=6.7/gun(iyi), Hacim=778M(cok-likit!), RSI=51(ideal), Pos=47%(orta-ideal), Giriş=ORTA %47(ideal)","final_score":7.984,"entry_pos":47,"entry_factor":1.0,"updated_at":"2026-07-21 18:35","capital":1400000,"market_status":"Piyasa=notr"};
                                 // GRID_REC_END
 
 // ════════════════════════════════════════════════════════
