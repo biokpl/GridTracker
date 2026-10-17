@@ -56698,6 +56698,7 @@ function _advOrderPlan(top,li){
   const row=(k,v,c)=>'<div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#94a3b8">'+k+'</span><b style="color:'+c+';font-family:var(--mono)">'+v+'</b></div>';
   return '<div style="font-size:10px;font-weight:600;text-align:left;margin-top:7px;padding-top:6px;border-top:1px dashed rgba(255,255,255,.12);line-height:1.6">'
     +'<div style="text-align:center;font-size:8px;letter-spacing:1px;color:#6ee7b7;margin-bottom:2px">━ EMİR PLANI (kuruma gir) ━</div>'
+    +(li.regime_half?'<div style="text-align:center;font-size:9.5px;color:#fbbf24;margin-bottom:3px">⚠️ Piyasa zayıf — YARIM LOT</div>':'')
     +row('🛑 Kuruma STOP emri', hard?_fmtPrice(hard):'—', '#f87171')
     +row('🎯 Hedef (satış)', _fmtPrice(top.target1), '#4ade80')
     +row('⏳ Stop (kapanış onaylı)', _fmtPrice(top.stop_loss)+(li.stop_tl?' · '+_fmtTL(-li.stop_tl):''), '#fca5a5')

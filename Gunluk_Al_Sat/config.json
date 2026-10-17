@@ -2,6 +2,7 @@
   "capital": 0,
   "strategy_mode": "RK",
   "data_mode": "EOD",
+  "regime_mode": "half",
   "risk_per_trade_tl": 1000,
   "max_loss_tl": 1500,
   "ntfy_topic": "GridTracker-bkpl-07",

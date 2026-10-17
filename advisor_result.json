@@ -1,6 +1,6 @@
 {
-  "ts": 1792253125.5154805,
-  "ts_str": "17.10.2026 19:05",
+  "ts": 1792274108.2309353,
+  "ts_str": "18.10.2026 00:55",
   "capital": 50000.0,
   "top_picks": [
     {
@@ -131,40 +131,43 @@
       "stop_tl": 932,
       "risk_tl": 1491,
       "reward_tl": 1164,
-      "risk_capped": true
+      "risk_capped": true,
+      "regime_half": true
     },
     "TAVHL": {
-      "lots": 101,
-      "lots_main": 101,
+      "lots": 92,
+      "lots_main": 92,
       "lots_dip": 0,
       "dip_price": 262.385,
       "price": 270.5,
       "conviction": "Temkinli",
       "conv_factor": 0.55,
-      "cost": 27323.23,
-      "cost_total": 27323.23,
-      "stop_tl": 837,
-      "risk_tl": 1339,
-      "reward_tl": 977,
-      "risk_capped": false
+      "cost": 24888.49,
+      "cost_total": 24888.49,
+      "stop_tl": 762,
+      "risk_tl": 1220,
+      "reward_tl": 890,
+      "risk_capped": false,
+      "regime_half": true
     },
     "EREGL": {
-      "lots": 889,
-      "lots_main": 889,
+      "lots": 689,
+      "lots_main": 689,
       "lots_dip": 0,
       "dip_price": 35.1722,
       "price": 36.26,
       "conviction": "İyi",
       "conv_factor": 0.85,
-      "cost": 32238.36,
-      "cost_total": 32238.36,
-      "stop_tl": 937,
-      "risk_tl": 1500,
-      "reward_tl": 1312,
-      "risk_capped": true
+      "cost": 24985.64,
+      "cost_total": 24985.64,
+      "stop_tl": 726,
+      "risk_tl": 1162,
+      "reward_tl": 1017,
+      "risk_capped": false,
+      "regime_half": true
     }
   },
-  "no_trade_today": true,
+  "no_trade_today": false,
   "high_quality_count": 3,
   "market_regime": {
     "level": "RISK_OFF",

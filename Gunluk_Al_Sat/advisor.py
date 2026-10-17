@@ -52,6 +52,11 @@ def _is_eod() -> bool:
 # MAX_LOSS_TL'ye kadar pay bırakılır. 0 = risk kısıtı yok.
 RISK_PER_TRADE = float(CFG.get("risk_per_trade_tl") or 0)
 MAX_LOSS_TL    = float(CFG.get("max_loss_tl") or 0)
+# Rejim modu: "on"   = RISK_OFF'ta yeni pozisyon yok (eski davranış)
+#             "half" = RISK_OFF'ta da öneri, ama YARIM LOT (CAUTION gibi)
+# 2026-10-18: 5 yıllık (lookahead'siz) backtestte "on" +218 TL/ay PF 1.16,
+# "half" +662 TL/ay PF 1.45 — her yıl daha iyi. Kullanıcı onayıyla "half".
+REGIME_MODE = (CFG.get("regime_mode") or "on").lower()
 def _is_daily() -> bool:
     return STRATEGY_MODE.startswith("G")    # GUNLUK / GÜNLÜK
 def _is_hybrid() -> bool:
@@ -1143,7 +1148,8 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
     # + bant-içi (bb<1.0) filtrelerinden geçmiş "şimdi girilebilir" hisseler.
     # Bu yüzden ek total kapısına gerek yok: eligible varsa en iyi-girişli aday
     # önerilir. Yalnız RISK_OFF'ta veya hiç eligible yoksa dur.
-    no_trade_today = (not active) and (regime == "RISK_OFF" or not eligible)
+    no_trade_today = (not active) and (
+        not eligible or (regime == "RISK_OFF" and REGIME_MODE != "half"))
 
     # Aktif pozisyon çıkış kontrolü
     exit_signal = {"symbol": None, "signal": "—", "score_now": 0.0, "score_prev": 0.0, "message": ""}
@@ -1206,7 +1212,8 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
                     avail_capital = capital
 
         # REJİM çarpanı (RISK_OFF zaten no_trade; CAUTION=zayıf piyasa)
-        _regime_factor = 0.5 if regime == "CAUTION" else 1.0
+        _weak = regime == "CAUTION" or (regime == "RISK_OFF" and REGIME_MODE == "half")
+        _regime_factor = 0.5 if _weak else 1.0
 
         for p in top_picks:
             # ── DOZLAMA: min(rejim, konviksiyon) — ÇİFT CEZA YOK ──────────────
@@ -1260,6 +1267,7 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
                 "risk_tl":    round(lots * _risk_ps) if _risk_ps > 0 else 0,
                 "reward_tl":  round(lots * (_t1 - p["price"])) if _t1 > p["price"] else 0,
                 "risk_capped": _risk_capped,
+                "regime_half": _weak,          # zayıf piyasa → yarım doz uygulandı
             }
 
     # Tracker P&L

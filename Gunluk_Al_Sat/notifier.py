@@ -31,6 +31,8 @@ def _order_plan_lines(pick, li) -> list:
     """Kuruma girilecek emir planı: felaket stop + hedef + TL risk/kazanç."""
     hard = pick.get("hard_stop") or pick.get("stop_loss") or 0
     out = ["━━━━ EMİR PLANI ━━━━"]
+    if li.get("regime_half"):
+        out.append("⚠️ Piyasa zayıf — YARIM LOT önerildi")
     if hard:
         out.append(f"🛑 Kuruma STOP emri: {_fp(hard)} TL")
     out.append(f"🎯 Hedef (satış)   : {_fp(pick.get('target1', 0))} TL")
