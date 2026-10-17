@@ -1,6 +1,6 @@
 {
-  "ts": 1792250909.957437,
-  "ts_str": "17.10.2026 18:28",
+  "ts": 1792253125.5154805,
+  "ts_str": "17.10.2026 19:05",
   "capital": 50000.0,
   "top_picks": [
     {
@@ -179,25 +179,25 @@
     "unrealized_pnl": 0.0,
     "unrealized_pct": 0.0,
     "realized_pnl": 0.0,
-    "history_pnl_total": 0,
-    "trade_count": 0,
+    "history_pnl_total": 11211.67,
+    "trade_count": 22,
     "stop_loss": 0.0,
     "hard_stop": 0.0,
     "target1": 0.0,
     "target2": 0.0,
     "error": null,
     "perf": {
-      "trades": 0,
-      "trade_days": 0,
-      "win_rate": 0,
-      "wins": 0,
-      "losses": 0,
-      "avg_win": 0,
-      "avg_loss": 0,
-      "best": 0,
-      "worst": 0,
-      "total": 0,
-      "pf": 0
+      "trades": 22,
+      "trade_days": 32,
+      "win_rate": 59,
+      "wins": 13,
+      "losses": 9,
+      "avg_win": 1285,
+      "avg_loss": -610,
+      "best": 2877,
+      "worst": -2736,
+      "total": 11212,
+      "pf": 3.04
     }
   },
   "score_table": {

@@ -1011,7 +1011,8 @@ select.field-input option{background:var(--surface2);}
 }
 .sr-stat.blue{--sc:#3b82f6;background:linear-gradient(180deg,rgba(59,130,246,.04) 0%,var(--surface) 60%);}
 .sr-stat.teal{--sc:#2dd4bf;background:linear-gradient(180deg,rgba(45,212,191,.04) 0%,var(--surface) 60%);}
-.sr-stat.violet{--sc:#a78bfa;grid-column:1/-1;background:linear-gradient(180deg,rgba(167,139,250,.05) 0%,var(--surface) 60%);}
+.sr-stat.blue.full{grid-column:1/-1;}
+.sr-stat.violet{--sc:#a78bfa;background:linear-gradient(180deg,rgba(167,139,250,.05) 0%,var(--surface) 60%);}
 .sr-stat-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#8b9ab5;margin-bottom:10px;}
 .sr-stat-sub{font-size:8.5px;color:#6b7a92;margin-top:6px;}
 .sr-stat-val{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--text);}
@@ -1408,22 +1409,22 @@ select.field-input option{background:var(--surface2);}
 <!-- ══ SERMAYe ══ -->
 <div class="page" id="pg-sermaye">
 
-  <!-- Ana Para + GridBot Kazancı -->
+  <!-- Ana Para (tam satır) / Al/Sat Kazancı + GridBot Kazancı -->
   <div class="sr-stats">
-    <div class="sr-stat blue">
+    <div class="sr-stat blue full">
       <div class="sr-stat-lbl">Ana Para</div>
       <div class="sr-stat-val blue" id="sr-ana">—</div>
-      <div class="sr-stat-sub">Net yatırılan sermaye</div>
-    </div>
-    <div class="sr-stat teal">
-      <div class="sr-stat-lbl">GridBot Kazancı</div>
-      <div class="sr-stat-val" id="sr-bot">—</div>
-      <div class="sr-stat-sub">Anlık portföy − net yatırılan sermaye (açık poz. dahil)</div>
+      <div class="sr-stat-sub" id="sr-ana-sub">Net yatırılan sermaye</div>
     </div>
     <div class="sr-stat violet">
       <div class="sr-stat-lbl">Al/Sat Kazancı</div>
       <div class="sr-stat-val" id="sr-alsat">—</div>
       <div class="sr-stat-sub" id="sr-alsat-sub">Günlük AL/SAT Danışmanı — gerçekleşen + açık pozisyon</div>
+    </div>
+    <div class="sr-stat teal">
+      <div class="sr-stat-lbl">GridBot Kazancı</div>
+      <div class="sr-stat-val" id="sr-bot">—</div>
+      <div class="sr-stat-sub" id="sr-bot-sub">Anlık portföy − net yatırılan sermaye (açık poz. dahil)</div>
     </div>
   </div>
 
@@ -56222,8 +56223,19 @@ function calcSr(){
   const sermayeBaz=txs.filter(t=>!t.trackPayment).reduce((s,t)=>s+t.amount,0);
   const totalIn=active.filter(t=>t.amount>0&&!t.trackPayment).reduce((s,t)=>s+t.amount,0);
   const totalOut=active.filter(t=>t.amount<0&&!t.trackPayment).reduce((s,t)=>s+Math.abs(t.amount),0);
-  const botKar=(D?D.todayOverall||0:0)-sermayeBaz;
-  return{anaPara,totalIn,totalOut,botKar};
+  let botKar=(D?D.todayOverall||0:0)-sermayeBaz;
+  // YENİDEN BAŞLANGIÇ (srReset): Ana Para belirlenen tutardan başlar, sonrasında
+  // girilen hareketler eklenir. GridBot durduğu için kazancı dondurulmuş değerde
+  // kalır (yeni para girişleri onu yapay düşürmesin). Toplam Giriş/Çıkış tüm
+  // geçmişten hesaplanmaya devam eder.
+  const rs=D&&D.srReset;
+  let anaParaBase=anaPara, reset=false;
+  if(rs&&rs.ts){
+    reset=true;
+    anaParaBase=(rs.anaPara||0)+txs.filter(t=>Number(t.id)>rs.ts).reduce((s,t)=>s+t.amount,0);
+    if(rs.gridbotFrozen!=null) botKar=rs.gridbotFrozen;
+  }
+  return{anaPara:anaParaBase,totalIn,totalOut,botKar,reset,resetDate:rs&&rs.date};
 }
 
 // ══ Danışman Akıllı Kart ══════════════════════════════════════════════════════
@@ -56836,7 +56848,11 @@ async function _advTickPrice(){
 
 function renderSermaye(){
   renderAdvisor();
-  const{anaPara,totalIn,totalOut,botKar}=calcSr();
+  const{anaPara,totalIn,totalOut,botKar,reset,resetDate}=calcSr();
+  const _as=$('sr-ana-sub');
+  if(_as) _as.textContent=reset?('Yeni dönem ('+String(resetDate||'').split('-').reverse().join('.')+') + sonraki hareketler'):'Net yatırılan sermaye';
+  const _bs=$('sr-bot-sub');
+  if(_bs) _bs.textContent=reset?'GridBot durduruldu — son kazanç (sabit)':'Anlık portföy − net yatırılan sermaye (açık poz. dahil)';
 
   // Kârlar çekilince net yatırılan sermaye eksiye düşebilir — işareti gizleme
   $('sr-ana').textContent=(anaPara<0?'−':'')+fxSr(anaPara);
