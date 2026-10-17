@@ -1395,8 +1395,58 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
         # Matriks'siz modda 1.xlsx yok → pozisyon ALDIM/SATTIM ile yönetilir.
         if not _is_eod():
             _sync_position()
+        else:
+            # Matriks'siz modda portföy değerini Matriks yazmıyor → danışman yazar
+            _eod_portfolio_record(tracker_data)
 
     return result
+
+
+def _eod_portfolio_record(tracker_data: dict):
+    """
+    MATRİKS'SİZ MOD — Overall sekmesi (overallHistory) + todayOverall için
+    akşam portföy kaydı. Değer = srReset.anaPara (50.000 başlangıç)
+      + reset sonrası Sermaye sekmesi giriş/çıkışları
+      + reset sonrası kapanan AL/SAT işlemlerinin K/Z'si
+      + açık pozisyonun gerçekleşmemiş K/Z'si.
+    (Uzun vadeli gümüş hissesi ve kurumdaki küçük nakit bilinçli olarak hariç.)
+    Matriks'e dönünce (data_mode=LIVE) bu fonksiyon çağrılmaz; değer yine
+    grid_tracker_service tarafından Matriks'ten yazılır.
+    """
+    import requests as _req
+    base = f"{FIREBASE_URL}/gridtracker"
+    try:
+        rs = _req.get(f"{base}/srReset.json", timeout=10).json() or {}
+        if not rs.get("ts"):
+            return
+        txs = _req.get(f"{base}/birikimTx.json", timeout=10).json() or []
+        if isinstance(txs, dict):
+            txs = list(txs.values())
+        tx_sum = sum((t or {}).get("amount", 0) for t in txs
+                     if t and str(t.get("id", "0")).isdigit() and int(t["id"]) > rs["ts"])
+        hist = _load_state().get("history", [])
+        realized = sum(h.get("pnl_tl", 0) or 0 for h in hist
+                       if isinstance(h, dict) and (h.get("exit_date") or "") >= rs.get("date", ""))
+        unreal = (tracker_data or {}).get("unrealized_pnl", 0) or 0
+        value  = round((rs.get("anaPara") or 0) + tx_sum + realized + unreal, 2)
+
+        today = datetime.now().strftime("%Y-%m-%d")
+        oh = _req.get(f"{base}/overallHistory.json", timeout=10).json() or []
+        if isinstance(oh, dict):
+            oh = list(oh.values())
+        idx = next((i for i, h in enumerate(oh) if h and h.get("date") == today), len(oh))
+        prev = oh[idx] if idx < len(oh) else None
+        # Elle yazılmış not (ör. "AL/SAT başlangıç") korunur
+        note = (prev or {}).get("note") or ""
+        if not note or note.startswith("Otomatik"):
+            note = f"Otomatik (AL/SAT) - {datetime.now().strftime('%H:%M')}"
+        _req.put(f"{base}/overallHistory/{idx}.json",
+                 json={"date": today, "amount": value, "note": note}, timeout=10)
+        _req.put(f"{base}/todayOverall.json", json=value, timeout=10)
+        print(f"[Advisor] Portföy kaydı: {value:,.2f} TL "
+              f"(giriş/çıkış {tx_sum:+,.0f}, gerçekleşen {realized:+,.0f}, açık {unreal:+,.0f})")
+    except Exception as e:
+        print(f"[Advisor] Portföy kaydı yazılamadı: {e}")
 
 
 def _sync_position():
