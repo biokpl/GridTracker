@@ -56865,7 +56865,7 @@ function renderSermaye(){
   $('sr-out').textContent=fxSr(totalOut);
 
   const txs=(D&&D.birikimTx)||[];
-  const sorted=[...txs].sort((a,b)=>b.date.localeCompare(a.date));
+  const sorted=[...txs].filter(t=>t&&t.date).sort((a,b)=>b.date.localeCompare(a.date));
   const filtered=sorted.filter(t=>{
     if(srFilter==='in') return t.amount>0;
     if(srFilter==='out') return t.amount<0;
@@ -57240,7 +57240,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   function handleSSEEvent(e){
     try{
       const {path,data}=JSON.parse(e.data);
-      if(path==='/'){
+      if(path==='/' && e.type!=='patch'){
         if(!data) return;
         const prev=D?D.lastUpdated:null;
         D=data;
@@ -57251,7 +57251,15 @@ document.addEventListener('DOMContentLoaded',async()=>{
         renderAll(D.lastUpdated&&D.lastUpdated!==prev);
       } else {
         if(!D) return;
-        setNestedD(path.slice(1), data); // data null olabilir (Firebase boş array/objeyi siler)
+        const _p=path.replace(/^\/|\/$/g,'');
+        if(e.type==='patch' && data && typeof data==='object'){
+          // PATCH = kısmi güncelleme: yalnız gelen alanları birleştir. (Eskiden
+          // tüm nesnenin üzerine yazılıyordu → kayıt tarih/id alanlarını kaybedip
+          // Sermaye listesini çökertiyordu.)
+          for(const k of Object.keys(data)) setNestedD(_p?_p+'/'+k:k, data[k]);
+        } else {
+          setNestedD(_p, data); // data null olabilir (Firebase boş array/objeyi siler)
+        }
         saveCache();
         renderAll(false);
       }
