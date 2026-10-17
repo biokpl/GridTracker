@@ -54,10 +54,10 @@ def _split(raw, tickers, names, min_len=80):
     return data
 
 
-def load_bist():
+def load_bist(period="2y"):
     syms = CFG["bist100"]
     tk = [f"{s}.IS" for s in syms] + ["XU100.IS"]
-    raw = yf.download(tk, period="2y", interval="1d", auto_adjust=True, progress=False, threads=True)
+    raw = yf.download(tk, period=period, interval="1d", auto_adjust=True, progress=False, threads=True)
     return _split(raw, tk, syms + ["XU100"]), syms, CFG["sectors"], 0.0001
 
 
@@ -75,7 +75,9 @@ def load_crypto():
 
 
 def simulate(data, syms, sectors, comm, bb_max=0.65, rsi_max=65.0, rr_min=1.0,
-             entry_min=3.0, max_hold=5, warmup=65):
+             entry_min=3.0, max_hold=5, warmup=65, regime_mode="on"):
+    """regime_mode: "on" = RISK_OFF'ta işlem yok (canlı), "off" = filtre yok,
+    "half" = RISK_OFF'ta da işlem ama yarım doz (CAUTION gibi)."""
     xu = data["XU100"]
     idx = xu.index
     trades, cooldown, pos = [], {}, None
@@ -111,8 +113,12 @@ def simulate(data, syms, sectors, comm, bb_max=0.65, rsi_max=65.0, rr_min=1.0,
             regime, _ = advisor._market_regime(xu_sl)
         except Exception:
             regime = "RISK_ON"
-        if regime == "RISK_OFF":
-            continue
+        if regime_mode == "off":
+            regime = "RISK_ON"
+        elif regime == "RISK_OFF":
+            if regime_mode == "on":
+                continue
+            regime = "CAUTION"          # half: yarım doz
 
         all_ret = {"r5": {}, "r20": {}, "r60": {}}
         slices = {}
