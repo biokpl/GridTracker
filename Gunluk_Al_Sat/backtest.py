@@ -84,6 +84,19 @@ def _download():
                 data[s] = df
         except Exception:
             continue
+    # TARİH HİZALAMA (2026-10-18 düzeltmesi): run() hisseleri iloc[t] ile, yani
+    # SIRA NUMARASIYLA okuyor. Yahoo XU100'de bazı günleri eksik verdiğinde
+    # (ör. 501 bar vs hisselerde 503) hisse barı endeks tarihinin GERİSİNDE
+    # kalıyor → rejim filtresi girişten 2 gün SONRASINI görüyordu (lookahead).
+    # Bu hata PF'yi 1.16 → 2.36'ya şişiriyordu. Artık hepsi ortak tarih
+    # eksenine oturtulur; eksik bar yalnız GEÇMİŞTEN (ffill) doldurulur.
+    if "XU100" in data:
+        common = data["XU100"].index
+        for s in list(data):
+            if s != "XU100":
+                common = common.union(data[s].index)
+        for s in list(data):
+            data[s] = data[s].reindex(common).ffill()
     print(f"[BT] {len(data)-1 if 'XU100' in data else len(data)} sembol verisi hazır.")
     _DATA_CACHE = data
     return data
