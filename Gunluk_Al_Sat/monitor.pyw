@@ -47,6 +47,14 @@ _sent_lock = threading.Lock()
 _FB_BASE       = "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app"
 _FB_USERACTION = _FB_BASE + "/gridtracker/advisor/userAction.json"
 
+# Matriks'siz mod (config data_mode="EOD"): DDE yok, fiyat Yahoo (~15 dk gecikmeli),
+# 1.xlsx mutabakatı yok → ALDIM/SATTIM'daki fiyat/lot gerçek kayıt sayılır.
+try:
+    EOD_MODE = (json.loads((BASE / "config.json").read_text(encoding="utf-8"))
+                .get("data_mode") or "").upper() == "EOD"
+except Exception:
+    EOD_MODE = False
+
 # ── Yardımcılar ───────────────────────────────────────────────────────────────
 
 def _fp(v) -> str:
@@ -338,6 +346,19 @@ def _fast_price_check():
                 # Kart anında güncellensin (sessiz — ayrı bildirim yok,
                 # stop kırılınca zaten ÇIK bildirimi gelecek)
                 _push_stop_to_card(stop, hard)
+                # Matriks'siz modda stop KURUMDA duruyor: felaket stop belirgin
+                # (≥%1) yükseldiyse kullanıcıya "kurumdaki emri güncelle" de.
+                _nh = active.get("notified_hard") or active.get("entry_hard") or 0
+                if EOD_MODE and hard >= _nh * 1.01:
+                    active["notified_hard"] = hard
+                    _save_state(state)
+                    notifier._send(
+                        f"🔼 {sym} — Kurumdaki STOP'u yükselt",
+                        f"Fiyat yükseldi, kâr kilitleniyor.\n"
+                        f"━━━━━━━━━━━━━━━━━━━━\n"
+                        f"➤ Kurumdaki stop emrini {_fp(hard)} TL'ye güncelle\n"
+                        f"Hedef: {_fp(h1)} TL",
+                        priority="high", tags="arrow_up")
             elif peak > (active.get("peak_price", entry) or entry) + price * 0.0015:
                 active["peak_price"] = peak                       # peak ilerledi, kaydet
                 _save_state(state)
@@ -495,7 +516,7 @@ def _find_pick(sym: str):
     return None, {}
 
 
-def _do_user_sold(state: dict, symbol: str):
+def _do_user_sold(state: dict, symbol: str, real_price=None):
     """Kullanıcı 'Sattım' dedi → aktif pozisyonu kapat (tahmini), sıradaki öneriyi hazırla.
     Gerçek K/Z akşam 1.xlsx senkronunda düzeltilir (provisional)."""
     import notifier
@@ -514,9 +535,11 @@ def _do_user_sold(state: dict, symbol: str):
     sym   = active["symbol"]
     entry = active.get("entry_price", 0)
     qty   = active.get("qty", 0)
-    price, _src = get_price(sym)
+    real_price = _pos_float(real_price)
+    price, _src = (real_price, "user") if real_price else get_price(sym)
     exit_px = price or active.get("target1") or entry
-    kar     = (exit_px - entry) * qty if (entry and qty) else 0
+    comm    = (entry + exit_px) * qty * _COMM if (entry and qty) else 0
+    kar     = (exit_px - entry) * qty - comm if (entry and qty) else 0
     pnl_pct = ((exit_px - entry) / entry * 100) if entry else 0
 
     state.setdefault("history", []).append({
@@ -528,8 +551,9 @@ def _do_user_sold(state: dict, symbol: str):
         "qty": qty,
         "pnl_tl":  round(kar, 2),
         "pnl_pct": round(pnl_pct, 2),
-        "exit_reason": "Manuel — Sattım butonu (tahmini)",
-        "provisional": True,
+        "exit_reason": ("Manuel — Sattım (gerçek fiyat)" if real_price
+                        else "Manuel — Sattım butonu (tahmini)"),
+        "provisional": not real_price,
     })
     state["active"] = None
     # KRİTİK: flat durumu refresh'ten ÖNCE diske yaz. run_analysis state'i
@@ -582,7 +606,7 @@ def _do_user_sold(state: dict, symbol: str):
     log.info(f"MANUEL SATIŞ: {sym} {_fp(exit_px)} (+{kar:.0f} TL) → "
              f"yeni öneri: {new_pick['symbol'] if new_pick else 'yok'}")
 
-    body = (f"✅ {sym} kapandı (tahmini).\n"
+    body = (f"✅ {sym} kapandı ({'gerçek fiyat' if real_price else 'tahmini — sayfadan ✏️ ile düzeltebilirsin'}).\n"
             f"Çıkış: {_fp(exit_px)} TL  ({pnl_pct:+.1f}%)\n"
             f"Tahmini kâr: {kar:+,.0f} TL".replace(",", "."))
     if new_pick:
@@ -596,7 +620,7 @@ def _do_user_sold(state: dict, symbol: str):
         actions=(notifier.action_bought(new_pick["symbol"]) if new_pick else ""))
 
 
-def _do_user_bought(state: dict, symbol: str):
+def _do_user_bought(state: dict, symbol: str, real_price=None, real_qty=None):
     """Kullanıcı 'Aldım' dedi → öneriyi aktif pozisyon yap (tahmini maliyet = canlı fiyat).
     Gerçek maliyet/lot akşam 1.xlsx senkronunda düzeltilir."""
     import notifier
@@ -610,8 +634,9 @@ def _do_user_bought(state: dict, symbol: str):
         return
     pick, lot_info = _find_pick(sym)
     li  = (lot_info or {}).get(sym, {})
-    qty = li.get("lots_main") or li.get("lots") or 0
-    price, _src = get_price(sym)
+    qty = int(_pos_float(real_qty) or 0) or li.get("lots_main") or li.get("lots") or 0
+    real_price = _pos_float(real_price)
+    price, _src = (real_price, "user") if real_price else get_price(sym)
     entry = price or (pick or {}).get("price") or 0
     # stop/hedef: pending eşleşiyorsa ondan, yoksa öneri detayından
     src = pending if pending.get("symbol") == sym else (pick or {})
@@ -662,10 +687,15 @@ def _do_user_bought(state: dict, symbol: str):
 
     notifier._send(
         f"🟢 {sym} ALINDI",
-        f"Pozisyon açıldı (tahmini).\n"
+        f"Pozisyon açıldı ({'gerçek fiyat' if real_price else 'tahmini'}).\n"
         f"Maliyet: {_fp(entry)} TL | {qty:,} lot\n".replace(",", ".") +
-        f"Stop: {_fp(state['active']['stop_loss'])} | Hedef: {_fp(state['active']['target1'])} TL\n"
-        f"Akşam gerçek rakamlarla güncellenecek.",
+        (f"━━━━ KURUMA GİR ━━━━\n"
+         f"🛑 STOP emri : {_fp(state['active']['hard_stop'] or state['active']['stop_loss'])} TL\n"
+         f"🎯 Hedef     : {_fp(state['active']['target1'])} TL\n"
+         f"(Fiyat/lot farklıysa sayfadaki ✏️ ile düzelt)"
+         if EOD_MODE else
+         f"Stop: {_fp(state['active']['stop_loss'])} | Hedef: {_fp(state['active']['target1'])} TL\n"
+         f"Akşam gerçek rakamlarla güncellenecek."),
         priority="high", tags="green_circle")
 
     # Gerçek sinyali HEMEN hesapla (sadece bu hisse + endeks indirilir, ~5 sn)
@@ -683,6 +713,57 @@ def _do_user_bought(state: dict, symbol: str):
                 log.debug(f"bought refresh: {e}")
             _slow_analysis()
         threading.Thread(target=_post_buy_refresh, daemon=True).start()
+
+
+_COMM = float(_load_cfg().get("commission_rate", 0.0001))
+
+
+def _pos_float(v):
+    try:
+        f = float(str(v).replace(",", "."))
+        return f if f > 0 else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _do_fix_trade(state: dict, act: dict):
+    """Kullanıcı gerçekleşen fiyat/lotu düzeltti (Matriks'siz modda mutabakat yok).
+    target="active" → açık pozisyonun maliyet/lotu; target="last" → son kapanan
+    işlemin çıkış fiyatı/lotu (K/Z yeniden hesaplanır)."""
+    price = _pos_float(act.get("price"))
+    qty   = _pos_float(act.get("qty"))
+    if act.get("target") == "active" and state.get("active"):
+        a = state["active"]
+        if price: a["entry_price"] = round(price, 4)
+        if qty:   a["qty"] = int(qty)
+        log.info(f"DÜZELTME (aktif): {a['symbol']} {a.get('qty')} lot @ {a.get('entry_price')}")
+        _save_state(state)
+        # Açık pozisyon sürüyor → yalnız tracker'ı tazele (active_pick'e dokunma)
+        try:
+            from tracker import track
+            from advisor import RESULT_PATH
+            import requests as _req
+            tr = track(state)
+            if RESULT_PATH.exists():
+                d = json.loads(RESULT_PATH.read_text(encoding="utf-8"))
+                d["tracker"] = tr
+                RESULT_PATH.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+            _req.put(_FB_BASE + "/gridtracker/advisor/tracker.json", json=tr, timeout=6)
+        except Exception as e:
+            log.debug(f"fix tracker push: {e}")
+        return
+    elif act.get("target") == "last" and state.get("history"):
+        h = state["history"][-1]
+        if price: h["exit_price"] = round(price, 4)
+        if qty:   h["qty"] = int(qty)
+        e, x, q = h.get("entry_price") or 0, h.get("exit_price") or 0, h.get("qty") or 0
+        if e and x and q:
+            h["pnl_tl"]  = round((x - e) * q - (e + x) * q * _COMM, 2)
+            h["pnl_pct"] = round((x - e) / e * 100, 2)
+        h["provisional"] = False
+        log.info(f"DÜZELTME (son işlem): {h['symbol']} çıkış {h.get('exit_price')} → K/Z {h.get('pnl_tl')}")
+    _save_state(state)
+    _push_tracker_after_close(state)
 
 
 def _do_set_capital(state: dict, capital):
@@ -744,9 +825,11 @@ def _process_user_action():
     state["last_action_id"] = aid   # _do_* save edince birlikte yazılır
     try:
         if action == "sold":
-            _do_user_sold(state, symbol)
+            _do_user_sold(state, symbol, act.get("price"))
         elif action == "bought":
-            _do_user_bought(state, symbol)
+            _do_user_bought(state, symbol, act.get("price"), act.get("qty"))
+        elif action == "fix":
+            _do_fix_trade(state, act)
         elif action == "set_capital":
             _do_set_capital(state, act.get("capital"))
         else:
@@ -1057,6 +1140,8 @@ def _check_active_dip_buy(state: dict, notifier, get_price):
       • Fiyat stop bölgesindeyse (stop'un %1 üstü ve altı) → GÖNDERME
       • Sinyal DİKKAT/ÇIK/ERKEN ÇIK ise (yapı bozuk) → GÖNDERME
     """
+    if EOD_MODE:
+        return   # Matriks'siz: fırsat alımı kapalı (canlı veri olmadan zamanlanamaz)
     try:
         active = state.get("active") or {}
         sym   = active.get("symbol")
@@ -1403,8 +1488,12 @@ def main():
     log.info("Monitor başlatıldı. Hızlı:5sn | Yavaş:15dk | Öneri-tazele:10dk")
     print("[Monitor] Başlatıldı — Hızlı:5sn | Yavaş:15dk | Log:", log_path)
 
-    # DDE self-heal watchdog (canlı fiyat feed'i düşerse otomatik geri getirir)
-    threading.Thread(target=_dde_watchdog_loop, daemon=True).start()
+    # DDE self-heal watchdog (canlı fiyat feed'i düşerse otomatik geri getirir).
+    # Matriks'siz modda DDE yok → watchdog her 10 dk "Matriks kapalı" uyarısı atmasın.
+    if not EOD_MODE:
+        threading.Thread(target=_dde_watchdog_loop, daemon=True).start()
+    else:
+        log.info("Matriks'siz mod (EOD): DDE watchdog kapalı, fiyatlar Yahoo ~15 dk gecikmeli.")
 
     # Kullanıcı komut dinleyici (HTML "Sattım"/"Aldım" butonları — 7/24, 4 sn)
     threading.Thread(target=_user_action_loop, daemon=True).start()

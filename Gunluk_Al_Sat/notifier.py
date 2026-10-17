@@ -22,6 +22,23 @@ from urllib.parse import quote as _quote
 
 FIREBASE_URL = "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app"
 
+# Matriks'siz mod: gün içi fiyatlar Yahoo'dan ~15 dk gecikmeli — her bildirimde belirt
+EOD_MODE = (_cfg.get("data_mode") or "").upper() == "EOD"
+_EOD_NOTE = "\n⏱ Fiyat verisi ~15 dk gecikmeli (Matriks'siz mod)"
+
+
+def _order_plan_lines(pick, li) -> list:
+    """Kuruma girilecek emir planı: felaket stop + hedef + TL risk/kazanç."""
+    hard = pick.get("hard_stop") or pick.get("stop_loss") or 0
+    out = ["━━━━ EMİR PLANI ━━━━"]
+    if hard:
+        out.append(f"🛑 Kuruma STOP emri: {_fp(hard)} TL")
+    out.append(f"🎯 Hedef (satış)   : {_fp(pick.get('target1', 0))} TL")
+    if li.get("risk_tl") or li.get("reward_tl"):
+        out.append(f"Stopta: −{li.get('stop_tl', 0):,} TL | En kötü: −{li.get('risk_tl', 0):,} TL".replace(",", "."))
+        out.append(f"Hedefte: +{li.get('reward_tl', 0):,} TL".replace(",", "."))
+    return out
+
 
 def _action_cmd(action: str, symbol: str, label: str) -> str:
     """ntfy bildirimi içine TEK DOKUNUŞ butonu: telefondan doğrudan Firebase'e
@@ -67,6 +84,8 @@ def _send(title: str, body: str, priority: str = "default", tags: str = "",
         headers["Tags"] = tags
     if actions:
         headers["Actions"] = actions   # tek-dokunuş butonu (action_sold/bought)
+    if EOD_MODE and _EOD_NOTE.strip() not in body:
+        body += _EOD_NOTE
     data = body.encode("utf-8")
     # TEKRAR DENEME: anlık internet/ntfy.sh takılmasında mesaj (özellikle
     # kritik ÇIK!) sessizce kaybolmasın — 3 deneme, artan bekleme (0/3/8 sn).
@@ -112,7 +131,7 @@ def _new_pick_lines(new_pick, lot_info, baslik="✅ YENİ HİSSE"):
     if lots_main:
         lines.append(f"┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
         _conv = li.get("conviction")
-        lines.append(f"Ana Giriş (%75) : {lots_main:,} lot".replace(",", ".") +
+        lines.append(f"{'Giriş' if not lots_dip else 'Ana Giriş (%75)'} : {lots_main:,} lot".replace(",", ".") +
                      (f"  ({_conv})" if _conv else ""))
         if lots_dip:
             lines.append(f"Fırsat Alımı (%25): {lots_dip:,} lot".replace(",", "."))
@@ -129,7 +148,9 @@ def _new_pick_lines(new_pick, lot_info, baslik="✅ YENİ HİSSE"):
         f"Stop        : {_fp(stop)} TL",
         f"1. Hedef    : {_fp(hedef)} TL",
     ]
-    if rr >= 1.5:
+    if EOD_MODE:
+        lines += _order_plan_lines(new_pick, li)
+    elif rr >= 1.5:
         lines.append(
             f"Risk/Kazanç : {_fp(risk_tl)} TL kayıp → {_fp(kazanc_tl)} TL kazanç ({rr:.1f}x)"
         )
@@ -189,6 +210,8 @@ def send_daily_pick(pick, lot=None):
                      (f"  ({_conv})" if _conv else ""))
     if lots_dip:
         lines.append(f"Fırsat alımı: {lots_dip:,} lot — {_fp(li.get('dip_price', 0))} TL'ye gelirse".replace(",", "."))
+    if EOD_MODE:
+        lines += _order_plan_lines(pick, li)
     return _send(title, "\n".join(lines), tags="chart_increasing",
                  actions=action_bought(pick["symbol"]))
 

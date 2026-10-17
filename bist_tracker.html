@@ -1011,6 +1011,7 @@ select.field-input option{background:var(--surface2);}
 }
 .sr-stat.blue{--sc:#3b82f6;background:linear-gradient(180deg,rgba(59,130,246,.04) 0%,var(--surface) 60%);}
 .sr-stat.teal{--sc:#2dd4bf;background:linear-gradient(180deg,rgba(45,212,191,.04) 0%,var(--surface) 60%);}
+.sr-stat.violet{--sc:#a78bfa;grid-column:1/-1;background:linear-gradient(180deg,rgba(167,139,250,.05) 0%,var(--surface) 60%);}
 .sr-stat-lbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#8b9ab5;margin-bottom:10px;}
 .sr-stat-sub{font-size:8.5px;color:#6b7a92;margin-top:6px;}
 .sr-stat-val{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--text);}
@@ -1419,6 +1420,11 @@ select.field-input option{background:var(--surface2);}
       <div class="sr-stat-val" id="sr-bot">—</div>
       <div class="sr-stat-sub">Anlık portföy − net yatırılan sermaye (açık poz. dahil)</div>
     </div>
+    <div class="sr-stat violet">
+      <div class="sr-stat-lbl">Al/Sat Kazancı</div>
+      <div class="sr-stat-val" id="sr-alsat">—</div>
+      <div class="sr-stat-sub" id="sr-alsat-sub">Günlük AL/SAT Danışmanı — gerçekleşen + açık pozisyon</div>
+    </div>
   </div>
 
   <!-- Toplam Giriş / Çıkış -->
@@ -1464,7 +1470,7 @@ select.field-input option{background:var(--surface2);}
       <!-- KPI: Maliyet / Anlık Fiyat / Lot / Skor -->
       <div class="adv-kpi-grid">
         <div class="adv-kpi">
-          <div class="adv-kpi-lbl">Maliyet</div>
+          <div class="adv-kpi-lbl">Maliyet <span onclick="advFixTrade('active')" title="Gerçekleşen fiyat/lotu düzelt" style="cursor:pointer;opacity:.7">✏️</span></div>
           <div class="adv-kpi-val" id="adv-cost" style="color:#a5f3fc">—</div>
         </div>
         <div class="adv-kpi">
@@ -1516,7 +1522,7 @@ select.field-input option{background:var(--surface2);}
       <div style="margin-top:8px;font-size:8.5px;color:#6b7280;line-height:1.4;text-align:center;opacity:.75">
         <span style="opacity:.8;font-style:italic"><b>Stop Loss Notu:</b> ⏳ Stop'a değince hemen çıkma — saatlik mum stop altında <u>kapanırsa</u> çık (fitil avına takılma).</span>
         <div style="margin-top:4px;display:inline-flex;align-items:center;gap:5px;font-size:9px;color:#f87171;background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.3);border-radius:5px;padding:2px 8px;opacity:1">
-          🚨 <b>Felaket stop:</b> <span id="adv-hardstop" style="font-weight:800">—</span> <span style="color:#9ca3af;font-weight:400">(buraya inerse anında çık)</span>
+          🚨 <b>Felaket stop:</b> <span id="adv-hardstop" style="font-weight:800">—</span> <span style="color:#9ca3af;font-weight:400"><span id="adv-hardstop-note">(buraya inerse anında çık)</span></span>
         </div>
       </div>
 
@@ -1591,6 +1597,7 @@ select.field-input option{background:var(--surface2);}
         <span>En iyi: <b id="adv-perf-best" style="color:#4ade80;font-family:var(--mono)">—</b></span>
         <span>En kötü: <b id="adv-perf-worst" style="color:#f87171;font-family:var(--mono)">—</b></span>
       </div>
+      <div id="adv-perf-fix" style="display:none;text-align:center;margin-top:5px;font-size:8.5px;color:#6b7a92;cursor:pointer" onclick="advFixTrade('last')">✏️ Son işlemin satış fiyatını düzelt</div>
     </div>
 
     <!-- Alt butonlar -->
@@ -56417,7 +56424,10 @@ async function renderAdvisor(){
     card.style.display='';  // CSS display'i temizle (adv-wrap görünür)
     _updateFabBadge();
 
-    $('adv-ts').textContent=d.ts_str||'';
+    const _eod=(d.data_mode==='EOD');
+    $('adv-ts').textContent=(d.ts_str||'')+(_eod?' · ⏱ fiyatlar ~15 dk gecikmeli':'');
+    const _hsn=$('adv-hardstop-note');
+    if(_hsn) _hsn.textContent=_eod?'(kurumdaki STOP emri bu olmalı)':'(buraya inerse anında çık)';
 
     const tr=d.tracker||{};
     const es=d.exit_signal||{};
@@ -56557,7 +56567,7 @@ async function renderAdvisor(){
           // Kademeli pozisyon: %75 ana + %25 fırsat alımı
           lotEl.innerHTML=
             '💰 <span style="font-size:19px;color:#4ade80">'+li.lots_main.toLocaleString('tr-TR')+'</span> LOT AL'
-            +'<span style="font-size:9px;color:#6ee7b7;margin-left:6px;opacity:.75">(%75 ana giriş)</span>'
+            +'<span style="font-size:9px;color:#6ee7b7;margin-left:6px;opacity:.75">'+(li.lots_dip>0?'(%75 ana giriş)':'(tam giriş)')+'</span>'
             +(li.conviction?(()=>{const _cc={'Güçlü':'#4ade80','İyi':'#86efac','Orta':'#fbbf24','Temkinli':'#fb923c'}[li.conviction]||'#94a3b8';return '<div style="font-size:9px;font-weight:700;margin-top:3px;color:'+_cc+'">⚖ Konviksiyon: '+li.conviction+(li.conv_factor&&li.conv_factor<1?' (doz %'+Math.round(li.conv_factor*100)+')':'')+'</div>';})():'')
             +'<div style="font-size:10px;font-weight:600;color:#6ee7b7;margin-top:2px;opacity:.85">≈ '+_fmtNum(li.cost)+' ₺ maliyet</div>'
             +(li.lots_dip>0?
@@ -56565,7 +56575,8 @@ async function renderAdvisor(){
               +'⬇ Fırsat alımı: <b style="color:#fbbf24">'+li.lots_dip.toLocaleString('tr-TR')+' lot</b>'
               +' ≈ '+_fmtPrice(li.dip_price||0)+' ₺ olursa '
               +'<span style="color:#94a3b8">(%25 • pull-back)</span></div>'
-              :'');
+              :'')
+            +(_eod?_advOrderPlan(top,li):'');
           lotEl.style.display='block';
         } else if(lotEl && li.lots>0){
           lotEl.innerHTML='💰 <span style="font-size:19px;color:#4ade80">'+li.lots.toLocaleString('tr-TR')+'</span> LOT AL'
@@ -56613,7 +56624,8 @@ async function renderAdvisor(){
     }
 
     if(_advShowDetail) _renderAdvTop3(picks);
-    _renderAdvPerf(tr.perf);
+    _renderAdvPerf(tr.perf, _eod);
+    _renderSrAlsat(tr);
 
   } catch(e){
     console.warn('[Advisor] Kart yüklenemedi:',e);
@@ -56629,10 +56641,13 @@ async function advConfirmSold(){
   const tr=(_advData&&_advData.tracker)||{};
   const sym=tr.active_symbol;
   if(!sym){ toast('Aktif pozisyon yok','inf',2500); return; }
-  if(!confirm(sym+' pozisyonunu SATTIĞINIZI onaylıyor musunuz?\nSıradaki öneri hazırlanacak.')) return;
+  const _px=prompt(sym+' SATIŞ — gerçekleşen satış fiyatı (TL):\n(Boş bırakırsan anlık fiyat tahmini kullanılır)',
+                   tr.current_price?String(tr.current_price).replace('.',','):'');
+  if(_px===null) return;
+  const price=_advNum(_px);
   const id=Date.now()+'-'+Math.random().toString(36).slice(2,6);
   try{
-    await fbWrite('gridtracker/advisor/userAction',{action:'sold',symbol:sym,ts:Date.now(),id});
+    await fbWrite('gridtracker/advisor/userAction',{action:'sold',symbol:sym,price:price||null,ts:Date.now(),id});
     toast('✅ '+sym+' satışı alındı — sıradaki öneri hazırlanıyor...','ok',3500);
     setTimeout(renderAdvisor,4500); setTimeout(renderAdvisor,9000);
   }catch(e){ toast('Bağlantı hatası, tekrar dene','inf',3000); }
@@ -56641,21 +56656,92 @@ async function advConfirmBought(){
   const picks=(_advData&&_advData.top_picks)||[];
   const sym=picks[0]&&picks[0].symbol;
   if(!sym){ toast('Şu an öneri yok','inf',2500); return; }
-  if(!confirm(sym+' ALDIĞINIZI onaylıyor musunuz?\nPozisyon takibi başlayacak.')) return;
+  const li=(_advData.lot_info||{})[sym]||{};
+  const _px=prompt(sym+' ALIŞ — gerçekleşen alış fiyatı (TL):\n(Boş bırakırsan anlık fiyat tahmini kullanılır)',
+                   picks[0].price?String(picks[0].price).replace('.',','):'');
+  if(_px===null) return;
+  const _lot=prompt(sym+' — aldığın LOT adedi:', String(li.lots_main||li.lots||''));
+  if(_lot===null) return;
+  const price=_advNum(_px), qty=Math.round(_advNum(_lot)||0);
   const id=Date.now()+'-'+Math.random().toString(36).slice(2,6);
   try{
-    await fbWrite('gridtracker/advisor/userAction',{action:'bought',symbol:sym,ts:Date.now(),id});
+    await fbWrite('gridtracker/advisor/userAction',{action:'bought',symbol:sym,price:price||null,qty:qty||null,ts:Date.now(),id});
     toast('🟢 '+sym+' alımı alındı — pozisyon açılıyor...','ok',3500);
     setTimeout(renderAdvisor,4500); setTimeout(renderAdvisor,9000);
   }catch(e){ toast('Bağlantı hatası, tekrar dene','inf',3000); }
 }
 
 // Performans özeti paneli — kapanmış işlemlerden (tracker.perf)
-function _renderAdvPerf(perf){
+function _advNum(v){
+  if(v==null) return 0;
+  const t=String(v).trim().replace(/\s/g,'');
+  // "1.234,56" → 1234.56 | "12,5" → 12.5 | "12.5" → 12.5
+  const n=parseFloat(t.includes(',')?t.replace(/\./g,'').replace(',','.'):t);
+  return isNaN(n)||n<=0?0:n;
+}
+
+// Kuruma girilecek emir planı (Matriks'siz mod) — lot kutusunun altında
+function _advOrderPlan(top,li){
+  const hard=top.hard_stop||top.stop_loss||0;
+  const row=(k,v,c)=>'<div style="display:flex;justify-content:space-between;gap:8px"><span style="color:#94a3b8">'+k+'</span><b style="color:'+c+';font-family:var(--mono)">'+v+'</b></div>';
+  return '<div style="font-size:10px;font-weight:600;text-align:left;margin-top:7px;padding-top:6px;border-top:1px dashed rgba(255,255,255,.12);line-height:1.6">'
+    +'<div style="text-align:center;font-size:8px;letter-spacing:1px;color:#6ee7b7;margin-bottom:2px">━ EMİR PLANI (kuruma gir) ━</div>'
+    +row('🛑 Kuruma STOP emri', hard?_fmtPrice(hard):'—', '#f87171')
+    +row('🎯 Hedef (satış)', _fmtPrice(top.target1), '#4ade80')
+    +row('⏳ Stop (kapanış onaylı)', _fmtPrice(top.stop_loss)+(li.stop_tl?' · '+_fmtTL(-li.stop_tl):''), '#fca5a5')
+    +row('En kötü (kurum stop)', li.risk_tl?_fmtTL(-li.risk_tl):'—', '#fca5a5')
+    +row('Hedefte kâr', li.reward_tl?_fmtTL(li.reward_tl):'—', '#86efac')
+    +(li.risk_capped?'<div style="font-size:8.5px;color:#fbbf24;text-align:center;margin-top:2px">⚖ Lot, işlem başı risk sınırına göre kısıldı</div>':'')
+    +'</div>';
+}
+
+// Gerçekleşen fiyat/lot düzeltme (Matriks'siz modda mutabakat yok)
+async function advFixTrade(target){
+  const tr=(_advData&&_advData.tracker)||{};
+  let msg, defPx='', defQty='';
+  if(target==='active'){
+    if(!tr.active_symbol){ toast('Aktif pozisyon yok','inf',2500); return; }
+    msg=tr.active_symbol+' — gerçekleşen ALIŞ fiyatı (TL):';
+    defPx=tr.avg_cost?String(tr.avg_cost).replace('.',','):'';
+    defQty=String(tr.open_qty||tr.total_qty||'');
+  } else {
+    msg='Son kapanan işlemin gerçekleşen SATIŞ fiyatı (TL):';
+  }
+  const _px=prompt(msg,defPx); if(_px===null) return;
+  let qty=0;
+  if(target==='active'){ const _q=prompt('Lot adedi:',defQty); if(_q===null) return; qty=Math.round(_advNum(_q)||0); }
+  const price=_advNum(_px);
+  if(!price&&!qty){ toast('Geçerli bir değer girin','err'); return; }
+  const id=Date.now()+'-'+Math.random().toString(36).slice(2,6);
+  try{
+    await fbWrite('gridtracker/advisor/userAction',{action:'fix',target,price:price||null,qty:qty||null,ts:Date.now(),id});
+    toast('✏️ Düzeltme gönderildi','ok',3000);
+    setTimeout(renderAdvisor,4500);
+  }catch(e){ toast('Bağlantı hatası, tekrar dene','inf',3000); }
+}
+
+// Sermaye sekmesi: Al/Sat Kazancı (gerçekleşen + açık pozisyon)
+function _renderSrAlsat(tr){
+  const el=$('sr-alsat'); if(!el) return;
+  const perf=tr.perf||{};
+  const tot=(tr.history_pnl_total||0)+(tr.active_symbol?(tr.unrealized_pnl||0):0);
+  el.textContent=(tot>=0?'+':'-')+fxSr(tot);
+  el.className='sr-stat-val '+(tot>=0?'pos':'neg');
+  const sub=$('sr-alsat-sub');
+  if(sub){
+    const n=perf.trades||0;
+    sub.textContent=n
+      ? n+' işlem · %'+(perf.win_rate||0)+' isabet · K/Z oranı '+(perf.pf||0).toFixed(1)+(tr.active_symbol?' · açık: '+tr.active_symbol:'')
+      : (tr.active_symbol?'Açık pozisyon: '+tr.active_symbol:'Henüz kapanmış işlem yok — yeni dönem');
+  }
+}
+
+function _renderAdvPerf(perf, eod){
   const el=$('adv-perf');
   if(!el) return;
-  if(!perf || !perf.trades){ el.style.display='none'; return; }
+  if(!perf){ el.style.display='none'; return; }
   el.style.display='block';
+  const _fx=$('adv-perf-fix'); if(_fx) _fx.style.display=(eod&&perf.trades)?'':'none';
   const st=(id,v)=>{const e=$(id); if(e) e.textContent=v;};
   const wr=perf.win_rate||0;
   st('adv-perf-trades', perf.trades);
@@ -56752,7 +56838,8 @@ function renderSermaye(){
   renderAdvisor();
   const{anaPara,totalIn,totalOut,botKar}=calcSr();
 
-  $('sr-ana').textContent=fxSr(anaPara);
+  // Kârlar çekilince net yatırılan sermaye eksiye düşebilir — işareti gizleme
+  $('sr-ana').textContent=(anaPara<0?'−':'')+fxSr(anaPara);
 
   const botEl=$('sr-bot');
   botEl.textContent=(botKar>=0?'+':'-')+fxSr(botKar);

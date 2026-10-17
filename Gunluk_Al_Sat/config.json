@@ -1,6 +1,9 @@
 {
   "capital": 0,
   "strategy_mode": "RK",
+  "data_mode": "EOD",
+  "risk_per_trade_tl": 1000,
+  "max_loss_tl": 1500,
   "ntfy_topic": "GridTracker-bkpl-07",
   "ntfy_topic_alert": "GridTracker-bkpl-07-acil",
   "excel_path": "C:/Users/BioCSI/CLAUDE/GridTracker/1.xlsx",

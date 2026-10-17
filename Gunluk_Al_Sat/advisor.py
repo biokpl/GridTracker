@@ -39,6 +39,19 @@ FIREBASE_URL = "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedat
 #   "GUNLUK" → çok sıkı stop (~%1.2), küçük hedef (~%2.2)
 #   "ORTA"   → orijinal orta vade: geniş ATR hedef, geniş stop
 STRATEGY_MODE = (CFG.get("strategy_mode") or "RK").upper()
+
+# Veri modu: "LIVE" = MatriksIQ DDE canlı fiyat + 1.xlsx mutabakatı (eski düzen)
+#            "EOD"  = Matriks'siz: analiz günlük kapanışla, gün içi fiyat Yahoo
+#                     (~15 dk gecikmeli), pozisyon ALDIM/SATTIM ile. Fırsat alımı
+#                     (%25 pull-back) kapalı — canlı veri olmadan zamanlanamaz.
+DATA_MODE = (CFG.get("data_mode") or "LIVE").upper()
+def _is_eod() -> bool:
+    return DATA_MODE == "EOD"
+# İşlem başı risk: lot, (giriş − felaket stop) × lot ≤ RISK_PER_TRADE olacak
+# şekilde kısılır. Felaket stop kuruma girilen emirdir; gap/kayma için
+# MAX_LOSS_TL'ye kadar pay bırakılır. 0 = risk kısıtı yok.
+RISK_PER_TRADE = float(CFG.get("risk_per_trade_tl") or 0)
+MAX_LOSS_TL    = float(CFG.get("max_loss_tl") or 0)
 def _is_daily() -> bool:
     return STRATEGY_MODE.startswith("G")    # GUNLUK / GÜNLÜK
 def _is_hybrid() -> bool:
@@ -65,8 +78,9 @@ def _firebase_push(result: dict):
         # BEKLEME GÜNÜ" uyarısı bunlara bakıyor (Firebase'e yazılmazsa web'de
         # uyarı çıkmıyordu).
         "no_trade_today": bool(result.get("no_trade_today")),
-        "regime":         result.get("regime"),
-        "regime_msg":     result.get("regime_msg"),
+        "regime":         (result.get("market_regime") or {}).get("level"),
+        "regime_msg":     (result.get("market_regime") or {}).get("msg"),
+        "data_mode":      result.get("data_mode", "LIVE"),
     }
     try:
         url = f"{FIREBASE_URL}/gridtracker/advisor.json"
@@ -1209,12 +1223,28 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
             _factor = min(_regime_factor, _conv)
             _cap = avail_capital * _factor
             lots = calc_lots(_cap, p["price"])
-            # ── KADEMELİ POZİSYON: %75 ana giriş + %25 fırsat (pull-back) ──
-            # 1) Ana giriş (%75): giriş bölgesinde hemen
-            # 2) Fırsat alımı (%25): geri çekilmede — ortalama maliyet iyileşir
-            lots_main  = calc_lots(_cap * 0.75, p["price"])
-            lots_dip   = calc_lots(_cap * 0.25, p["price"])
+            # ── RİSK KISITI (iki kademe) ──────────────────────────────────────
+            #   stop_loss'ta (saatlik kapanış onaylı çıkış) kayıp ≤ RISK_PER_TRADE
+            #   hard_stop'ta (kurumdaki STOP emri, en kötü durum) kayıp ≤ MAX_LOSS_TL
+            _stop = p.get("stop_loss") or 0
+            _hard = p.get("hard_stop") or _stop
+            _soft_ps = p["price"] - _stop if _stop else 0     # lot başı normal risk
+            _risk_ps = p["price"] - _hard if _hard else 0     # lot başı en kötü risk
+            _risk_capped = False
+            for _lim, _ps in ((RISK_PER_TRADE, _soft_ps), (MAX_LOSS_TL, _risk_ps)):
+                if _lim > 0 and _ps > 0 and int(_lim / _ps) < lots:
+                    lots, _risk_capped = int(_lim / _ps), True
+            if _is_eod():
+                # Matriks'siz: tek seferde tam giriş, fırsat alımı yok
+                lots_main, lots_dip = lots, 0
+            else:
+                # ── KADEMELİ POZİSYON: %75 ana giriş + %25 fırsat (pull-back) ──
+                # 1) Ana giriş (%75): giriş bölgesinde hemen
+                # 2) Fırsat alımı (%25): geri çekilmede — ortalama maliyet iyileşir
+                lots_main  = int(lots * 0.75)
+                lots_dip   = lots - lots_main
             dip_target = round(p["price"] * 0.97, 4)   # %3 geri çekilme hedefi
+            _t1 = p.get("target1") or 0
             lot_info[p["symbol"]] = {
                 "lots":       lots,            # konviksiyon dozlu toplam
                 "lots_main":  lots_main,       # %75 ana giriş
@@ -1225,6 +1255,11 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
                 "conv_factor": _conv,          # 0.55-1.0 doz çarpanı
                 "cost":       round(lots_main * p["price"] * (1 + CFG["commission_rate"]), 2),
                 "cost_total": round(lots * p["price"] * (1 + CFG["commission_rate"]), 2),
+                # Emir planı: stopta / felaket stopta kayıp, hedefte kâr (TL)
+                "stop_tl":    round(lots * _soft_ps) if _soft_ps > 0 else 0,
+                "risk_tl":    round(lots * _risk_ps) if _risk_ps > 0 else 0,
+                "reward_tl":  round(lots * (_t1 - p["price"])) if _t1 > p["price"] else 0,
+                "risk_capped": _risk_capped,
             }
 
     # Tracker P&L
@@ -1261,6 +1296,7 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
         "no_trade_today": no_trade_today,
         "high_quality_count": len(high_quality),
         "market_regime":  {"level": regime, "msg": regime_msg},
+        "data_mode":      DATA_MODE,
         "tracker":     tracker_data,
         "score_table": {s["symbol"]: {"total": s["total_score"], "rank": i+1,
                                        "timeframe": s["timeframe"],
@@ -1356,7 +1392,9 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
         # ── OTOMATİK POZİSYON TAKİBİ ──────────────────────────────────────
         # 1.xlsx bu noktada (akşam, grid_tracker_service sonrası) güncel.
         # Satış/alış algılayıp pozisyonu otomatik günceller.
-        _sync_position()
+        # Matriks'siz modda 1.xlsx yok → pozisyon ALDIM/SATTIM ile yönetilir.
+        if not _is_eod():
+            _sync_position()
 
     return result
 

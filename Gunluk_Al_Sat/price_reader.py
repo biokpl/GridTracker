@@ -18,6 +18,16 @@ EXCEL_PATH  = Path(r"C:\Users\BioCSI\CLAUDE\GridTracker\Bist100 - Anlık Fiyat.x
 CACHE_PATH  = _DIR / "last_prices.json"
 MAX_AGE_SECONDS = 90  # Excel dosyası bu kadar saniyeden eskiyse diskten okuma fallback
 
+# MATRİKS'SİZ MOD (config data_mode="EOD"): DDE yok → Excel COM hiç denenmez,
+# fiyat doğrudan Yahoo'dan (~15 dk gecikmeli) gelir. Monitor 5 sn'de bir sorduğu
+# için Yahoo'yu boğmamak adına sembol başına YAHOO_TTL sn bellek cache'i.
+try:
+    EOD_MODE = json.loads((_DIR / "config.json").read_text(encoding="utf-8")).get("data_mode") == "EOD"
+except Exception:
+    EOD_MODE = False
+YAHOO_TTL = 60
+_yahoo_mem = {}  # {sym: (ts, price)}
+
 _cache = None  # {sym: {"price": float, "ts": int}}
 
 
@@ -156,13 +166,18 @@ def _read_excel_from_disk(sym: str) -> float | None:
 
 
 def get_price_from_yahoo(symbol: str) -> float | None:
-    """Yahoo Finance fallback."""
+    """Yahoo Finance fallback (sembol başına YAHOO_TTL sn bellek cache'li)."""
+    rec = _yahoo_mem.get(symbol)
+    if rec and time.time() - rec[0] < YAHOO_TTL:
+        return rec[1]
     try:
         import yfinance as yf
         t = yf.Ticker(f"{symbol}.IS")
         hist = t.history(period="2d")
         if not hist.empty:
-            return float(hist["Close"].iloc[-1])
+            p = float(hist["Close"].iloc[-1])
+            _yahoo_mem[symbol] = (time.time(), p)
+            return p
     except:
         pass
     return None
@@ -175,8 +190,8 @@ def get_price(symbol: str) -> tuple[float | None, str]:
     """
     sym = symbol.upper().replace(".IS", "")
 
-    # 1. Excel (MatriksIQ DDE) — BIST saatlerinde anlık
-    price = get_price_from_excel(sym)
+    # 1. Excel (MatriksIQ DDE) — BIST saatlerinde anlık (Matriks'siz modda atlanır)
+    price = None if EOD_MODE else get_price_from_excel(sym)
     if price and price > 0:
         _save_cache(sym, price)   # son fiyatı kalıcı yaz
         return price, "excel"
@@ -203,8 +218,8 @@ def get_all_prices() -> dict[str, float]:
     """
     prices = {}
 
-    # Piyasa kapalıysa Excel COM'u deneme (donma riski) → diskten oku
-    if not _market_open():
+    # Piyasa kapalıysa / Matriks'siz modda Excel COM'u deneme → diskten oku
+    if EOD_MODE or not _market_open():
         return _read_all_from_disk()
 
     # ── Açık Excel'den canlı oku ─────────────────────────────

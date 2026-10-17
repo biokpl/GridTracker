@@ -225,6 +225,51 @@ def _send_notify(title, body, tag='gridtracker', priority='default', alert=False
         log.warning(f'[Push] ntfy hatası: {e}')
 
 
+def _matriks_running():
+    try:
+        out = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq MatriksIQ.exe'],
+                             capture_output=True, text=True, creationflags=CREATE_NO_WINDOW)
+        return 'MatriksIQ.exe' in (out.stdout or '')
+    except Exception:
+        return True   # emin değilsek eski akışa devam
+
+
+def _run_advisor():
+    advisor_script = SCRIPT_DIR / 'Gunluk_Al_Sat' / 'advisor.py'
+    if not advisor_script.exists():
+        log.warning(f'advisor.py bulunamadı: {advisor_script}')
+        return False
+    log.info('Sermaye danışmanı analizi çalıştırılıyor...')
+    r = subprocess.run(
+        [sys.executable, str(advisor_script), '--run'],
+        capture_output=True, text=True, encoding='utf-8', errors='replace',
+        cwd=str(SCRIPT_DIR / 'Gunluk_Al_Sat'), creationflags=CREATE_NO_WINDOW
+    )
+    if r.returncode == 0:
+        log.info('advisor.py tamamlandı ✓')
+        return True
+    log.warning(f'advisor.py hatası: {r.stderr[:300]}')
+    return False
+
+
+def _git_publish(files, msg):
+    try:
+        subprocess.run(['git', 'add', *files], cwd=str(SCRIPT_DIR), capture_output=True,
+                       creationflags=CREATE_NO_WINDOW)
+        c = subprocess.run(['git', 'commit', '-m', f'{msg} {datetime.now().strftime("%Y-%m-%d %H:%M")}'],
+                           cwd=str(SCRIPT_DIR), capture_output=True, text=True,
+                           encoding='utf-8', errors='replace', creationflags=CREATE_NO_WINDOW)
+        if c.returncode == 0:
+            p = subprocess.run(['git', 'push', 'origin', 'master'], cwd=str(SCRIPT_DIR),
+                               capture_output=True, text=True, encoding='utf-8', errors='replace',
+                               creationflags=CREATE_NO_WINDOW)
+            log.info('GitHub Pages güncellendi ✓' if p.returncode == 0 else f'Git push hatası: {p.stderr[:200]}')
+        else:
+            log.info('Git: değişiklik yok, push atlandı.')
+    except Exception as e:
+        log.warning(f'Git işlemi hatası: {e}')
+
+
 def run(mode='normal'):
     """
     mode='normal' → 18:35 görevi tarafından tetiklenir (arefe günü ise çıkar)
@@ -247,6 +292,20 @@ def run(mode='normal'):
         return
 
     log.info(f'Mod: {"AREFE (13:35)" if today_arefe else "NORMAL (18:35)"}')
+
+    # ── MATRİKS'SİZ MOD: MatriksIQ çalışmıyorsa koordinat tıklamaları başka
+    # pencerelere gider → Adım 1-4 ATLANIR, sadece AL/SAT danışmanı (yfinance
+    # kapanış verisiyle) çalışır ve sonucu yayınlanır.
+    if not _matriks_running():
+        log.info('MatriksIQ çalışmıyor → Matriks\'siz mod: sadece AL/SAT danışmanı çalıştırılıyor.')
+        adv_ok = _run_advisor()
+        if adv_ok:
+            _git_publish(['advisor_result.json'], 'auto: AL/SAT danismani guncellendi')
+        _send_notify('🌙 Akşam Analizi Tamamlandı' if adv_ok else '⚠️ Akşam Analizi HATALI',
+                     'Matriks\'siz mod: yarının AL/SAT önerisi hazır.' if adv_ok
+                     else 'advisor.py çalışmadı — log\'a bak.',
+                     tag='evening-done', priority='default' if adv_ok else 'high')
+        return
 
     # ── Adım 1: MatriksIQ'yu öne getir ─────────────────────
     bring_to_front('MatriksIQ')

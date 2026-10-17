@@ -69,7 +69,11 @@ def _ss(v):
 
 def _read_excel(symbol: str) -> tuple[list, list]:
     """Verilen sembol için Alış/Satış listelerini döndürür.
-    Önce 1.xlsx; dosya yoksa (servis sildiyse) Firebase allTrades'e düşer."""
+    Önce 1.xlsx; dosya yoksa (servis sildiyse) Firebase allTrades'e düşer.
+    Matriks'siz modda (EOD) işlem dosyası yok: pozisyon yalnızca ALDIM/SATTIM
+    butonlarından (state.json) izlenir."""
+    if _cfg.get("data_mode") == "EOD":
+        return [], []
     if not EXCEL_PATH.exists():
         return _read_trades_firebase(symbol)
 
