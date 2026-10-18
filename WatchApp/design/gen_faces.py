@@ -133,6 +133,11 @@ def hexc(rgb, a=255): return "#%02x%02x%02x%02x" % (a, *rgb)
 def face_ultra():
     d = module("face_ultra", "com.biokpl.gridwatch.face.ultra", "AL/SAT Ultra Pro")
     dr = d / "src/main/res/drawable"
+    # İç içerik büyütme: halka kenara taşındığı için iç öğeler merkeze göre Z kat.
+    # k() boyutları Z ile ölçekler; üst düzey öğelerin x/y'sine yazımdan sonra
+    # O = 225·(1−Z) ofseti eklenir (_center_scale).
+    Z = 1.13
+    def k(v): return int(round(v * K * Z))
     # ── arka plan PNG (2x çiz, küçült) ──
     S2 = 2; F = W * S2; C = F / 2
     bg = Image.new("RGBA", (F, F), (0, 0, 0, 255)); px = bg.load()
@@ -232,12 +237,12 @@ def face_ultra():
                 <BitmapFont family="bc" size="{k(112)}" color="{WHITE}" />
             </TimeText>
         </DigitalClock>
-        <DigitalClock x="{k(120) + 225 - 40}" y="{k(142)}" width="80" height="{k(30)}">{amb(0)}
+        <DigitalClock x="{k(132) + 225 - 40}" y="{k(142)}" width="80" height="{k(30)}">{amb(0)}
             <TimeText format="ss" align="CENTER" x="0" y="0" width="80" height="{k(30)}">
                 <BitmapFont family="bc" size="{k(30)}" color="{TEAL}" />
             </TimeText>
         </DigitalClock>
-        {text(k(120) + 225 - 40, k(178), 80, 16, "SN", [], "sc", 12, "#ff5a5f64", "CENTER", 0)}
+        {text(k(132) + 225 - 40, k(178), 80, 16, "SN", [], "sc", 12, "#ff5a5f64", "CENTER", 0)}
 
         <PartDraw x="{k(120)}" y="{k(230)}" width="{k(240)}" height="{k(34)}">{amb(0)}
             <RoundRectangle x="0" y="0" width="{k(240)}" height="{k(34)}" cornerRadiusX="{k(17)}" cornerRadiusY="{k(17)}">
@@ -284,8 +289,27 @@ def face_ultra():
     </Scene>
 </WatchFace>
 '''
+    xml = _center_scale(xml, Z)
     (d / "src/main/res/raw/watchface.xml").write_text(xml, encoding="utf-8")
     print("A üretildi:", d)
+
+
+def _center_scale(xml, Z):
+    """Scene'in doğrudan çocuklarının x/y'sine merkez ofseti ekler.
+    Tam ekran (450x450) öğelere dokunmaz; genişliği 450 olanlarda yalnız y kayar."""
+    import re
+    O = 225 * (1 - Z)
+    out = []
+    for line in xml.splitlines():
+        m = re.match(r'^(        <(?:PartDraw|PartImage|PartText|DigitalClock|ComplicationSlot)(?: slotId="\d+")?) x="(-?\d+)" y="(-?\d+)" width="(\d+)" height="(\d+)"(.*)$', line)
+        if m:
+            head, x, y, w, h, rest = m.groups(); x, y = int(x), int(y)
+            if not (w == "450" and h == "450"):
+                if w != "450": x = round(x + O)
+                y = round(y + O)
+            line = f'{head} x="{x}" y="{y}" width="{w}" height="{h}"{rest}'
+        out.append(line)
+    return "\n".join(out) + "\n"
 
 
 # ── ortak yardımcılar (B, C) ─────────────────────────────────────────────────
