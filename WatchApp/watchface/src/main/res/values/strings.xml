@@ -2,4 +2,5 @@
 <resources>
     <string name="wf_name">AL/SAT Kadran</string>
     <string name="slot_ezan">Namaz vakti</string>
+    <string name="slot_kalan">Vakte kalan</string>
 </resources>
