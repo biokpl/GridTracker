@@ -33,10 +33,10 @@
         <!-- ── 0: Halka (stop → hedef) ── -->
         <ComplicationSlot slotId="0" x="0" y="0" width="450" height="450"
             supportedTypes="RANGED_VALUE" isCustomizable="TRUE" displayName="@string/wf_name">
-            <DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY"
+            <DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="RANGED_VALUE"
                 primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.RingComplicationService"
                 primaryProviderType="RANGED_VALUE" />
-            <BoundingBox x="195" y="2" width="60" height="22" />
+            <BoundingOval x="0" y="0" width="450" height="450" />
             <Complication type="RANGED_VALUE">
                 <PartDraw x="0" y="0" width="450" height="450">
                     <Variant mode="AMBIENT" target="alpha" value="0" />
@@ -92,7 +92,7 @@
         <!-- ── 1: Namaz vakti (Ezan Vakti Pro) ── -->
         <ComplicationSlot slotId="1" x="85" y="198" width="280" height="40"
             supportedTypes="SHORT_TEXT LONG_TEXT" isCustomizable="TRUE" displayName="@string/slot_ezan">
-            <DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY"
+            <DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="SHORT_TEXT"
                 primaryProvider="com.mobilexsoft.ezanvakti/com.mobilexsoft.ezanvakti.complications.SonrakiVakitComplicationProviderService"
                 primaryProviderType="SHORT_TEXT" />
             <BoundingBox x="0" y="0" width="280" height="40" />
@@ -151,7 +151,7 @@
         <!-- ── 2: Hisse + K/Z ── -->
         <ComplicationSlot slotId="2" x="45" y="252" width="360" height="46"
             supportedTypes="RANGED_VALUE" isCustomizable="TRUE" displayName="@string/wf_name">
-            <DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY"
+            <DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="RANGED_VALUE"
                 primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.KzComplicationService"
                 primaryProviderType="RANGED_VALUE" />
             <BoundingBox x="0" y="0" width="360" height="46" />
@@ -238,7 +238,7 @@
         <!-- ── 3: Stop ── -->
         <ComplicationSlot slotId="3" x="45" y="298" width="170" height="34"
             supportedTypes="SHORT_TEXT" isCustomizable="TRUE" displayName="@string/wf_name">
-            <DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY"
+            <DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="SHORT_TEXT"
                 primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.StopComplicationService"
                 primaryProviderType="SHORT_TEXT" />
             <BoundingBox x="0" y="0" width="170" height="34" />
@@ -265,7 +265,7 @@
         <!-- ── 4: Hedef ── -->
         <ComplicationSlot slotId="4" x="235" y="298" width="170" height="34"
             supportedTypes="SHORT_TEXT" isCustomizable="TRUE" displayName="@string/wf_name">
-            <DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY"
+            <DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="SHORT_TEXT"
                 primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.TargetComplicationService"
                 primaryProviderType="SHORT_TEXT" />
             <BoundingBox x="0" y="0" width="170" height="34" />
