@@ -230,7 +230,7 @@ def face_ultra():
         {slot(0, 0, 0, 450, 450, "RANGED_VALUE", APP + "RingComplicationService", "RANGED_VALUE", "slot_alsat", ring_body,
               '<BoundingOval x="0" y="0" width="450" height="450" />')}
 
-        {text(0, k(90), 450, k(30), "%s %s %s", ["[DAY_OF_WEEK_F]", "[DAY]", "[MONTH_F]"], "sc", k(21), GRAY, "CENTER", 110)}
+        {text(0, k(84), 450, k(34), "%s %s %s", ["[DAY_OF_WEEK_F]", "[DAY]", "[MONTH_F]"], "sc", k(25), "#ffa0a5aa", "CENTER", 110)}
 
         <DigitalClock x="{-k(14)}" y="{k(120)}" width="450" height="{k(112)}">{amb(170)}
             <TimeText format="hh:mm" hourFormat="24" align="CENTER" x="0" y="0" width="450" height="{k(112)}">
