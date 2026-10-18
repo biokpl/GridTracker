@@ -52,9 +52,9 @@ def build(path, family="VFD7"):
     fb = FontBuilder(UPM, isTTF=True)
     fb.setupGlyphOrder(order); fb.setupCharacterMap(cmap); fb.setupGlyf(glyphs)
     fb.setupHorizontalMetrics(metrics)
-    fb.setupHorizontalHeader(ascent=900, descent=-100)
+    fb.setupHorizontalHeader(ascent=CAP, descent=0, lineGap=0)
     fb.setupNameTable({"familyName": family, "styleName": "Regular"})
-    fb.setupOS2(sTypoAscender=900, sTypoDescender=-100, usWinAscent=900, usWinDescent=100)
+    fb.setupOS2(sTypoAscender=CAP, sTypoDescender=0, sTypoLineGap=0, usWinAscent=CAP, usWinDescent=0)   # satır kutusu = rakam boyu → dikeyde ortalı
     fb.setupPost()
     fb.save(str(path))
 
