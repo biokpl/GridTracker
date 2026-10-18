@@ -12,7 +12,7 @@ renk WFF tarafında BitmapFont color ile verilir (beyaz glif + renk).
 """
 import math, random, shutil
 from pathlib import Path
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageChops
 
 ROOT = Path(__file__).resolve().parent.parent      # WatchApp
 FD = "C:/Windows/Fonts/"
@@ -129,6 +129,90 @@ def slot(sid, x, y, w, h, types, provider, ptype, name, body, bound=None):
 def hexc(rgb, a=255): return "#%02x%02x%02x%02x" % (a, *rgb)
 
 
+# ── A: floresan (VFD) saat + K/Z ışığı yardımcıları ─────────────────────────
+ICE = (170, 235, 255)
+VFD = dict(x=91, y=104, cell=50, colon=22, h=96, dw=40, dh=84, t=10)      # WFF px
+VFDS = dict(x=335, y=127, cell=15, h=30, dw=11, dh=24, t=3)
+WIN = (81, 100, 323, 204); SWIN = (331, 124, 369, 160)
+
+
+def _vfd_cell(ch, cell, h, dw, dh, t, col, ghost=False):
+    import render_vfd as V
+    q = 4
+    W_, H_ = cell * q, h * q
+    on = Image.new("RGBA", (W_, H_), (0, 0, 0, 0)); od = ImageDraw.Draw(on)
+    off = od if ghost else ImageDraw.Draw(Image.new("RGBA", (W_, H_)))   # yanmayan segmentler: ghost'ta çiz, normalde atla
+    if ch == ":":
+        V.draw_7seg(od, off, ":", (W_ - t * q * 1.3) / 2 - t * q * 0.1, (H_ - dh * q) / 2, dw * q, dh * q, t * q, 0, col, col)
+    else:
+        V.draw_7seg(od, off, ch, (W_ - dw * q) / 2 - dh * q * 0.06, (H_ - dh * q) / 2, dw * q, dh * q, t * q, 0, col, col)
+    if not ghost:
+        out = Image.new("RGBA", (W_, H_), (0, 0, 0, 0))
+        for rad in (6 * q / 2, 2 * q / 2):
+            out.alpha_composite(on.filter(ImageFilter.GaussianBlur(rad)))
+        out.alpha_composite(on); on = out
+    return on.resize((cell, h), Image.LANCZOS)
+
+
+def vfd_font(dr, prefix, spec, col):
+    chars = []
+    for ch in "0123456789:":
+        cw = spec.get("colon", spec["cell"]) if ch == ":" else spec["cell"]
+        img = _vfd_cell(ch, cw, spec["h"], spec["dw"], spec["dh"], spec["t"], col + (255,))
+        name = f"{prefix}_u{ord(ch):04x}"; img.save(dr / f"{name}.png")
+        chars.append(f'            <Character name="{ch}" resource="{name}" width="{cw}" height="{spec["h"]}" />')
+    return f'        <BitmapFont name="{prefix}">\n' + "\n".join(chars) + "\n        </BitmapFont>"
+
+
+def vfd_ghost(dr, name, spec, text, col):
+    xs = 0; parts = []
+    for ch in text:
+        cw = spec.get("colon", spec["cell"]) if ch == ":" else spec["cell"]
+        parts.append((xs, _vfd_cell(ch, cw, spec["h"], spec["dw"], spec["dh"], spec["t"], col, ghost=True))); xs += cw
+    img = Image.new("RGBA", (xs, spec["h"]), (0, 0, 0, 0))
+    for x, im in parts: img.alpha_composite(im, (x, 0))
+    img.save(dr / f"{name}.png"); return xs
+
+
+def recessed(g, box, rad, S2):
+    x0, y0, x1, y1 = [v * S2 for v in box]
+    m = Image.new("L", g.size, 0); ImageDraw.Draw(m).rounded_rectangle((x0, y0, x1, y1), radius=rad * S2, fill=255)
+    g.paste(Image.new("RGBA", g.size, (6, 8, 10, 255)), (0, 0), m)
+    sh = ImageChops.subtract(m, ImageChops.offset(m, 0, 7 * S2)).filter(ImageFilter.GaussianBlur(5 * S2))
+    g.paste(Image.new("RGBA", g.size, (0, 0, 0, 255)), (0, 0), sh)
+    edge = Image.new("L", g.size, 0); ImageDraw.Draw(edge).rounded_rectangle((x0, y0, x1, y1), radius=rad * S2, outline=255, width=2 * S2)
+    g.paste(Image.new("RGBA", g.size, (40, 44, 48, 255)), (0, 0), edge)
+    low = ImageChops.multiply(edge, ImageChops.subtract(m, ImageChops.offset(m, 0, -int((y1 - y0) * 0.5))))
+    g.paste(Image.new("RGBA", g.size, (95, 102, 108, 255)), (0, 0), low)
+
+
+def mesh_png(dr, box):
+    w, h = box[2] - box[0], box[3] - box[1]
+    q = 2; img = Image.new("RGBA", (w * q, h * q), (0, 0, 0, 0)); d = ImageDraw.Draw(img)
+    for kk in range(0, w * q, 4 * q): d.line((kk, 0, kk, h * q), fill=(0, 0, 0, 70), width=1)
+    for kk in range(0, h * q, 4 * q): d.line((0, kk, w * q, kk), fill=(0, 0, 0, 70), width=1)
+    img.resize((w, h), Image.LANCZOS).save(dr / "vfd_mesh.png")
+
+
+def glow_png(dr, name, w, h, below, rad, col, strength=0.35, below_k=0.22):
+    import numpy as np
+    q = 2; W_, H_ = w * q, (h + below) * q
+    yy = np.arange(H_)[:, None].astype(np.float32); xx = np.arange(W_)[None, :].astype(np.float32)
+    m = Image.new("L", (W_, H_), 0); ImageDraw.Draw(m).rounded_rectangle((0, 0, W_ - 1, h * q - 1), radius=rad * q, fill=255)
+    inside = np.array(m).astype(np.float32) / 255
+    hfall = np.exp(-((xx - W_ / 2) / (W_ / 2 * 0.55)) ** 2)
+    t = np.clip((h * q - yy) / (h * q * 0.6), 0, 1)
+    up = (1 - t) ** 2.2 * inside * hfall
+    tb = np.clip((yy - h * q) / (below * q), 0, 1)
+    down = np.where(yy > h * q, (1 - tb) ** 2, 0) * hfall
+    a = (up * 150 * strength + down * 150 * below_k)
+    y0 = int(h * q - 2)
+    for dy in range(-q, q + 1):
+        if 0 <= y0 + dy < H_: a[y0 + dy] = np.maximum(a[y0 + dy], hfall[0] * 230 * strength)
+    lay = np.zeros((H_, W_, 4), np.uint8); lay[..., :3] = col; lay[..., 3] = a.clip(0, 255).astype(np.uint8)
+    Image.fromarray(lay).filter(ImageFilter.GaussianBlur(2 * q)).resize((w, h + below), Image.LANCZOS).save(dr / f"{name}.png")
+
+
 # ═════════════════════════ A · ULTRA PRO ═════════════════════════
 def face_ultra():
     d = module("face_ultra", "com.biokpl.gridwatch.face.ultra", "AL/SAT Ultra Pro")
@@ -154,6 +238,7 @@ def face_ultra():
     # (dakika çizgileri/rakamları kaldırıldı — kadran doğrudan halkayla başlıyor)
     m = Image.new("L", (F, F), 0); ImageDraw.Draw(m).ellipse((0, 0, F - 1, F - 1), fill=255)
     out = Image.new("RGBA", (F, F), (0, 0, 0, 0)); out.paste(bg, (0, 0), m)
+    recessed(out, WIN, 18, S2); recessed(out, SWIN, 8, S2)
     out.resize((W, W), Image.LANCZOS).save(dr / "bg_ultra.png")
     # ikonlar
     ic = Image.new("RGBA", (40, 40), (0, 0, 0, 0)); idr = ImageDraw.Draw(ic)
@@ -165,6 +250,9 @@ def face_ultra():
     # bitmap fontlar
     fb, hb = glyph_set(dr, "bc", "Bold Condensed", 120)
     fs, hs = glyph_set(dr, "sc", "SemiBold Condensed", 48)
+    fv = vfd_font(dr, "vf", VFD, ICE); fvs = vfd_font(dr, "vs", VFDS, ICE)
+    ghost_w = vfd_ghost(dr, "vfd_ghost", VFD, "88:88", (int(ICE[0] * .16), int(ICE[1] * .16), int(ICE[2] * .16), 160))
+    mesh_png(dr, WIN)
     # önizleme: saatin gerçek ekran görüntüsü (design/preview_A_saat.png)
     shutil.copy(ROOT / "design/preview_A_saat.png", dr / "preview.png")
 
@@ -198,17 +286,19 @@ def face_ultra():
         f'<Stroke color="#ffffffff" thickness="22" cap="ROUND" /></Arc></PartDraw>'
     )
 
-    kz_cond = lambda tpl_x, tpl_w, size: (
+    kz_cond = lambda tpl_x, tpl_w, size, ty=0: (
         '<Condition><Expressions>'
         '<Expression name="pos"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] > 0]]></Expression>'
         '<Expression name="neg"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] < 0]]></Expression>'
         '</Expressions>'
-        f'<Compare expression="pos">{text(tpl_x, 0, tpl_w, 36, "%s", ["[COMPLICATION.TEXT]"], "bc", size, TEAL, "END", 140)}</Compare>'
-        f'<Compare expression="neg">{text(tpl_x, 0, tpl_w, 36, "%s", ["[COMPLICATION.TEXT]"], "bc", size, RED, "END", 140)}</Compare>'
-        f'<Default>{text(tpl_x, 0, tpl_w, 36, "%s", ["[COMPLICATION.TEXT]"], "bc", size, "#ffb4b2a9", "END", 140)}</Default>'
+        f'<Compare expression="pos">{text(tpl_x, ty, tpl_w, 36, "%s", ["[COMPLICATION.TEXT]"], "bc", size, TEAL, "END", 140)}</Compare>'
+        f'<Compare expression="neg">{text(tpl_x, ty, tpl_w, 36, "%s", ["[COMPLICATION.TEXT]"], "bc", size, RED, "END", 140)}</Compare>'
+        f'<Default>{text(tpl_x, ty, tpl_w, 36, "%s", ["[COMPLICATION.TEXT]"], "bc", size, "#ffb4b2a9", "END", 140)}</Default>'
         '</Condition>')
 
     px0, py0, pw, ph = k(96), k(272), k(288), k(92)       # panel
+    for nm, col in (("glow_pos", (60, 225, 170)), ("glow_neg", (255, 80, 90)), ("glow_neu", (150, 200, 255))):
+        glow_png(dr, nm, pw, ph, k(22), k(22), col)
     xml = f'''<?xml version="1.0" encoding="utf-8"?>
 <!-- A · ULTRA PRO — gen_faces.py ile üretildi, elle düzenlemeyin. -->
 <WatchFace width="450" height="450" clipShape="CIRCLE">
@@ -217,6 +307,8 @@ def face_ultra():
     <BitmapFonts>
 {fb}
 {fs}
+{fv}
+{fvs}
     </BitmapFonts>
     <Scene backgroundColor="#ff000000">
         <PartImage x="0" y="0" width="450" height="450">{amb(0)}<Image resource="bg_ultra" /></PartImage>
@@ -232,17 +324,19 @@ def face_ultra():
 
         {text(0, k(84), 450, k(34), "%s %s %s", ["[DAY_OF_WEEK_F]", "[DAY]", "[MONTH_F]"], "sc", k(25), "#ffa0a5aa", "CENTER", 110)}
 
-        <DigitalClock x="{-k(14)}" y="{k(120)}" width="450" height="{k(112)}">{amb(170)}
-            <TimeText format="hh:mm" hourFormat="24" align="CENTER" x="0" y="0" width="450" height="{k(112)}">
-                <BitmapFont family="bc" size="{k(112)}" color="{WHITE}" />
+          <PartImage x="{VFD['x']}" y="{VFD['y']}" width="{ghost_w}" height="{VFD['h']}">{amb(0)}<Image resource="vfd_ghost" /></PartImage>
+          <DigitalClock x="{VFD['x']}" y="{VFD['y']}" width="{ghost_w}" height="{VFD['h']}">{amb(255)}
+            <TimeText format="hh:mm" hourFormat="24" align="START" x="0" y="0" width="{ghost_w}" height="{VFD['h']}">
+                <BitmapFont family="vf" size="{VFD['h']}" />
             </TimeText>
         </DigitalClock>
-        <DigitalClock x="{k(132) + 225 - 40}" y="{k(142)}" width="80" height="{k(30)}">{amb(0)}
-            <TimeText format="ss" align="CENTER" x="0" y="0" width="80" height="{k(30)}">
-                <BitmapFont family="bc" size="{k(30)}" color="{TEAL}" />
+          <PartImage x="{WIN[0]}" y="{WIN[1]}" width="{WIN[2] - WIN[0]}" height="{WIN[3] - WIN[1]}">{amb(0)}<Image resource="vfd_mesh" /></PartImage>
+          <DigitalClock x="{VFDS['x']}" y="{VFDS['y']}" width="{2 * VFDS['cell']}" height="{VFDS['h']}">{amb(0)}
+            <TimeText format="ss" align="START" x="0" y="0" width="{2 * VFDS['cell']}" height="{VFDS['h']}">
+                <BitmapFont family="vs" size="{VFDS['h']}" />
             </TimeText>
         </DigitalClock>
-        {text(k(132) + 225 - 40, k(176), 80, 18, "SN", [], "sc", 14, "#ff6e737a", "CENTER", 0)}
+          {text(SWIN[0], SWIN[3] + 1, SWIN[2] - SWIN[0], 16, "SN", [], "sc", 13, "#ff6e737a", "CENTER", 0)}
 
         <PartDraw x="{k(104)}" y="{k(226)}" width="{k(272)}" height="{k(42)}">{amb(0)}
             <RoundRectangle x="0" y="0" width="{k(272)}" height="{k(42)}" cornerRadiusX="{k(21)}" cornerRadiusY="{k(21)}">
@@ -263,8 +357,16 @@ def face_ultra():
         </PartDraw>
         {slot(6, k(184), k(286), k(60), k(44), "SMALL_IMAGE", APP + "SparkComplicationService", "SMALL_IMAGE", "slot_grafik",
               f'<PartImage x="0" y="0" width="{k(60)}" height="{k(44)}">{amb(0)}<Image resource="[COMPLICATION.SMALL_IMAGE]" /></PartImage>')}
-        {slot(2, px0 + k(14), k(278), pw - k(28), k(40), "RANGED_VALUE", APP + "KzComplicationService", "RANGED_VALUE", "slot_alsat",
-              text(0, 0, k(100), k(40), "%s", ["[COMPLICATION.TITLE]"], "bc", k(34), WHITE, "START", 150) + kz_cond(k(100), pw - k(28) - k(100), k(34)))}
+        {slot(2, px0, py0, pw, ph + k(22), "RANGED_VALUE", APP + "KzComplicationService", "RANGED_VALUE", "slot_alsat",
+              '<Condition><Expressions>'
+              '<Expression name="pos"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] > 0]]></Expression>'
+              '<Expression name="neg"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] < 0]]></Expression></Expressions>'
+              f'<Compare expression="pos"><PartImage x="0" y="0" width="{pw}" height="{ph + k(22)}">{amb(0)}<Image resource="glow_pos" /></PartImage></Compare>'
+              f'<Compare expression="neg"><PartImage x="0" y="0" width="{pw}" height="{ph + k(22)}">{amb(0)}<Image resource="glow_neg" /></PartImage></Compare>'
+              f'<Default><PartImage x="0" y="0" width="{pw}" height="{ph + k(22)}">{amb(0)}<Image resource="glow_neu" /></PartImage></Default>'
+              '</Condition>'
+              + text(k(14), k(6), k(100), k(40), "%s", ["[COMPLICATION.TITLE]"], "bc", k(34), WHITE, "START", 150)
+              + kz_cond(k(14) + k(100), pw - k(28) - k(100), k(34), k(6)))}
         {slot(7, px0 + k(14), k(330), pw - k(28), k(30), "RANGED_VALUE", APP + "RingComplicationService", "RANGED_VALUE", "slot_alsat",
               text(0, 0, k(180), k(30), "%s", ["[COMPLICATION.TEXT]"], "sc", k(20), "#ff9aa0a6", "START", 0)
               + text(k(180), 0, pw - k(28) - k(180), k(30), "%s", ["[COMPLICATION.TITLE]"], "sc", k(20), "#ffc8cdd2", "END", 0))}

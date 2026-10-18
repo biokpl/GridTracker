@@ -184,6 +184,32 @@
             <Character name="y" resource="sc_u0079" width="18" height="49" />
             <Character name="z" resource="sc_u007a" width="17" height="49" />
         </BitmapFont>
+        <BitmapFont name="vf">
+            <Character name="0" resource="vf_u0030" width="50" height="96" />
+            <Character name="1" resource="vf_u0031" width="50" height="96" />
+            <Character name="2" resource="vf_u0032" width="50" height="96" />
+            <Character name="3" resource="vf_u0033" width="50" height="96" />
+            <Character name="4" resource="vf_u0034" width="50" height="96" />
+            <Character name="5" resource="vf_u0035" width="50" height="96" />
+            <Character name="6" resource="vf_u0036" width="50" height="96" />
+            <Character name="7" resource="vf_u0037" width="50" height="96" />
+            <Character name="8" resource="vf_u0038" width="50" height="96" />
+            <Character name="9" resource="vf_u0039" width="50" height="96" />
+            <Character name=":" resource="vf_u003a" width="22" height="96" />
+        </BitmapFont>
+        <BitmapFont name="vs">
+            <Character name="0" resource="vs_u0030" width="15" height="30" />
+            <Character name="1" resource="vs_u0031" width="15" height="30" />
+            <Character name="2" resource="vs_u0032" width="15" height="30" />
+            <Character name="3" resource="vs_u0033" width="15" height="30" />
+            <Character name="4" resource="vs_u0034" width="15" height="30" />
+            <Character name="5" resource="vs_u0035" width="15" height="30" />
+            <Character name="6" resource="vs_u0036" width="15" height="30" />
+            <Character name="7" resource="vs_u0037" width="15" height="30" />
+            <Character name="8" resource="vs_u0038" width="15" height="30" />
+            <Character name="9" resource="vs_u0039" width="15" height="30" />
+            <Character name=":" resource="vs_u003a" width="15" height="30" />
+        </BitmapFont>
     </BitmapFonts>
     <Scene backgroundColor="#ff000000">
         <PartImage x="0" y="0" width="450" height="450"><Variant mode="AMBIENT" target="alpha" value="0" /><Image resource="bg_ultra" /></PartImage>
@@ -198,17 +224,19 @@
 
         <PartText x="0" y="60" width="450" height="36"><Variant mode="AMBIENT" target="alpha" value="110" /><Text align="CENTER"><BitmapFont family="sc" size="26" color="#ffa0a5aa"><Template>%s %s %s<Parameter expression="[DAY_OF_WEEK_F]" /><Parameter expression="[DAY]" /><Parameter expression="[MONTH_F]" /></Template></BitmapFont></Text></PartText>
 
-        <DigitalClock x="-15" y="98" width="450" height="119"><Variant mode="AMBIENT" target="alpha" value="170" />
-            <TimeText format="hh:mm" hourFormat="24" align="CENTER" x="0" y="0" width="450" height="119">
-                <BitmapFont family="bc" size="119" color="#fff5f5f0" />
+          <PartImage x="91" y="104" width="222" height="96"><Variant mode="AMBIENT" target="alpha" value="0" /><Image resource="vfd_ghost" /></PartImage>
+          <DigitalClock x="91" y="104" width="222" height="96"><Variant mode="AMBIENT" target="alpha" value="255" />
+            <TimeText format="hh:mm" hourFormat="24" align="START" x="0" y="0" width="222" height="96">
+                <BitmapFont family="vf" size="96" />
             </TimeText>
         </DigitalClock>
-        <DigitalClock x="296" y="121" width="80" height="32"><Variant mode="AMBIENT" target="alpha" value="0" />
-            <TimeText format="ss" align="CENTER" x="0" y="0" width="80" height="32">
-                <BitmapFont family="bc" size="32" color="#ff3ce1aa" />
+          <PartImage x="81" y="100" width="242" height="104"><Variant mode="AMBIENT" target="alpha" value="0" /><Image resource="vfd_mesh" /></PartImage>
+          <DigitalClock x="335" y="127" width="30" height="30"><Variant mode="AMBIENT" target="alpha" value="0" />
+            <TimeText format="ss" align="START" x="0" y="0" width="30" height="30">
+                <BitmapFont family="vs" size="30" />
             </TimeText>
         </DigitalClock>
-        <PartText x="296" y="157" width="80" height="18"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><BitmapFont family="sc" size="14" color="#ff6e737a">SN</BitmapFont></Text></PartText>
+          <PartText x="331" y="161" width="38" height="16"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><BitmapFont family="sc" size="13" color="#ff6e737a">SN</BitmapFont></Text></PartText>
 
         <PartDraw x="81" y="210" width="288" height="44"><Variant mode="AMBIENT" target="alpha" value="0" />
             <RoundRectangle x="0" y="0" width="288" height="44" cornerRadiusX="22" cornerRadiusY="22">
@@ -226,7 +254,7 @@
             </RoundRectangle>
         </PartDraw>
         <ComplicationSlot slotId="6" x="166" y="274" width="64" height="47" supportedTypes="SMALL_IMAGE" isCustomizable="TRUE" displayName="@string/slot_grafik"><DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="SMALL_IMAGE" primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.SparkComplicationService" primaryProviderType="SMALL_IMAGE" /><BoundingBox x="0" y="0" width="64" height="47" /><Complication type="SMALL_IMAGE"><PartImage x="0" y="0" width="64" height="47"><Variant mode="AMBIENT" target="alpha" value="0" /><Image resource="[COMPLICATION.SMALL_IMAGE]" /></PartImage></Complication></ComplicationSlot>
-        <ComplicationSlot slotId="2" x="88" y="266" width="275" height="42" supportedTypes="RANGED_VALUE" isCustomizable="TRUE" displayName="@string/slot_alsat"><DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="RANGED_VALUE" primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.KzComplicationService" primaryProviderType="RANGED_VALUE" /><BoundingBox x="0" y="0" width="275" height="42" /><Complication type="RANGED_VALUE"><PartText x="0" y="0" width="106" height="42"><Variant mode="AMBIENT" target="alpha" value="150" /><Text align="START"><BitmapFont family="bc" size="36" color="#fff5f5f0"><Template>%s<Parameter expression="[COMPLICATION.TITLE]" /></Template></BitmapFont></Text></PartText><Condition><Expressions><Expression name="pos"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] > 0]]></Expression><Expression name="neg"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] < 0]]></Expression></Expressions><Compare expression="pos"><PartText x="106" y="0" width="169" height="36"><Variant mode="AMBIENT" target="alpha" value="140" /><Text align="END"><BitmapFont family="bc" size="36" color="#ff3ce1aa"><Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template></BitmapFont></Text></PartText></Compare><Compare expression="neg"><PartText x="106" y="0" width="169" height="36"><Variant mode="AMBIENT" target="alpha" value="140" /><Text align="END"><BitmapFont family="bc" size="36" color="#ffff7a6e"><Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template></BitmapFont></Text></PartText></Compare><Default><PartText x="106" y="0" width="169" height="36"><Variant mode="AMBIENT" target="alpha" value="140" /><Text align="END"><BitmapFont family="bc" size="36" color="#ffb4b2a9"><Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template></BitmapFont></Text></PartText></Default></Condition></Complication></ComplicationSlot>
+        <ComplicationSlot slotId="2" x="73" y="259" width="305" height="120" supportedTypes="RANGED_VALUE" isCustomizable="TRUE" displayName="@string/slot_alsat"><DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="RANGED_VALUE" primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.KzComplicationService" primaryProviderType="RANGED_VALUE" /><BoundingBox x="0" y="0" width="305" height="120" /><Complication type="RANGED_VALUE"><Condition><Expressions><Expression name="pos"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] > 0]]></Expression><Expression name="neg"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] < 0]]></Expression></Expressions><Compare expression="pos"><PartImage x="0" y="0" width="305" height="120"><Variant mode="AMBIENT" target="alpha" value="0" /><Image resource="glow_pos" /></PartImage></Compare><Compare expression="neg"><PartImage x="0" y="0" width="305" height="120"><Variant mode="AMBIENT" target="alpha" value="0" /><Image resource="glow_neg" /></PartImage></Compare><Default><PartImage x="0" y="0" width="305" height="120"><Variant mode="AMBIENT" target="alpha" value="0" /><Image resource="glow_neu" /></PartImage></Default></Condition><PartText x="15" y="6" width="106" height="42"><Variant mode="AMBIENT" target="alpha" value="150" /><Text align="START"><BitmapFont family="bc" size="36" color="#fff5f5f0"><Template>%s<Parameter expression="[COMPLICATION.TITLE]" /></Template></BitmapFont></Text></PartText><Condition><Expressions><Expression name="pos"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] > 0]]></Expression><Expression name="neg"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] < 0]]></Expression></Expressions><Compare expression="pos"><PartText x="121" y="6" width="169" height="36"><Variant mode="AMBIENT" target="alpha" value="140" /><Text align="END"><BitmapFont family="bc" size="36" color="#ff3ce1aa"><Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template></BitmapFont></Text></PartText></Compare><Compare expression="neg"><PartText x="121" y="6" width="169" height="36"><Variant mode="AMBIENT" target="alpha" value="140" /><Text align="END"><BitmapFont family="bc" size="36" color="#ffff7a6e"><Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template></BitmapFont></Text></PartText></Compare><Default><PartText x="121" y="6" width="169" height="36"><Variant mode="AMBIENT" target="alpha" value="140" /><Text align="END"><BitmapFont family="bc" size="36" color="#ffb4b2a9"><Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template></BitmapFont></Text></PartText></Default></Condition></Complication></ComplicationSlot>
         <ComplicationSlot slotId="7" x="88" y="321" width="275" height="32" supportedTypes="RANGED_VALUE" isCustomizable="TRUE" displayName="@string/slot_alsat"><DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="RANGED_VALUE" primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.RingComplicationService" primaryProviderType="RANGED_VALUE" /><BoundingBox x="0" y="0" width="275" height="32" /><Complication type="RANGED_VALUE"><PartText x="0" y="0" width="191" height="32"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="START"><BitmapFont family="sc" size="21" color="#ff9aa0a6"><Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template></BitmapFont></Text></PartText><PartText x="191" y="0" width="84" height="32"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="END"><BitmapFont family="sc" size="21" color="#ffc8cdd2"><Template>%s<Parameter expression="[COMPLICATION.TITLE]" /></Template></BitmapFont></Text></PartText></Complication></ComplicationSlot>
 
         <ComplicationSlot slotId="3" x="73" y="369" width="148" height="34" supportedTypes="SHORT_TEXT" isCustomizable="TRUE" displayName="@string/slot_alsat"><DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="SHORT_TEXT" primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.StopComplicationService" primaryProviderType="SHORT_TEXT" /><BoundingBox x="0" y="0" width="148" height="34" /><Complication type="SHORT_TEXT"><PartText x="0" y="0" width="148" height="34"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><BitmapFont family="sc" size="25" color="#ffff7a6e"><Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template></BitmapFont></Text></PartText></Complication></ComplicationSlot>
