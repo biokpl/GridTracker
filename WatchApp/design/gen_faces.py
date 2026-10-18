@@ -146,16 +146,7 @@ def face_ultra():
     bg.alpha_composite(tex)
     g = ImageDraw.Draw(bg)
 
-    def pt(r, a):
-        t = math.radians(a - 90); return C + r * math.cos(t), C + r * math.sin(t)
-    for i in range(60):
-        a = i * 6; big = i % 5 == 0
-        r0 = 236 * K * S2; r1 = (222 if big else 229) * K * S2
-        g.line((*pt(r0, a), *pt(r1, a)), fill=(150, 150, 145) if big else (70, 72, 75), width=(3 if big else 1) * S2)
-    fnum = bfont("SemiBold Condensed", int(15 * K * S2))
-    for i in range(0, 60, 5):
-        if i in (25, 30, 35): continue
-        g.text(pt(207 * K * S2, i * 6), f"{i:02d}", font=fnum, fill=(110, 112, 115), anchor="mm")
+    # (dakika çizgileri/rakamları kaldırıldı — kadran doğrudan halkayla başlıyor)
     m = Image.new("L", (F, F), 0); ImageDraw.Draw(m).ellipse((0, 0, F - 1, F - 1), fill=255)
     out = Image.new("RGBA", (F, F), (0, 0, 0, 0)); out.paste(bg, (0, 0), m)
     out.resize((W, W), Image.LANCZOS).save(dr / "bg_ultra.png")
@@ -169,11 +160,11 @@ def face_ultra():
     # bitmap fontlar
     fb, hb = glyph_set(dr, "bc", "Bold Condensed", 120)
     fs, hs = glyph_set(dr, "sc", "SemiBold Condensed", 48)
-    with Image.open(ROOT / "design/kadran_A_v2.png") as prev:
-        prev.crop((95, 63, 610, 578)).resize((450, 450), Image.LANCZOS).save(dr / "preview.png")
+    # önizleme: saatin gerçek ekran görüntüsü (design/preview_A_saat.png)
+    shutil.copy(ROOT / "design/preview_A_saat.png", dr / "preview.png")
 
     # ── geometri ──
-    R = 186 * K; TH = 16 * K
+    R = 213 * K; TH = 18 * K
     L = 2 * math.pi * R * 0.75; seg = L / 42
     dash = f"{seg - 4:.2f} 4"
     arc_box = f'centerX="225" centerY="225" width="{round(2 * R)}" height="{round(2 * R)}"'
@@ -248,24 +239,25 @@ def face_ultra():
         </DigitalClock>
         {text(k(120) + 225 - 40, k(178), 80, 16, "SN", [], "sc", 12, "#ff5a5f64", "CENTER", 0)}
 
-        <PartDraw x="{k(132)}" y="{k(230)}" width="{k(216)}" height="{k(32)}">{amb(0)}
-            <RoundRectangle x="0" y="0" width="{k(216)}" height="{k(32)}" cornerRadiusX="{k(16)}" cornerRadiusY="{k(16)}">
+        <PartDraw x="{k(120)}" y="{k(230)}" width="{k(240)}" height="{k(34)}">{amb(0)}
+            <RoundRectangle x="0" y="0" width="{k(240)}" height="{k(34)}" cornerRadiusX="{k(17)}" cornerRadiusY="{k(17)}">
                 <Fill color="#ff281c08" /><Stroke color="#ff966419" thickness="2" />
             </RoundRectangle>
+            <Rectangle x="{k(160)}" y="{k(8)}" width="2" height="{k(18)}"><Fill color="#ff7a5214" /></Rectangle>
         </PartDraw>
-        <PartImage x="{k(148)}" y="{k(238)}" width="{k(16)}" height="{k(16)}">{amb(140)}<Image resource="ic_moon" /></PartImage>
-        {slot(1, k(166), k(230), k(112), k(32), "SHORT_TEXT", EZAN + "SonrakiVakitComplicationProviderService", "SHORT_TEXT", "slot_ezan",
-              text(0, 2, k(112), k(28), "%s %s", ["[COMPLICATION.TITLE]", "[COMPLICATION.TEXT]"], "sc", k(17), AMBER, "END", 150))}
-        {slot(5, k(278), k(230), k(62), k(32), "SHORT_TEXT", EZAN + "VaktinCikmasinaComplicationProviderService", "SHORT_TEXT", "slot_kalan",
-              text(0, 2, k(62), k(28), " · %s", ["[COMPLICATION.TEXT]"], "sc", k(17), AMBER, "START", 150))}
+        <PartImage x="{k(134)}" y="{k(239)}" width="{k(16)}" height="{k(16)}">{amb(140)}<Image resource="ic_moon" /></PartImage>
+        {slot(1, k(156), k(230), k(122), k(34), "SHORT_TEXT", EZAN + "SonrakiVakitComplicationProviderService", "SHORT_TEXT", "slot_ezan",
+              text(0, k(3), k(122), k(28), "%s %s", ["[COMPLICATION.TITLE]", "[COMPLICATION.TEXT]"], "sc", k(17), AMBER, "START", 150))}
+        {slot(5, k(286), k(230), k(62), k(34), "SHORT_TEXT", EZAN + "VaktinCikmasinaComplicationProviderService", "SHORT_TEXT", "slot_kalan",
+              text(0, k(3), k(62), k(28), "%s", ["[COMPLICATION.TEXT]"], "sc", k(17), "#ffffdc9a", "CENTER", 150))}
 
         <PartDraw x="{px0}" y="{py0}" width="{pw}" height="{ph}">{amb(0)}
             <RoundRectangle x="0" y="0" width="{pw}" height="{ph}" cornerRadiusX="{k(20)}" cornerRadiusY="{k(20)}">
                 <Fill color="#eb0e1216" /><Stroke color="#ff2d343a" thickness="2" />
             </RoundRectangle>
         </PartDraw>
-        {slot(6, k(218), k(286), k(72), k(52), "SMALL_IMAGE", APP + "SparkComplicationService", "SMALL_IMAGE", "slot_grafik",
-              f'<PartImage x="0" y="0" width="{k(72)}" height="{k(52)}">{amb(0)}<Image resource="[COMPLICATION.SMALL_IMAGE]" /></PartImage>')}
+        {slot(6, k(176), k(288), k(62), k(46), "SMALL_IMAGE", APP + "SparkComplicationService", "SMALL_IMAGE", "slot_grafik",
+              f'<PartImage x="0" y="0" width="{k(62)}" height="{k(46)}">{amb(0)}<Image resource="[COMPLICATION.SMALL_IMAGE]" /></PartImage>')}
         {slot(2, px0 + k(16), k(278), pw - k(32), 36, "RANGED_VALUE", APP + "KzComplicationService", "RANGED_VALUE", "slot_alsat",
               text(0, 0, k(130), 36, "%s", ["[COMPLICATION.TITLE]"], "bc", k(28), WHITE, "START", 150) + kz_cond(k(130), pw - k(32) - k(130), k(28)))}
         {slot(7, px0 + k(16), k(312), pw - k(32), 22, "RANGED_VALUE", APP + "RingComplicationService", "RANGED_VALUE", "slot_alsat",
