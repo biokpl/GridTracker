@@ -136,6 +136,10 @@ VFDS = dict(x=335, y=127, cell=15, h=30, dw=11, dh=24, t=3)
 WIN = (81, 100, 323, 204); SWIN = (331, 124, 369, 160)
 
 
+VFD_GLOW = float(__import__("os").environ.get("VFD_GLOW", "1"))   # 0 = parlama yok
+VFD_MESH = __import__("os").environ.get("VFD_MESH", "1") == "1"
+
+
 def _vfd_cell(ch, cell, h, dw, dh, t, col, ghost=False):
     import render_vfd as V
     q = 4
@@ -146,12 +150,22 @@ def _vfd_cell(ch, cell, h, dw, dh, t, col, ghost=False):
         V.draw_7seg(od, off, ":", (W_ - t * q * 1.3) / 2 - t * q * 0.1, (H_ - dh * q) / 2, dw * q, dh * q, t * q, 0, col, col)
     else:
         V.draw_7seg(od, off, ch, (W_ - dw * q) / 2 - dh * q * 0.06, (H_ - dh * q) / 2, dw * q, dh * q, t * q, 0, col, col)
-    if not ghost:
+    if not ghost and VFD_GLOW > 0:
         out = Image.new("RGBA", (W_, H_), (0, 0, 0, 0))
-        for rad in (6 * q / 2, 2 * q / 2):
-            out.alpha_composite(on.filter(ImageFilter.GaussianBlur(rad)))
+        for rad in (6 * q / 2 * VFD_GLOW, 2 * q / 2):
+            g = on.filter(ImageFilter.GaussianBlur(rad))
+            # çok soluk parlama piksellerini at (yarı saydam alanı küçült → hafif çizim)
+            a_ = g.split()[3].point(lambda v: v if v > 24 else 0); g.putalpha(a_)
+            out.alpha_composite(g)
         out.alpha_composite(on); on = out
-    return on.resize((cell, h), Image.LANCZOS)
+    res = on.resize((cell, h), Image.LANCZOS)
+    if not ghost and h >= 60 and VFD_MESH:   # büyük saat gliflerine VFD ızgarası
+        a = res.split()[3]; md = ImageDraw.Draw(a)
+        lay = Image.new("L", res.size, 255); ld = ImageDraw.Draw(lay)
+        for xx in range(0, res.size[0], 4): ld.line((xx, 0, xx, res.size[1]), fill=185)
+        for yy in range(0, res.size[1], 4): ld.line((0, yy, res.size[0], yy), fill=185)
+        res.putalpha(ImageChops.multiply(a, lay))
+    return res
 
 
 def vfd_font(dr, prefix, spec, col):
@@ -162,6 +176,16 @@ def vfd_font(dr, prefix, spec, col):
         name = f"{prefix}_u{ord(ch):04x}"; img.save(dr / f"{name}.png")
         chars.append(f'            <Character name="{ch}" resource="{name}" width="{cw}" height="{spec["h"]}" />')
     return f'        <BitmapFont name="{prefix}">\n' + "\n".join(chars) + "\n        </BitmapFont>"
+
+
+def _ghost_strip(spec, text, col):
+    xs = 0; parts = []
+    for ch in text:
+        cw = spec.get("colon", spec["cell"]) if ch == ":" else spec["cell"]
+        parts.append((xs, _vfd_cell(ch, cw, spec["h"], spec["dw"], spec["dh"], spec["t"], col, ghost=True))); xs += cw
+    img = Image.new("RGBA", (xs, spec["h"]), (0, 0, 0, 0))
+    for x, im in parts: img.alpha_composite(im, (x, 0))
+    return img
 
 
 def vfd_ghost(dr, name, spec, text, col):
@@ -239,7 +263,31 @@ def face_ultra():
     m = Image.new("L", (F, F), 0); ImageDraw.Draw(m).ellipse((0, 0, F - 1, F - 1), fill=255)
     out = Image.new("RGBA", (F, F), (0, 0, 0, 0)); out.paste(bg, (0, 0), m)
     recessed(out, WIN, 18, S2); recessed(out, SWIN, 8, S2)
-    out.resize((W, W), Image.LANCZOS).save(dr / "bg_ultra.png")
+    # yanmayan halka segmentleri (eskiden her karede çizilen kesikli yay)
+    Rb = 213 * K * S2; THb = 18 * K * S2; gap_deg = math.degrees(4 * S2 / Rb)
+    od_ = ImageDraw.Draw(out)
+    for i in range(42):
+        a0 = 225 + i * 270 / 42; a1 = a0 + 270 / 42 - gap_deg
+        Ro = Rb + THb / 2   # PIL yay kalınlığı içe doğru: dış yarıçapı merkez + yarım kalınlık al
+        od_.arc((C - Ro, C - Ro, C + Ro, C + Ro), a0 - 90, a1 - 90, fill=(38, 40, 44, 255), width=int(THb))
+    # sönük 88:88 (pencerenin içinde)
+    gh = Image.new("RGBA", (0, 0)) if False else None
+    out_small = out.resize((W, W), Image.LANCZOS)
+    # VFD ızgarası pencere içinde
+    md_ = ImageDraw.Draw(out_small)
+    for xx in range(WIN[0] + 4, WIN[2] - 3, 4): md_.line((xx, WIN[1] + 3, xx, WIN[3] - 3), fill=(0, 0, 0, 90))
+    for yy in range(WIN[1] + 4, WIN[3] - 3, 4): md_.line((WIN[0] + 3, yy, WIN[2] - 3, yy), fill=(0, 0, 0, 90))
+    out_small.save(dr / "bg_ultra.png")
+    # halka boşluk maskesi: boşluk bölgelerinde arka planın kendisi (yanan yayın üstüne biner)
+    gm = Image.new("L", (F, F), 0); gdm = ImageDraw.Draw(gm)
+    for i in range(43):
+        a1 = 225 + i * 270 / 42 - gap_deg
+        if i == 0: continue
+        Rg = Rb + THb / 2 + S2
+        gdm.arc((C - Rg, C - Rg, C + Rg, C + Rg), a1 - 90, a1 + gap_deg - 90, fill=255, width=int(THb + 2 * S2))
+    gm = gm.resize((W, W), Image.LANCZOS)
+    gaps = Image.new("RGBA", (W, W), (0, 0, 0, 0)); gaps.paste(out_small, (0, 0), gm)
+    gaps.save(dr / "ring_gaps.png")
     # ikonlar
     ic = Image.new("RGBA", (40, 40), (0, 0, 0, 0)); idr = ImageDraw.Draw(ic)
     idr.ellipse((4, 4, 36, 36), fill=(250, 199, 117, 255)); idr.ellipse((14, 0, 46, 32), fill=(0, 0, 0, 0))
@@ -248,11 +296,13 @@ def face_ultra():
     ImageDraw.Draw(hi).text((20, 21), "\u2665", font=ImageFont.truetype(FD + "seguisym.ttf", 36), fill=(255, 90, 110, 255), anchor="mm")
     hi.save(dr / "ic_heart.png")
     # bitmap fontlar
-    fb, hb = glyph_set(dr, "bc", "Bold Condensed", 120)
-    fs, hs = glyph_set(dr, "sc", "SemiBold Condensed", 48)
-    fv = vfd_font(dr, "vf", VFD, ICE); fvs = vfd_font(dr, "vs", VFDS, ICE)
-    ghost_w = vfd_ghost(dr, "vfd_ghost", VFD, "88:88", (int(ICE[0] * .16), int(ICE[1] * .16), int(ICE[2] * .16), 160))
-    mesh_png(dr, WIN)
+    fb, hb = glyph_set(dr, "bc", "Bold Condensed", 44)      # kullanım ~36 px
+    fs, hs = glyph_set(dr, "sc", "SemiBold Condensed", 30)  # kullanım ~21-26 px
+    # VFD rakamları: gerçek TTF (bitmap glifler AOD geçişinde CPU'yu kilitliyordu)
+    import build_vfd_font
+    (d / "src/main/res/font").mkdir(parents=True, exist_ok=True)
+    build_vfd_font.build(d / "src/main/res/font/vfd7.ttf")
+    ghost_w = 4 * VFD["cell"] + VFD["colon"]
     # önizleme: saatin gerçek ekran görüntüsü (design/preview_A_saat.png)
     shutil.copy(ROOT / "design/preview_A_saat.png", dr / "preview.png")
 
@@ -267,19 +317,11 @@ def face_ultra():
     TEAL, RED, GREEN, AMBER, GRAY, WHITE = "#ff3ce1aa", "#ffff7a6e", "#ff6ee6aa", "#fffac775", "#ff8c9196", "#fff5f5f0"
 
     ring_body = (
-        # parlama (geniş, soluk)
-        f'<PartDraw x="0" y="0" width="450" height="450">{amb(0)}'
-        f'<Arc {arc_box} startAngle="225" endAngle="225"><Transform target="endAngle" value="225 + 270 * {prog}" />'
-        f'<Stroke color="#22ffffff" thickness="{TH * 1.6:.1f}">{grad}</Stroke></Arc></PartDraw>'
         # segmentli parlak yay
         f'<PartDraw x="0" y="0" width="450" height="450">{amb(110)}'
         f'<Arc {arc_box} startAngle="225" endAngle="225"><Transform target="endAngle" value="225 + 270 * {prog}" />'
-        f'<Stroke color="#ffffffff" thickness="{TH}" dashIntervals="{dash}">{grad}</Stroke></Arc></PartDraw>'
-        # fiyat noktası (parlama + beyaz)
-        f'<PartDraw x="0" y="0" width="450" height="450">{amb(0)}'
-        f'<Arc {arc_box} startAngle="225" endAngle="225">'
-        f'<Transform target="startAngle" value="224.6 + 270 * {prog}" /><Transform target="endAngle" value="225.4 + 270 * {prog}" />'
-        f'<Stroke color="#50ffffff" thickness="36" cap="ROUND" /></Arc></PartDraw>'
+        f'<Stroke color="#ffffffff" thickness="{TH}">{grad}</Stroke></Arc></PartDraw>'
+        # fiyat noktası
         f'<PartDraw x="0" y="0" width="450" height="450">{amb(150)}'
         f'<Arc {arc_box} startAngle="225" endAngle="225">'
         f'<Transform target="startAngle" value="224.6 + 270 * {prog}" /><Transform target="endAngle" value="225.4 + 270 * {prog}" />'
@@ -307,33 +349,29 @@ def face_ultra():
     <BitmapFonts>
 {fb}
 {fs}
-{fv}
-{fvs}
     </BitmapFonts>
     <Scene backgroundColor="#ff000000">
         <PartImage x="0" y="0" width="450" height="450">{amb(0)}<Image resource="bg_ultra" /></PartImage>
-
-        <PartDraw x="0" y="0" width="450" height="450">{amb(70)}
-            <Arc {arc_box} startAngle="225" endAngle="495">
-                <Stroke color="#ff26282c" thickness="{TH}" dashIntervals="{dash}" />
-            </Arc>
-        </PartDraw>
+        <!-- yanmayan halka segmentleri, sönük 88:88 ve VFD ızgarası bg_ultra.png'ye gömülü (performans) -->
 
         {slot(0, 0, 0, 450, 450, "RANGED_VALUE", APP + "RingComplicationService", "RANGED_VALUE", "slot_alsat", ring_body,
               '<BoundingOval x="0" y="0" width="450" height="450" />')}
+        <PartImage x="0" y="0" width="450" height="450">{amb(0)}<Image resource="ring_gaps" /></PartImage>
 
         {text(0, k(84), 450, k(34), "%s %s %s", ["[DAY_OF_WEEK_F]", "[DAY]", "[MONTH_F]"], "sc", k(25), "#ffa0a5aa", "CENTER", 110)}
 
-          <PartImage x="{VFD['x']}" y="{VFD['y']}" width="{ghost_w}" height="{VFD['h']}">{amb(0)}<Image resource="vfd_ghost" /></PartImage>
+          <PartText x="{VFD['x']}" y="{VFD['y']}" width="{ghost_w}" height="{VFD['h']}">{amb(0)}
+            <Text align="START"><Font family="vfd7" size="{VFD['dh'] * 100 // 84}" color="#a01b2528">88:88</Font></Text></PartText>
           <DigitalClock x="{VFD['x']}" y="{VFD['y']}" width="{ghost_w}" height="{VFD['h']}">{amb(255)}
             <TimeText format="hh:mm" hourFormat="24" align="START" x="0" y="0" width="{ghost_w}" height="{VFD['h']}">
-                <BitmapFont family="vf" size="{VFD['h']}" />
+                <Font family="vfd7" size="{VFD['dh'] * 100 // 84}" color="#ffaaebff" />
             </TimeText>
         </DigitalClock>
-          <PartImage x="{WIN[0]}" y="{WIN[1]}" width="{WIN[2] - WIN[0]}" height="{WIN[3] - WIN[1]}">{amb(0)}<Image resource="vfd_mesh" /></PartImage>
+          <PartText x="{VFDS['x']}" y="{VFDS['y']}" width="{2 * VFDS['cell']}" height="{VFDS['h']}">{amb(0)}
+            <Text align="START"><Font family="vfd7" size="{VFDS['cell'] * 2}" color="#a01b2528">88</Font></Text></PartText>
           <DigitalClock x="{VFDS['x']}" y="{VFDS['y']}" width="{2 * VFDS['cell']}" height="{VFDS['h']}">{amb(0)}
             <TimeText format="ss" align="START" x="0" y="0" width="{2 * VFDS['cell']}" height="{VFDS['h']}">
-                <BitmapFont family="vs" size="{VFDS['h']}" />
+                <Font family="vfd7" size="{VFDS['cell'] * 2}" color="#ffaaebff" />
             </TimeText>
         </DigitalClock>
           {text(SWIN[0], SWIN[3] + 1, SWIN[2] - SWIN[0], 16, "SN", [], "sc", 13, "#ff6e737a", "CENTER", 0)}
