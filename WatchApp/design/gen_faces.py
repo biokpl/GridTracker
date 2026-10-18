@@ -208,7 +208,7 @@ def face_ultra():
         f'<Default>{text(tpl_x, 0, tpl_w, 36, "%s", ["[COMPLICATION.TEXT]"], "bc", size, "#ffb4b2a9", "END", 140)}</Default>'
         '</Condition>')
 
-    px0, py0, pw, ph = k(90), k(272), k(300), k(78)       # panel
+    px0, py0, pw, ph = k(96), k(272), k(288), k(92)       # panel
     xml = f'''<?xml version="1.0" encoding="utf-8"?>
 <!-- A · ULTRA PRO — gen_faces.py ile üretildi, elle düzenlemeyin. -->
 <WatchFace width="450" height="450" clipShape="CIRCLE">
@@ -230,7 +230,7 @@ def face_ultra():
         {slot(0, 0, 0, 450, 450, "RANGED_VALUE", APP + "RingComplicationService", "RANGED_VALUE", "slot_alsat", ring_body,
               '<BoundingOval x="0" y="0" width="450" height="450" />')}
 
-        {text(0, k(98), 450, k(24), "%s %s %s", ["[DAY_OF_WEEK_F]", "[DAY]", "[MONTH_F]"], "sc", k(16), GRAY, "CENTER", 110)}
+        {text(0, k(90), 450, k(30), "%s %s %s", ["[DAY_OF_WEEK_F]", "[DAY]", "[MONTH_F]"], "sc", k(21), GRAY, "CENTER", 110)}
 
         <DigitalClock x="{-k(14)}" y="{k(120)}" width="450" height="{k(112)}">{amb(170)}
             <TimeText format="hh:mm" hourFormat="24" align="CENTER" x="0" y="0" width="450" height="{k(112)}">
@@ -242,50 +242,50 @@ def face_ultra():
                 <BitmapFont family="bc" size="{k(30)}" color="{TEAL}" />
             </TimeText>
         </DigitalClock>
-        {text(k(132) + 225 - 40, k(178), 80, 16, "SN", [], "sc", 12, "#ff5a5f64", "CENTER", 0)}
+        {text(k(132) + 225 - 40, k(176), 80, 18, "SN", [], "sc", 14, "#ff6e737a", "CENTER", 0)}
 
-        <PartDraw x="{k(120)}" y="{k(230)}" width="{k(240)}" height="{k(34)}">{amb(0)}
-            <RoundRectangle x="0" y="0" width="{k(240)}" height="{k(34)}" cornerRadiusX="{k(17)}" cornerRadiusY="{k(17)}">
+        <PartDraw x="{k(104)}" y="{k(226)}" width="{k(272)}" height="{k(42)}">{amb(0)}
+            <RoundRectangle x="0" y="0" width="{k(272)}" height="{k(42)}" cornerRadiusX="{k(21)}" cornerRadiusY="{k(21)}">
                 <Fill color="#ff281c08" /><Stroke color="#ff966419" thickness="2" />
             </RoundRectangle>
-            <Rectangle x="{k(160)}" y="{k(8)}" width="2" height="{k(18)}"><Fill color="#ff7a5214" /></Rectangle>
+            <Rectangle x="{k(184)}" y="{k(9)}" width="2" height="{k(24)}"><Fill color="#ff7a5214" /></Rectangle>
         </PartDraw>
-        <PartImage x="{k(134)}" y="{k(239)}" width="{k(16)}" height="{k(16)}">{amb(140)}<Image resource="ic_moon" /></PartImage>
-        {slot(1, k(156), k(230), k(122), k(34), "SHORT_TEXT", EZAN + "SonrakiVakitComplicationProviderService", "SHORT_TEXT", "slot_ezan",
-              text(0, k(3), k(122), k(28), "%s %s", ["[COMPLICATION.TITLE]", "[COMPLICATION.TEXT]"], "sc", k(17), AMBER, "START", 150))}
-        {slot(5, k(286), k(230), k(62), k(34), "SHORT_TEXT", EZAN + "VaktinCikmasinaComplicationProviderService", "SHORT_TEXT", "slot_kalan",
-              text(0, k(3), k(62), k(28), "%s", ["[COMPLICATION.TEXT]"], "sc", k(17), "#ffffdc9a", "CENTER", 150))}
+        <PartImage x="{k(116)}" y="{k(237)}" width="{k(20)}" height="{k(20)}">{amb(140)}<Image resource="ic_moon" /></PartImage>
+        {slot(1, k(138), k(226), k(148), k(42), "SHORT_TEXT", EZAN + "SonrakiVakitComplicationProviderService", "SHORT_TEXT", "slot_ezan",
+              text(0, k(4), k(148), k(34), "%s %s", ["[COMPLICATION.TITLE]", "[COMPLICATION.TEXT]"], "sc", k(22), AMBER, "CENTER", 150))}
+        {slot(5, k(290), k(226), k(84), k(42), "SHORT_TEXT", EZAN + "VaktinCikmasinaComplicationProviderService", "SHORT_TEXT", "slot_kalan",
+              text(0, k(4), k(84), k(34), "%s", ["[COMPLICATION.TEXT]"], "sc", k(22), "#ffffdc9a", "CENTER", 150))}
 
         <PartDraw x="{px0}" y="{py0}" width="{pw}" height="{ph}">{amb(0)}
-            <RoundRectangle x="0" y="0" width="{pw}" height="{ph}" cornerRadiusX="{k(20)}" cornerRadiusY="{k(20)}">
+            <RoundRectangle x="0" y="0" width="{pw}" height="{ph}" cornerRadiusX="{k(22)}" cornerRadiusY="{k(22)}">
                 <Fill color="#eb0e1216" /><Stroke color="#ff2d343a" thickness="2" />
             </RoundRectangle>
         </PartDraw>
-        {slot(6, k(176), k(288), k(62), k(46), "SMALL_IMAGE", APP + "SparkComplicationService", "SMALL_IMAGE", "slot_grafik",
-              f'<PartImage x="0" y="0" width="{k(62)}" height="{k(46)}">{amb(0)}<Image resource="[COMPLICATION.SMALL_IMAGE]" /></PartImage>')}
-        {slot(2, px0 + k(16), k(278), pw - k(32), 36, "RANGED_VALUE", APP + "KzComplicationService", "RANGED_VALUE", "slot_alsat",
-              text(0, 0, k(130), 36, "%s", ["[COMPLICATION.TITLE]"], "bc", k(28), WHITE, "START", 150) + kz_cond(k(130), pw - k(32) - k(130), k(28)))}
-        {slot(7, px0 + k(16), k(312), pw - k(32), 22, "RANGED_VALUE", APP + "RingComplicationService", "RANGED_VALUE", "slot_alsat",
-              text(0, 0, k(170), 22, "%s", ["[COMPLICATION.TEXT]"], "sc", k(15), "#ff82878c", "START", 0)
-              + text(k(170), 0, pw - k(32) - k(170), 22, "%s", ["[COMPLICATION.TITLE]"], "sc", k(16), "#ffb4b9be", "END", 0))}
+        {slot(6, k(184), k(286), k(60), k(44), "SMALL_IMAGE", APP + "SparkComplicationService", "SMALL_IMAGE", "slot_grafik",
+              f'<PartImage x="0" y="0" width="{k(60)}" height="{k(44)}">{amb(0)}<Image resource="[COMPLICATION.SMALL_IMAGE]" /></PartImage>')}
+        {slot(2, px0 + k(14), k(278), pw - k(28), k(40), "RANGED_VALUE", APP + "KzComplicationService", "RANGED_VALUE", "slot_alsat",
+              text(0, 0, k(100), k(40), "%s", ["[COMPLICATION.TITLE]"], "bc", k(34), WHITE, "START", 150) + kz_cond(k(100), pw - k(28) - k(100), k(34)))}
+        {slot(7, px0 + k(14), k(330), pw - k(28), k(30), "RANGED_VALUE", APP + "RingComplicationService", "RANGED_VALUE", "slot_alsat",
+              text(0, 0, k(180), k(30), "%s", ["[COMPLICATION.TEXT]"], "sc", k(20), "#ff9aa0a6", "START", 0)
+              + text(k(180), 0, pw - k(28) - k(180), k(30), "%s", ["[COMPLICATION.TITLE]"], "sc", k(20), "#ffc8cdd2", "END", 0))}
 
-        {slot(3, k(110), k(358), k(120), 26, "SHORT_TEXT", APP + "StopComplicationService", "SHORT_TEXT", "slot_alsat",
-              text(0, 0, k(120), 26, "%s", ["[COMPLICATION.TEXT]"], "sc", k(18), RED, "CENTER", 120))}
-        {slot(4, k(250), k(358), k(120), 26, "SHORT_TEXT", APP + "TargetComplicationService", "SHORT_TEXT", "slot_alsat",
-              text(0, 0, k(120), 26, "%s", ["[COMPLICATION.TEXT]"], "sc", k(18), GREEN, "CENTER", 120))}
+        {slot(3, k(96), k(376), k(140), k(32), "SHORT_TEXT", APP + "StopComplicationService", "SHORT_TEXT", "slot_alsat",
+              text(0, 0, k(140), k(32), "%s", ["[COMPLICATION.TEXT]"], "sc", k(24), RED, "CENTER", 120))}
+        {slot(4, k(244), k(376), k(140), k(32), "SHORT_TEXT", APP + "TargetComplicationService", "SHORT_TEXT", "slot_alsat",
+              text(0, 0, k(140), k(32), "%s", ["[COMPLICATION.TEXT]"], "sc", k(24), GREEN, "CENTER", 120))}
 
-        <PartImage x="{k(176)}" y="{k(392)}" width="{k(16)}" height="{k(16)}">{amb(0)}<Image resource="ic_heart" /></PartImage>
-        {text(k(196), k(390), 50, 20, "%s", ["[HEART_RATE]"], "sc", k(15), "#ffc8c8c8", "START", 0)}
-        <PartDraw x="{k(250)}" y="{k(393)}" width="{k(34)}" height="{k(14)}">{amb(0)}
-            <RoundRectangle x="1" y="1" width="{k(32)}" height="{k(12)}" cornerRadiusX="3" cornerRadiusY="3">
+        <PartImage x="{k(160)}" y="{k(412)}" width="{k(20)}" height="{k(20)}">{amb(0)}<Image resource="ic_heart" /></PartImage>
+        {text(k(184), k(408), 60, k(28), "%s", ["[HEART_RATE]"], "sc", k(21), "#ffd2d2d2", "START", 0)}
+        <PartDraw x="{k(250)}" y="{k(413)}" width="{k(40)}" height="{k(18)}">{amb(0)}
+            <RoundRectangle x="1" y="1" width="{k(38)}" height="{k(16)}" cornerRadiusX="3" cornerRadiusY="3">
                 <Stroke color="#ff787d82" thickness="2" />
             </RoundRectangle>
-            <Rectangle x="4" y="4" width="1" height="{k(14) - 8}">
-                <Transform target="width" value="{k(26)} * [BATTERY_PERCENT] / 100" />
+            <Rectangle x="4" y="4" width="1" height="{k(18) - 8}">
+                <Transform target="width" value="{k(32)} * [BATTERY_PERCENT] / 100" />
                 <Fill color="#ff78dc78" />
             </Rectangle>
         </PartDraw>
-        {text(k(290), k(390), 60, 20, "%s%%", ["[BATTERY_PERCENT]"], "sc", k(15), GRAY, "START", 0)}
+        {text(k(296), k(408), 70, k(28), "%s%%", ["[BATTERY_PERCENT]"], "sc", k(21), GRAY, "START", 0)}
     </Scene>
 </WatchFace>
 '''
