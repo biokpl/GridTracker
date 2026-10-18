@@ -52,12 +52,12 @@ private fun kzData(s: Snapshot): ComplicationData = when (s.mode) {
 }
 
 private fun stopData(s: Snapshot): ComplicationData =
-    if (s.stop > 0 && s.mode != Snapshot.Mode.WAIT) short("S ${fmtPrice(s.stop)}", "Stop ${fmtPrice(s.stop)}")
+    if (s.stop > 0 && s.mode != Snapshot.Mode.WAIT) short("S:  ${fmtPrice(s.stop)}", "Stop ${fmtPrice(s.stop)}")
     else if (s.mode == Snapshot.Mode.WAIT) short("${s.trades} işlem")
     else short(" ")
 
 private fun targetData(s: Snapshot): ComplicationData =
-    if (s.target > 0 && s.mode != Snapshot.Mode.WAIT) short("H ${fmtPrice(s.target)}", "Hedef ${fmtPrice(s.target)}")
+    if (s.target > 0 && s.mode != Snapshot.Mode.WAIT) short("H:  ${fmtPrice(s.target)}", "Hedef ${fmtPrice(s.target)}")
     else if (s.mode == Snapshot.Mode.WAIT) short("%${s.winRate} isabet")
     else short(" ")
 
