@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wf_name">AL/SAT Neon Trader</string>
+    <string name="slot_alsat">AL/SAT</string>
+    <string name="slot_ezan">Namaz vakti</string>
+    <string name="slot_kalan">Vakte kalan</string>
+    <string name="slot_grafik">Grafik</string>
+</resources>

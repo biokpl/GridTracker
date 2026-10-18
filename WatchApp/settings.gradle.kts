@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "GridWatch"
-include(":app", ":watchface")
+include(":app", ":watchface", ":face_ultra", ":face_lux", ":face_neon")

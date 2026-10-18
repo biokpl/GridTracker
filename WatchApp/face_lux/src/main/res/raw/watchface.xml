@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- B · LUXURY — gen_faces.py ile üretildi, elle düzenlemeyin. -->
+<WatchFace width="450" height="450" clipShape="CIRCLE">
+    <Metadata key="CLOCK_TYPE" value="DIGITAL" />
+    <Metadata key="PREVIEW_TIME" value="14:32:27" />
+    <BitmapFonts>
+        <BitmapFont name="sc">
+            <Character name="0" resource="sc_u0030" width="20" height="49" />
+            <Character name="1" resource="sc_u0031" width="13" height="49" />
+            <Character name="2" resource="sc_u0032" width="19" height="49" />
+            <Character name="3" resource="sc_u0033" width="19" height="49" />
+            <Character name="4" resource="sc_u0034" width="21" height="49" />
+            <Character name="5" resource="sc_u0035" width="20" height="49" />
+            <Character name="6" resource="sc_u0036" width="19" height="49" />
+            <Character name="7" resource="sc_u0037" width="18" height="49" />
+            <Character name="8" resource="sc_u0038" width="20" height="49" />
+            <Character name="9" resource="sc_u0039" width="19" height="49" />
+            <Character name=":" resource="sc_u003a" width="8" height="49" />
+            <Character name="." resource="sc_u002e" width="8" height="49" />
+            <Character name="," resource="sc_u002c" width="8" height="49" />
+            <Character name="+" resource="sc_u002b" width="16" height="49" />
+            <Character name="-" resource="sc_u002d" width="17" height="49" />
+            <Character name="−" resource="sc_u2212" width="23" height="49" />
+            <Character name="%" resource="sc_u0025" width="28" height="49" />
+            <Character name="₺" resource="sc_u20ba" width="20" height="49" />
+            <Character name=" " resource="sc_u0020" width="10" height="49" />
+            <Character name="·" resource="sc_u00b7" width="8" height="49" />
+            <Character name="/" resource="sc_u002f" width="13" height="49" />
+            <Character name="½" resource="sc_u00bd" width="28" height="49" />
+            <Character name="(" resource="sc_u0028" width="11" height="49" />
+            <Character name=")" resource="sc_u0029" width="11" height="49" />
+            <Character name="A" resource="sc_u0041" width="21" height="49" />
+            <Character name="B" resource="sc_u0042" width="20" height="49" />
+            <Character name="C" resource="sc_u0043" width="20" height="49" />
+            <Character name="Ç" resource="sc_u00c7" width="20" height="49" />
+            <Character name="D" resource="sc_u0044" width="21" height="49" />
+            <Character name="E" resource="sc_u0045" width="18" height="49" />
+            <Character name="F" resource="sc_u0046" width="18" height="49" />
+            <Character name="G" resource="sc_u0047" width="21" height="49" />
+            <Character name="Ğ" resource="sc_u011e" width="21" height="49" />
+            <Character name="H" resource="sc_u0048" width="20" height="49" />
+            <Character name="I" resource="sc_u0049" width="9" height="49" />
+            <Character name="İ" resource="sc_u0130" width="9" height="49" />
+            <Character name="J" resource="sc_u004a" width="17" height="49" />
+            <Character name="K" resource="sc_u004b" width="20" height="49" />
+            <Character name="L" resource="sc_u004c" width="18" height="49" />
+            <Character name="M" resource="sc_u004d" width="27" height="49" />
+            <Character name="N" resource="sc_u004e" width="21" height="49" />
+            <Character name="O" resource="sc_u004f" width="22" height="49" />
+            <Character name="Ö" resource="sc_u00d6" width="22" height="49" />
+            <Character name="P" resource="sc_u0050" width="21" height="49" />
+            <Character name="Q" resource="sc_u0051" width="22" height="49" />
+            <Character name="R" resource="sc_u0052" width="22" height="49" />
+            <Character name="S" resource="sc_u0053" width="21" height="49" />
+            <Character name="Ş" resource="sc_u015e" width="21" height="49" />
+            <Character name="T" resource="sc_u0054" width="17" height="49" />
+            <Character name="U" resource="sc_u0055" width="20" height="49" />
+            <Character name="Ü" resource="sc_u00dc" width="20" height="49" />
+            <Character name="V" resource="sc_u0056" width="19" height="49" />
+            <Character name="W" resource="sc_u0057" width="27" height="49" />
+            <Character name="X" resource="sc_u0058" width="19" height="49" />
+            <Character name="Y" resource="sc_u0059" width="17" height="49" />
+            <Character name="Z" resource="sc_u005a" width="17" height="49" />
+            <Character name="a" resource="sc_u0061" width="20" height="49" />
+            <Character name="b" resource="sc_u0062" width="19" height="49" />
+            <Character name="c" resource="sc_u0063" width="18" height="49" />
+            <Character name="ç" resource="sc_u00e7" width="18" height="49" />
+            <Character name="d" resource="sc_u0064" width="19" height="49" />
+            <Character name="e" resource="sc_u0065" width="19" height="49" />
+            <Character name="f" resource="sc_u0066" width="12" height="49" />
+            <Character name="g" resource="sc_u0067" width="19" height="49" />
+            <Character name="ğ" resource="sc_u011f" width="19" height="49" />
+            <Character name="h" resource="sc_u0068" width="20" height="49" />
+            <Character name="ı" resource="sc_u0131" width="10" height="49" />
+            <Character name="i" resource="sc_u0069" width="10" height="49" />
+            <Character name="j" resource="sc_u006a" width="10" height="49" />
+            <Character name="k" resource="sc_u006b" width="19" height="49" />
+            <Character name="l" resource="sc_u006c" width="11" height="49" />
+            <Character name="m" resource="sc_u006d" width="30" height="49" />
+            <Character name="n" resource="sc_u006e" width="20" height="49" />
+            <Character name="o" resource="sc_u006f" width="18" height="49" />
+            <Character name="ö" resource="sc_u00f6" width="18" height="49" />
+            <Character name="p" resource="sc_u0070" width="19" height="49" />
+            <Character name="q" resource="sc_u0071" width="19" height="49" />
+            <Character name="r" resource="sc_u0072" width="15" height="49" />
+            <Character name="s" resource="sc_u0073" width="17" height="49" />
+            <Character name="ş" resource="sc_u015f" width="17" height="49" />
+            <Character name="t" resource="sc_u0074" width="13" height="49" />
+            <Character name="u" resource="sc_u0075" width="20" height="49" />
+            <Character name="ü" resource="sc_u00fc" width="20" height="49" />
+            <Character name="v" resource="sc_u0076" width="19" height="49" />
+            <Character name="w" resource="sc_u0077" width="27" height="49" />
+            <Character name="x" resource="sc_u0078" width="19" height="49" />
+            <Character name="y" resource="sc_u0079" width="18" height="49" />
+            <Character name="z" resource="sc_u007a" width="17" height="49" />
+        </BitmapFont>
+        <BitmapFont name="bc">
+            <Character name="0" resource="bc_u0030" width="40" height="97" />
+            <Character name="1" resource="bc_u0031" width="26" height="97" />
+            <Character name="2" resource="bc_u0032" width="38" height="97" />
+            <Character name="3" resource="bc_u0033" width="38" height="97" />
+            <Character name="4" resource="bc_u0034" width="41" height="97" />
+            <Character name="5" resource="bc_u0035" width="39" height="97" />
+            <Character name="6" resource="bc_u0036" width="37" height="97" />
+            <Character name="7" resource="bc_u0037" width="37" height="97" />
+            <Character name="8" resource="bc_u0038" width="39" height="97" />
+            <Character name="9" resource="bc_u0039" width="37" height="97" />
+            <Character name=":" resource="bc_u003a" width="16" height="97" />
+            <Character name="." resource="bc_u002e" width="16" height="97" />
+            <Character name="," resource="bc_u002c" width="16" height="97" />
+            <Character name="+" resource="bc_u002b" width="32" height="97" />
+            <Character name="-" resource="bc_u002d" width="34" height="97" />
+            <Character name="−" resource="bc_u2212" width="46" height="97" />
+            <Character name="%" resource="bc_u0025" width="57" height="97" />
+            <Character name="₺" resource="bc_u20ba" width="40" height="97" />
+            <Character name=" " resource="bc_u0020" width="19" height="97" />
+            <Character name="·" resource="bc_u00b7" width="16" height="97" />
+            <Character name="/" resource="bc_u002f" width="26" height="97" />
+            <Character name="½" resource="bc_u00bd" width="56" height="97" />
+            <Character name="(" resource="bc_u0028" width="22" height="97" />
+            <Character name=")" resource="bc_u0029" width="22" height="97" />
+            <Character name="A" resource="bc_u0041" width="42" height="97" />
+            <Character name="B" resource="bc_u0042" width="40" height="97" />
+            <Character name="C" resource="bc_u0043" width="40" height="97" />
+            <Character name="Ç" resource="bc_u00c7" width="40" height="97" />
+            <Character name="D" resource="bc_u0044" width="41" height="97" />
+            <Character name="E" resource="bc_u0045" width="36" height="97" />
+            <Character name="F" resource="bc_u0046" width="35" height="97" />
+            <Character name="G" resource="bc_u0047" width="42" height="97" />
+            <Character name="Ğ" resource="bc_u011e" width="42" height="97" />
+            <Character name="H" resource="bc_u0048" width="41" height="97" />
+            <Character name="I" resource="bc_u0049" width="18" height="97" />
+            <Character name="İ" resource="bc_u0130" width="18" height="97" />
+            <Character name="J" resource="bc_u004a" width="34" height="97" />
+            <Character name="K" resource="bc_u004b" width="41" height="97" />
+            <Character name="L" resource="bc_u004c" width="35" height="97" />
+            <Character name="M" resource="bc_u004d" width="53" height="97" />
+            <Character name="N" resource="bc_u004e" width="43" height="97" />
+            <Character name="O" resource="bc_u004f" width="43" height="97" />
+            <Character name="Ö" resource="bc_u00d6" width="43" height="97" />
+            <Character name="P" resource="bc_u0050" width="42" height="97" />
+            <Character name="Q" resource="bc_u0051" width="44" height="97" />
+            <Character name="R" resource="bc_u0052" width="43" height="97" />
+            <Character name="S" resource="bc_u0053" width="41" height="97" />
+            <Character name="Ş" resource="bc_u015e" width="41" height="97" />
+            <Character name="T" resource="bc_u0054" width="33" height="97" />
+            <Character name="U" resource="bc_u0055" width="39" height="97" />
+            <Character name="Ü" resource="bc_u00dc" width="39" height="97" />
+            <Character name="V" resource="bc_u0056" width="38" height="97" />
+            <Character name="W" resource="bc_u0057" width="54" height="97" />
+            <Character name="X" resource="bc_u0058" width="38" height="97" />
+            <Character name="Y" resource="bc_u0059" width="34" height="97" />
+            <Character name="Z" resource="bc_u005a" width="35" height="97" />
+            <Character name="a" resource="bc_u0061" width="39" height="97" />
+            <Character name="b" resource="bc_u0062" width="39" height="97" />
+            <Character name="c" resource="bc_u0063" width="36" height="97" />
+            <Character name="ç" resource="bc_u00e7" width="36" height="97" />
+            <Character name="d" resource="bc_u0064" width="39" height="97" />
+            <Character name="e" resource="bc_u0065" width="38" height="97" />
+            <Character name="f" resource="bc_u0066" width="24" height="97" />
+            <Character name="g" resource="bc_u0067" width="39" height="97" />
+            <Character name="ğ" resource="bc_u011f" width="39" height="97" />
+            <Character name="h" resource="bc_u0068" width="40" height="97" />
+            <Character name="ı" resource="bc_u0131" width="19" height="97" />
+            <Character name="i" resource="bc_u0069" width="19" height="97" />
+            <Character name="j" resource="bc_u006a" width="20" height="97" />
+            <Character name="k" resource="bc_u006b" width="39" height="97" />
+            <Character name="l" resource="bc_u006c" width="22" height="97" />
+            <Character name="m" resource="bc_u006d" width="60" height="97" />
+            <Character name="n" resource="bc_u006e" width="40" height="97" />
+            <Character name="o" resource="bc_u006f" width="36" height="97" />
+            <Character name="ö" resource="bc_u00f6" width="36" height="97" />
+            <Character name="p" resource="bc_u0070" width="39" height="97" />
+            <Character name="q" resource="bc_u0071" width="39" height="97" />
+            <Character name="r" resource="bc_u0072" width="30" height="97" />
+            <Character name="s" resource="bc_u0073" width="35" height="97" />
+            <Character name="ş" resource="bc_u015f" width="35" height="97" />
+            <Character name="t" resource="bc_u0074" width="25" height="97" />
+            <Character name="u" resource="bc_u0075" width="39" height="97" />
+            <Character name="ü" resource="bc_u00fc" width="39" height="97" />
+            <Character name="v" resource="bc_u0076" width="37" height="97" />
+            <Character name="w" resource="bc_u0077" width="55" height="97" />
+            <Character name="x" resource="bc_u0078" width="38" height="97" />
+            <Character name="y" resource="bc_u0079" width="36" height="97" />
+            <Character name="z" resource="bc_u007a" width="34" height="97" />
+        </BitmapFont>
+        <BitmapFont name="lt">
+            <Character name="0" resource="lt_u0030" width="75" height="188" />
+            <Character name="1" resource="lt_u0031" width="53" height="188" />
+            <Character name="2" resource="lt_u0032" width="75" height="188" />
+            <Character name="3" resource="lt_u0033" width="75" height="188" />
+            <Character name="4" resource="lt_u0034" width="75" height="188" />
+            <Character name="5" resource="lt_u0035" width="75" height="188" />
+            <Character name="6" resource="lt_u0036" width="75" height="188" />
+            <Character name="7" resource="lt_u0037" width="75" height="188" />
+            <Character name="8" resource="lt_u0038" width="75" height="188" />
+            <Character name="9" resource="lt_u0039" width="75" height="188" />
+            <Character name=":" resource="lt_u003a" width="30" height="188" />
+        </BitmapFont>
+    </BitmapFonts>
+    <Scene backgroundColor="#ff000000">
+        <PartImage x="0" y="0" width="450" height="450"><Variant mode="AMBIENT" target="alpha" value="0" /><Image resource="bg_lux" /></PartImage>
+        <PartText x="0" y="86" width="450" height="22"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><BitmapFont family="sc" size="14" color="#ffdeb86e"><Template>%s · %s %s<Parameter expression="[DAY_OF_WEEK_F]" /><Parameter expression="[DAY]" /><Parameter expression="[MONTH_F]" /></Template></BitmapFont></Text></PartText>
+        <DigitalClock x="0" y="105" width="450" height="98"><Variant mode="AMBIENT" target="alpha" value="170" />
+            <TimeText format="hh:mm" hourFormat="24" align="CENTER" x="0" y="0" width="450" height="98">
+                <BitmapFont family="lt" size="98" color="#fff8f4ec" />
+            </TimeText>
+        </DigitalClock>
+
+        <ComplicationSlot slotId="1" x="69" y="268" width="104" height="18" supportedTypes="SHORT_TEXT" isCustomizable="TRUE" displayName="@string/slot_ezan"><DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="SHORT_TEXT" primaryProvider="com.mobilexsoft.ezanvakti/com.mobilexsoft.ezanvakti.complications.SonrakiVakitComplicationProviderService" primaryProviderType="SHORT_TEXT" /><BoundingBox x="0" y="0" width="104" height="18" /><Complication type="SHORT_TEXT"><PartText x="0" y="0" width="104" height="18"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><BitmapFont family="sc" size="13" color="#ff968c78"><Template>%s %s<Parameter expression="[COMPLICATION.TITLE]" /><Parameter expression="[COMPLICATION.TEXT]" /></Template></BitmapFont></Text></PartText></Complication></ComplicationSlot>
+        <ComplicationSlot slotId="5" x="69" y="240" width="104" height="28" supportedTypes="SHORT_TEXT" isCustomizable="TRUE" displayName="@string/slot_kalan"><DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="SHORT_TEXT" primaryProvider="com.mobilexsoft.ezanvakti/com.mobilexsoft.ezanvakti.complications.VaktinCikmasinaComplicationProviderService" primaryProviderType="SHORT_TEXT" /><BoundingBox x="0" y="0" width="104" height="28" /><Complication type="SHORT_TEXT"><PartText x="0" y="0" width="104" height="28"><Variant mode="AMBIENT" target="alpha" value="150" /><Text align="CENTER"><BitmapFont family="bc" size="19" color="#fff8f4ec"><Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template></BitmapFont></Text></PartText></Complication></ComplicationSlot>
+
+        <PartDraw x="0" y="0" width="450" height="450"><Variant mode="AMBIENT" target="alpha" value="0" />
+            <Arc centerX="328" centerY="262" width="88" height="88" startAngle="225" endAngle="225">
+                <Transform target="endAngle" value="225 + 270 * [BATTERY_PERCENT] / 100" />
+                <Stroke color="#ff78c88c" thickness="5" cap="ROUND" />
+            </Arc>
+        </PartDraw>
+        <PartText x="276" y="232" width="104" height="16"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><BitmapFont family="sc" size="11" color="#ff968c78">NABIZ</BitmapFont></Text></PartText>
+        <PartText x="276" y="248" width="104" height="28"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><BitmapFont family="bc" size="19" color="#fff8f4ec"><Template>%s<Parameter expression="[HEART_RATE]" /></Template></BitmapFont></Text></PartText>
+        <PartText x="276" y="276" width="104" height="16"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><BitmapFont family="sc" size="11" color="#ff968c78"><Template>PİL %s%%<Parameter expression="[BATTERY_PERCENT]" /></Template></BitmapFont></Text></PartText>
+
+        <ComplicationSlot slotId="0" x="0" y="0" width="450" height="450" supportedTypes="RANGED_VALUE" isCustomizable="TRUE" displayName="@string/slot_alsat"><DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="RANGED_VALUE" primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.RingComplicationService" primaryProviderType="RANGED_VALUE" /><BoundingOval x="160" y="280" width="130" height="130" /><Complication type="RANGED_VALUE"><PartDraw x="0" y="0" width="450" height="450"><Variant mode="AMBIENT" target="alpha" value="110" /><Arc centerX="225" centerY="345" width="112" height="112" startAngle="225" endAngle="225"><Transform target="endAngle" value="225 + 270 * ([COMPLICATION.RANGED_VALUE_VALUE] - [COMPLICATION.RANGED_VALUE_MIN]) / ([COMPLICATION.RANGED_VALUE_MAX] - [COMPLICATION.RANGED_VALUE_MIN])" /><Stroke color="#ffdeb86e" thickness="7" cap="ROUND" /></Arc></PartDraw></Complication></ComplicationSlot>
+        <ComplicationSlot slotId="2" x="160" y="311" width="130" height="44" supportedTypes="RANGED_VALUE" isCustomizable="TRUE" displayName="@string/slot_alsat"><DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="RANGED_VALUE" primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.KzComplicationService" primaryProviderType="RANGED_VALUE" /><BoundingBox x="0" y="0" width="130" height="44" /><Complication type="RANGED_VALUE"><PartText x="0" y="0" width="130" height="18"><Variant mode="AMBIENT" target="alpha" value="140" /><Text align="CENTER"><BitmapFont family="bc" size="15" color="#ffdeb86e"><Template>%s<Parameter expression="[COMPLICATION.TITLE]" /></Template></BitmapFont></Text></PartText><Condition><Expressions><Expression name="pos"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] > 0]]></Expression><Expression name="neg"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] < 0]]></Expression></Expressions><Compare expression="pos"><PartText x="0" y="18" width="130" height="26"><Variant mode="AMBIENT" target="alpha" value="140" /><Text align="CENTER"><BitmapFont family="bc" size="24" color="#ff78dca0"><Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template></BitmapFont></Text></PartText></Compare><Compare expression="neg"><PartText x="0" y="18" width="130" height="26"><Variant mode="AMBIENT" target="alpha" value="140" /><Text align="CENTER"><BitmapFont family="bc" size="24" color="#ffff7a6e"><Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template></BitmapFont></Text></PartText></Compare><Default><PartText x="0" y="18" width="130" height="26"><Variant mode="AMBIENT" target="alpha" value="140" /><Text align="CENTER"><BitmapFont family="bc" size="24" color="#fff8f4ec"><Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template></BitmapFont></Text></PartText></Default></Condition></Complication></ComplicationSlot>
+        <ComplicationSlot slotId="3" x="170" y="359" width="55" height="18" supportedTypes="SHORT_TEXT" isCustomizable="TRUE" displayName="@string/slot_alsat"><DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="SHORT_TEXT" primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.StopComplicationService" primaryProviderType="SHORT_TEXT" /><BoundingBox x="0" y="0" width="55" height="18" /><Complication type="SHORT_TEXT"><PartText x="0" y="0" width="55" height="18"><Variant mode="AMBIENT" target="alpha" value="110" /><Text align="END"><BitmapFont family="sc" size="12" color="#ffd28c82"><Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template></BitmapFont></Text></PartText></Complication></ComplicationSlot>
+        <ComplicationSlot slotId="4" x="229" y="359" width="55" height="18" supportedTypes="SHORT_TEXT" isCustomizable="TRUE" displayName="@string/slot_alsat"><DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="SHORT_TEXT" primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.TargetComplicationService" primaryProviderType="SHORT_TEXT" /><BoundingBox x="0" y="0" width="55" height="18" /><Complication type="SHORT_TEXT"><PartText x="0" y="0" width="55" height="18"><Variant mode="AMBIENT" target="alpha" value="110" /><Text align="START"><BitmapFont family="sc" size="12" color="#ff8cc8a0"><Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template></BitmapFont></Text></PartText></Complication></ComplicationSlot>
+    </Scene>
+</WatchFace>

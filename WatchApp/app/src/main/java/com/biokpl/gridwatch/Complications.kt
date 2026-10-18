@@ -33,10 +33,12 @@ private val PREVIEW = Snapshot(
 )
 
 private fun ringData(s: Snapshot): ComplicationData = when (s.mode) {
-    Snapshot.Mode.ACTIVE -> ranged(s.progress, 0f, 1f, s.symbol, fmtPrice(s.price))
-    Snapshot.Mode.PICK -> ranged(1f, 0f, 1f, s.symbol, "öneri")
-    Snapshot.Mode.WAIT -> ranged(s.winRate / 100f, 0f, 1f, "isabet", "%${s.winRate}")
-    Snapshot.Mode.NO_DATA -> ranged(0f, 0f, 1f, "AL/SAT", "veri yok")
+    // Premium kadranlar halkanın metinlerini panelde alt satır olarak kullanır:
+    //   TITLE = yüzde değişim / durum,  TEXT = "62 LOT · 384,90"
+    Snapshot.Mode.ACTIVE -> ranged(s.progress, 0f, 1f, fmtPct(s.pnlPct), "${s.qty} LOT · ${fmtPrice(s.price)}")
+    Snapshot.Mode.PICK -> ranged(1f, 0f, 1f, if (s.halfLot) "YARIM LOT" else "ÖNERİ", "${s.lots} LOT · ${fmtPrice(s.price)}")
+    Snapshot.Mode.WAIT -> ranged(s.winRate / 100f, 0f, 1f, "%${s.winRate} İSABET", "${s.trades} İŞLEM")
+    Snapshot.Mode.NO_DATA -> ranged(0f, 0f, 1f, "AL/SAT", "VERİ YOK")
 }
 
 /** K/Z değeri: >0 yeşil, <0 kırmızı, 0 nötr (kadran rengi buna göre seçer). */

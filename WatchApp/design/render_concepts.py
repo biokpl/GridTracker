@@ -123,38 +123,38 @@ def face_ultra():
     d = ImageDraw.Draw(img)
     # S / H uç etiketleri
     # namaz çipi
-    chip = (C - 108 * S, 214 * S, C + 108 * S, 246 * S)
+    chip = (C - 108 * S, 230 * S, C + 108 * S, 262 * S)
     d.rounded_rectangle(chip, radius=17 * S, fill=(40, 28, 8, 255), outline=(150, 100, 25, 255), width=2 * S)
-    moon(d, C - 84 * S, 230 * S, 8 * S, (250, 199, 117, 255))
-    ctext(d, (C + 8 * S, 230 * S), "İKİNDİ 15:56  ·  01:44", BAHN(17, "SemiBold Condensed"), (250, 199, 117, 255))
+    moon(d, C - 84 * S, 246 * S, 8 * S, (250, 199, 117, 255))
+    ctext(d, (C + 8 * S, 246 * S), "İKİNDİ 15:56  ·  01:44", BAHN(17, "SemiBold Condensed"), (250, 199, 117, 255))
     # tarih + saat
-    ctext(d, (C, 92 * S), "PAZAR  18 EKİM", BAHN(16, "SemiBold Condensed"), (140, 145, 150, 255))
-    glow(img, lambda dr: ctext(dr, (C - 14 * S, 156 * S), "14:32", BAHN(118, "Bold Condensed"), (245, 245, 240, 255)), radius=12, strength=1)
+    ctext(d, (C, 110 * S), "PAZAR  18 EKİM", BAHN(16, "SemiBold Condensed"), (140, 145, 150, 255))
+    glow(img, lambda dr: ctext(dr, (C - 14 * S, 176 * S), "14:32", BAHN(118, "Bold Condensed"), (245, 245, 240, 255)), radius=12, strength=1)
     d = ImageDraw.Draw(img)
-    ctext(d, (C + 128 * S, 136 * S), "27", BAHN(30, "Bold Condensed"), (60, 225, 170, 255))
-    ctext(d, (C + 128 * S, 166 * S), "SN", BAHN(12, "SemiBold Condensed"), (90, 95, 100, 255))
+    ctext(d, (C + 120 * S, 158 * S), "27", BAHN(30, "Bold Condensed"), (60, 225, 170, 255))
+    ctext(d, (C + 120 * S, 186 * S), "SN", BAHN(12, "SemiBold Condensed"), (90, 95, 100, 255))
     # pozisyon paneli
-    panel = (C - 150 * S, 258 * S, C + 150 * S, 336 * S)
+    panel = (C - 150 * S, 272 * S, C + 150 * S, 350 * S)
     d.rounded_rectangle(panel, radius=20 * S, fill=(14, 18, 22, 235), outline=(45, 52, 58, 255), width=2 * S)
-    d.text((C - 132 * S, 268 * S), "TUPRS", font=BAHN(28, "Bold Condensed"), fill=(240, 240, 235, 255))
-    d.text((C - 132 * S, 302 * S), "62 LOT · 384,90", font=BAHN(15, "SemiBold Condensed"), fill=(130, 135, 140, 255))
+    d.text((C - 132 * S, 282 * S), "TUPRS", font=BAHN(28, "Bold Condensed"), fill=(240, 240, 235, 255))
+    d.text((C - 132 * S, 316 * S), "62 LOT · 384,90", font=BAHN(15, "SemiBold Condensed"), fill=(130, 135, 140, 255))
     # mini grafik
     sp = spark(); lo, hi = min(sp), max(sp)
-    gx0, gx1, gy0, gy1 = C - 22 * S, C + 50 * S, 272 * S, 324 * S
+    gx0, gx1, gy0, gy1 = C - 22 * S, C + 50 * S, 286 * S, 338 * S
     pts = [(gx0 + (gx1 - gx0) * i / (len(sp) - 1), gy1 - (gy1 - gy0) * (v - lo) / (hi - lo)) for i, v in enumerate(sp)]
     glow(img, lambda dr: dr.line(pts, fill=(60, 225, 170, 255), width=3 * S, joint="curve"), radius=5)
     d = ImageDraw.Draw(img)
-    d.text((C + 140 * S, 270 * S), "+582 ₺", font=BAHN(28, "Bold Condensed"), fill=(60, 225, 170, 255), anchor="ra")
-    d.text((C + 140 * S, 304 * S), "+%2,5", font=BAHN(16, "SemiBold Condensed"), fill=(60, 225, 170, 255), anchor="ra")
+    d.text((C + 140 * S, 284 * S), "+582 ₺", font=BAHN(28, "Bold Condensed"), fill=(60, 225, 170, 255), anchor="ra")
+    d.text((C + 140 * S, 318 * S), "+%2,5", font=BAHN(16, "SemiBold Condensed"), fill=(60, 225, 170, 255), anchor="ra")
     # stop / hedef değerleri
-    ctext(d, (C - 70 * S, 356 * S), "S 351,45", BAHN(18, "SemiBold Condensed"), (255, 120, 110, 255))
-    ctext(d, (C + 70 * S, 356 * S), "H 394,28", BAHN(18, "SemiBold Condensed"), (110, 230, 170, 255))
+    ctext(d, (C - 70 * S, 370 * S), "S 351,45", BAHN(18, "SemiBold Condensed"), (255, 120, 110, 255))
+    ctext(d, (C + 70 * S, 370 * S), "H 394,28", BAHN(18, "SemiBold Condensed"), (110, 230, 170, 255))
     # nabız / pil
     fs = BAHN(15, "SemiBold Condensed")
-    heart(d, C - 56 * S, 388 * S, 15, (255, 90, 110, 255)); ctext(d, (C - 36 * S, 388 * S), "77", fs, (200, 200, 200, 255))
-    d.rounded_rectangle((C + 10 * S, 381 * S, C + 44 * S, 395 * S), radius=3 * S, outline=(120, 125, 130, 255), width=2 * S)
-    d.rectangle((C + 13 * S, 384 * S, C + 13 * S + int(28 * S * 0.74), 392 * S), fill=(120, 220, 120, 255))
-    ctext(d, (C + 66 * S, 388 * S), "74%", fs, (140, 145, 150, 255))
+    heart(d, C - 56 * S, 400 * S, 15, (255, 90, 110, 255)); ctext(d, (C - 36 * S, 400 * S), "77", fs, (200, 200, 200, 255))
+    d.rounded_rectangle((C + 10 * S, 393 * S, C + 44 * S, 407 * S), radius=3 * S, outline=(120, 125, 130, 255), width=2 * S)
+    d.rectangle((C + 13 * S, 396 * S, C + 13 * S + int(28 * S * 0.74), 404 * S), fill=(120, 220, 120, 255))
+    ctext(d, (C + 66 * S, 400 * S), "74%", fs, (140, 145, 150, 255))
     return img
 
 
