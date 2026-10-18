@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  AL/SAT kadranı (Watch Face Format v2).
+  Normal görünüm + soluk AOD görünümü: her öğenin iki kopyası var; normal kopya
+  AMBIENT'ta alpha=0, AOD kopyası normalde alpha=0 / AMBIENT'ta 255.
+  Veri komplikasyonlardan gelir (kadran ağa çıkamaz):
+    0 halka  → com.biokpl.gridwatch RingComplicationService  (RANGED_VALUE)
+    1 namaz  → Ezan Vakti Pro "Sonraki vakit"                  (SHORT_TEXT)
+    2 K/Z    → KzComplicationService (değerin işareti = renk)   (RANGED_VALUE)
+    3 stop   → StopComplicationService                          (SHORT_TEXT)
+    4 hedef  → TargetComplicationService                        (SHORT_TEXT)
+-->
+<WatchFace width="450" height="450">
+    <Metadata key="CLOCK_TYPE" value="DIGITAL" />
+    <Metadata key="PREVIEW_TIME" value="14:32:00" />
+
+    <Scene backgroundColor="#ff000000">
+
+        <!-- ── Halka zemini ── -->
+        <PartDraw x="0" y="0" width="450" height="450">
+            <Variant mode="AMBIENT" target="alpha" value="0" />
+            <Arc centerX="225" centerY="225" width="408" height="408" startAngle="0" endAngle="360">
+                <Stroke color="#ff2c2c2a" thickness="12" />
+            </Arc>
+        </PartDraw>
+        <PartDraw x="0" y="0" width="450" height="450" alpha="0">
+            <Variant mode="AMBIENT" target="alpha" value="255" />
+            <Arc centerX="225" centerY="225" width="408" height="408" startAngle="0" endAngle="360">
+                <Stroke color="#ff1a1a19" thickness="6" />
+            </Arc>
+        </PartDraw>
+
+        <!-- ── 0: Halka (stop → hedef) ── -->
+        <ComplicationSlot slotId="0" x="0" y="0" width="450" height="450"
+            supportedTypes="RANGED_VALUE" isCustomizable="TRUE" displayName="@string/wf_name">
+            <DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY"
+                primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.RingComplicationService"
+                primaryProviderType="RANGED_VALUE" />
+            <BoundingBox x="195" y="2" width="60" height="22" />
+            <Complication type="RANGED_VALUE">
+                <PartDraw x="0" y="0" width="450" height="450">
+                    <Variant mode="AMBIENT" target="alpha" value="0" />
+                    <Arc centerX="225" centerY="225" width="408" height="408" startAngle="225" endAngle="225">
+                        <Transform target="endAngle"
+                            value="225 + 270 * ([COMPLICATION.RANGED_VALUE_VALUE] - [COMPLICATION.RANGED_VALUE_MIN]) / ([COMPLICATION.RANGED_VALUE_MAX] - [COMPLICATION.RANGED_VALUE_MIN])" />
+                        <Stroke color="#ff5dcaa5" thickness="12" cap="ROUND" />
+                    </Arc>
+                </PartDraw>
+                <PartDraw x="0" y="0" width="450" height="450" alpha="0">
+                    <Variant mode="AMBIENT" target="alpha" value="255" />
+                    <Arc centerX="225" centerY="225" width="408" height="408" startAngle="225" endAngle="225">
+                        <Transform target="endAngle"
+                            value="225 + 270 * ([COMPLICATION.RANGED_VALUE_VALUE] - [COMPLICATION.RANGED_VALUE_MIN]) / ([COMPLICATION.RANGED_VALUE_MAX] - [COMPLICATION.RANGED_VALUE_MIN])" />
+                        <Stroke color="#ff085041" thickness="6" cap="ROUND" />
+                    </Arc>
+                </PartDraw>
+            </Complication>
+        </ComplicationSlot>
+
+        <!-- ── Tarih ── -->
+        <PartText x="0" y="58" width="450" height="36">
+            <Variant mode="AMBIENT" target="alpha" value="0" />
+            <Text align="CENTER">
+                <Font family="SYNC_TO_DEVICE" size="26" color="#ffb4b2a9">
+                    <Template>%s %s %s<Parameter expression="[DAY_OF_WEEK_S]" /><Parameter expression="[DAY]" /><Parameter expression="[MONTH_S]" /></Template>
+                </Font>
+            </Text>
+        </PartText>
+        <PartText x="0" y="58" width="450" height="36" alpha="0">
+            <Variant mode="AMBIENT" target="alpha" value="255" />
+            <Text align="CENTER">
+                <Font family="SYNC_TO_DEVICE" size="26" color="#ff5f5e5a">
+                    <Template>%s %s %s<Parameter expression="[DAY_OF_WEEK_S]" /><Parameter expression="[DAY]" /><Parameter expression="[MONTH_S]" /></Template>
+                </Font>
+            </Text>
+        </PartText>
+
+        <!-- ── Saat ── -->
+        <DigitalClock x="0" y="88" width="450" height="112">
+            <Variant mode="AMBIENT" target="alpha" value="0" />
+            <TimeText format="hh:mm" hourFormat="24" align="CENTER" x="0" y="0" width="450" height="112">
+                <Font family="SYNC_TO_DEVICE" size="100" weight="MEDIUM" color="#fff1efe8" />
+            </TimeText>
+        </DigitalClock>
+        <DigitalClock x="0" y="88" width="450" height="112" alpha="0">
+            <Variant mode="AMBIENT" target="alpha" value="255" />
+            <TimeText format="hh:mm" hourFormat="24" align="CENTER" x="0" y="0" width="450" height="112">
+                <Font family="SYNC_TO_DEVICE" size="100" weight="NORMAL" color="#ff888780" />
+            </TimeText>
+        </DigitalClock>
+
+        <!-- ── 1: Namaz vakti (Ezan Vakti Pro) ── -->
+        <ComplicationSlot slotId="1" x="85" y="198" width="280" height="40"
+            supportedTypes="SHORT_TEXT LONG_TEXT" isCustomizable="TRUE" displayName="@string/slot_ezan">
+            <DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY"
+                primaryProvider="com.mobilexsoft.ezanvakti/com.mobilexsoft.ezanvakti.complications.SonrakiVakitComplicationProviderService"
+                primaryProviderType="SHORT_TEXT" />
+            <BoundingBox x="0" y="0" width="280" height="40" />
+            <Complication type="SHORT_TEXT">
+                <PartDraw x="0" y="0" width="280" height="40">
+                    <Variant mode="AMBIENT" target="alpha" value="0" />
+                    <RoundRectangle x="1" y="1" width="278" height="38" cornerRadiusX="19" cornerRadiusY="19">
+                        <Stroke color="#ff633806" thickness="2" />
+                    </RoundRectangle>
+                </PartDraw>
+                <PartText x="0" y="0" width="280" height="40">
+                    <Variant mode="AMBIENT" target="alpha" value="0" />
+                    <Text align="CENTER">
+                        <Font family="SYNC_TO_DEVICE" size="25" color="#fffac775">
+                            <Template>%s %s<Parameter expression="[COMPLICATION.TITLE]" /><Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                        </Font>
+                    </Text>
+                </PartText>
+                <PartText x="0" y="0" width="280" height="40" alpha="0">
+                    <Variant mode="AMBIENT" target="alpha" value="255" />
+                    <Text align="CENTER">
+                        <Font family="SYNC_TO_DEVICE" size="25" color="#ff854f0b">
+                            <Template>%s %s<Parameter expression="[COMPLICATION.TITLE]" /><Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                        </Font>
+                    </Text>
+                </PartText>
+            </Complication>
+            <Complication type="LONG_TEXT">
+                <PartText x="0" y="0" width="280" height="40">
+                    <Variant mode="AMBIENT" target="alpha" value="0" />
+                    <Text align="CENTER">
+                        <Font family="SYNC_TO_DEVICE" size="25" color="#fffac775">
+                            <Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                        </Font>
+                    </Text>
+                </PartText>
+                <PartText x="0" y="0" width="280" height="40" alpha="0">
+                    <Variant mode="AMBIENT" target="alpha" value="255" />
+                    <Text align="CENTER">
+                        <Font family="SYNC_TO_DEVICE" size="25" color="#ff854f0b">
+                            <Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                        </Font>
+                    </Text>
+                </PartText>
+            </Complication>
+        </ComplicationSlot>
+
+        <!-- ── Ayraç (yalnız normal) ── -->
+        <PartDraw x="180" y="246" width="90" height="2">
+            <Variant mode="AMBIENT" target="alpha" value="0" />
+            <Rectangle x="0" y="0" width="90" height="2">
+                <Fill color="#ff2c2c2a" />
+            </Rectangle>
+        </PartDraw>
+
+        <!-- ── 2: Hisse + K/Z ── -->
+        <ComplicationSlot slotId="2" x="45" y="252" width="360" height="46"
+            supportedTypes="RANGED_VALUE" isCustomizable="TRUE" displayName="@string/wf_name">
+            <DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY"
+                primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.KzComplicationService"
+                primaryProviderType="RANGED_VALUE" />
+            <BoundingBox x="0" y="0" width="360" height="46" />
+            <Complication type="RANGED_VALUE">
+                <PartText x="0" y="0" width="172" height="46">
+                    <Variant mode="AMBIENT" target="alpha" value="0" />
+                    <Text align="END">
+                        <Font family="SYNC_TO_DEVICE" size="36" weight="MEDIUM" color="#fff1efe8">
+                            <Template>%s<Parameter expression="[COMPLICATION.TITLE]" /></Template>
+                        </Font>
+                    </Text>
+                </PartText>
+                <PartText x="0" y="0" width="172" height="46" alpha="0">
+                    <Variant mode="AMBIENT" target="alpha" value="255" />
+                    <Text align="END">
+                        <Font family="SYNC_TO_DEVICE" size="36" color="#ff888780">
+                            <Template>%s<Parameter expression="[COMPLICATION.TITLE]" /></Template>
+                        </Font>
+                    </Text>
+                </PartText>
+                <Condition>
+                    <Expressions>
+                        <Expression name="pos"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] > 0]]></Expression>
+                        <Expression name="neg"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] < 0]]></Expression>
+                    </Expressions>
+                    <Compare expression="pos">
+                        <PartText x="186" y="0" width="174" height="46">
+                            <Variant mode="AMBIENT" target="alpha" value="0" />
+                            <Text align="START">
+                                <Font family="SYNC_TO_DEVICE" size="36" weight="MEDIUM" color="#ff5dcaa5">
+                                    <Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                                </Font>
+                            </Text>
+                        </PartText>
+                        <PartText x="186" y="0" width="174" height="46" alpha="0">
+                            <Variant mode="AMBIENT" target="alpha" value="255" />
+                            <Text align="START">
+                                <Font family="SYNC_TO_DEVICE" size="36" color="#ff0f6e56">
+                                    <Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                                </Font>
+                            </Text>
+                        </PartText>
+                    </Compare>
+                    <Compare expression="neg">
+                        <PartText x="186" y="0" width="174" height="46">
+                            <Variant mode="AMBIENT" target="alpha" value="0" />
+                            <Text align="START">
+                                <Font family="SYNC_TO_DEVICE" size="36" weight="MEDIUM" color="#ffe24b4a">
+                                    <Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                                </Font>
+                            </Text>
+                        </PartText>
+                        <PartText x="186" y="0" width="174" height="46" alpha="0">
+                            <Variant mode="AMBIENT" target="alpha" value="255" />
+                            <Text align="START">
+                                <Font family="SYNC_TO_DEVICE" size="36" color="#ff9c7676">
+                                    <Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                                </Font>
+                            </Text>
+                        </PartText>
+                    </Compare>
+                    <Default>
+                        <PartText x="186" y="0" width="174" height="46">
+                            <Variant mode="AMBIENT" target="alpha" value="0" />
+                            <Text align="START">
+                                <Font family="SYNC_TO_DEVICE" size="36" weight="MEDIUM" color="#ffb4b2a9">
+                                    <Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                                </Font>
+                            </Text>
+                        </PartText>
+                        <PartText x="186" y="0" width="174" height="46" alpha="0">
+                            <Variant mode="AMBIENT" target="alpha" value="255" />
+                            <Text align="START">
+                                <Font family="SYNC_TO_DEVICE" size="36" color="#ff5f5e5a">
+                                    <Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                                </Font>
+                            </Text>
+                        </PartText>
+                    </Default>
+                </Condition>
+            </Complication>
+        </ComplicationSlot>
+
+        <!-- ── 3: Stop ── -->
+        <ComplicationSlot slotId="3" x="45" y="298" width="170" height="34"
+            supportedTypes="SHORT_TEXT" isCustomizable="TRUE" displayName="@string/wf_name">
+            <DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY"
+                primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.StopComplicationService"
+                primaryProviderType="SHORT_TEXT" />
+            <BoundingBox x="0" y="0" width="170" height="34" />
+            <Complication type="SHORT_TEXT">
+                <PartText x="0" y="0" width="170" height="34">
+                    <Variant mode="AMBIENT" target="alpha" value="0" />
+                    <Text align="END">
+                        <Font family="SYNC_TO_DEVICE" size="25" color="#fff09595">
+                            <Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                        </Font>
+                    </Text>
+                </PartText>
+                <PartText x="0" y="0" width="170" height="34" alpha="0">
+                    <Variant mode="AMBIENT" target="alpha" value="255" />
+                    <Text align="END">
+                        <Font family="SYNC_TO_DEVICE" size="25" color="#ff9c7676">
+                            <Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                        </Font>
+                    </Text>
+                </PartText>
+            </Complication>
+        </ComplicationSlot>
+
+        <!-- ── 4: Hedef ── -->
+        <ComplicationSlot slotId="4" x="235" y="298" width="170" height="34"
+            supportedTypes="SHORT_TEXT" isCustomizable="TRUE" displayName="@string/wf_name">
+            <DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="EMPTY"
+                primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.TargetComplicationService"
+                primaryProviderType="SHORT_TEXT" />
+            <BoundingBox x="0" y="0" width="170" height="34" />
+            <Complication type="SHORT_TEXT">
+                <PartText x="0" y="0" width="170" height="34">
+                    <Variant mode="AMBIENT" target="alpha" value="0" />
+                    <Text align="START">
+                        <Font family="SYNC_TO_DEVICE" size="25" color="#ff97c459">
+                            <Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                        </Font>
+                    </Text>
+                </PartText>
+                <PartText x="0" y="0" width="170" height="34" alpha="0">
+                    <Variant mode="AMBIENT" target="alpha" value="255" />
+                    <Text align="START">
+                        <Font family="SYNC_TO_DEVICE" size="25" color="#ff7f9468">
+                            <Template>%s<Parameter expression="[COMPLICATION.TEXT]" /></Template>
+                        </Font>
+                    </Text>
+                </PartText>
+            </Complication>
+        </ComplicationSlot>
+
+        <!-- ── Nabız + pil (yalnız normal) ── -->
+        <PartText x="0" y="336" width="450" height="32">
+            <Variant mode="AMBIENT" target="alpha" value="0" />
+            <Text align="CENTER">
+                <Font family="SYNC_TO_DEVICE" size="23" color="#ff888780">
+                    <Template>♥ %s   ·   %s%%<Parameter expression="[HEART_RATE]" /><Parameter expression="[BATTERY_PERCENT]" /></Template>
+                </Font>
+            </Text>
+        </PartText>
+    </Scene>
+</WatchFace>
