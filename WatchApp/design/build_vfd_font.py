@@ -24,6 +24,13 @@ def _glyph(polys):
 def digit_polys(ch):
     x0 = (ADV - W_) / 2 - CAP * 0.06
     segs = V.seg_polys(x0, 0, W_, CAP, T_)
+    if ch == "1":      # yatay segment yok → dikeyleri tam boya uzat (yoksa kısa görünür)
+        hw, g = T_ / 2, T_ * 0.18
+        P = lambda px, py: (x0 + px + (CAP - py) * 0.12, py)
+        def vseg(px, y0, y1):
+            return [P(px, y0 + g), P(px + hw, y0 + g + hw), P(px + hw, y1 - g - hw),
+                    P(px, y1 - g), P(px - hw, y1 - g - hw), P(px - hw, y0 + g + hw)]
+        return [vseg(W_ - hw, -g, CAP / 2), vseg(W_ - hw, CAP / 2, CAP + g)]
     return [segs[k] for k in V.SEG[ch]]
 
 
