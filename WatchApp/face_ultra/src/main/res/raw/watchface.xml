@@ -194,20 +194,36 @@
 
         <PartText x="0" y="60" width="450" height="36"><Variant mode="AMBIENT" target="alpha" value="110" /><Text align="CENTER"><BitmapFont family="sc" size="26" color="#ffa0a5aa"><Template>%s %s %s<Parameter expression="[DAY_OF_WEEK_F]" /><Parameter expression="[DAY]" /><Parameter expression="[MONTH_F]" /></Template></BitmapFont></Text></PartText>
 
-          <PartText x="91" y="104" width="222" height="96"><Variant mode="AMBIENT" target="alpha" value="0" />
-            <Text align="START"><Font family="vfd7" size="100" color="#a01b2528">88:88</Font></Text></PartText>
-          <DigitalClock x="91" y="104" width="222" height="96"><Variant mode="AMBIENT" target="alpha" value="255" />
-            <TimeText format="hh:mm" hourFormat="24" align="START" x="0" y="0" width="222" height="96">
-                <Font family="vfd7" size="100" color="#ffaaebff" />
-            </TimeText>
-        </DigitalClock>
-          <PartText x="335" y="127" width="30" height="30"><Variant mode="AMBIENT" target="alpha" value="0" />
-            <Text align="START"><Font family="vfd7" size="30" color="#a01b2528">88</Font></Text></PartText>
-          <DigitalClock x="335" y="127" width="30" height="30"><Variant mode="AMBIENT" target="alpha" value="0" />
-            <TimeText format="ss" align="START" x="0" y="0" width="30" height="30">
-                <Font family="vfd7" size="30" color="#ffaaebff" />
-            </TimeText>
-        </DigitalClock>
+          <PartText x="91" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_2e9d" size="100" color="#a01b2528">8</Font></Text></PartText>
+          <PartText x="141" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_2e9d" size="100" color="#a01b2528">8</Font></Text></PartText>
+          <PartText x="191" y="104" width="22" height="96"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_2e9d" size="100" color="#a01b2528">:</Font></Text></PartText>
+          <PartText x="213" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_2e9d" size="100" color="#a01b2528">8</Font></Text></PartText>
+          <PartText x="263" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_2e9d" size="100" color="#a01b2528">8</Font></Text></PartText>
+          <PartText x="91" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="60" /><Text align="CENTER"><Font family="vfd7g2_2e9d" size="100" color="#1caaebff"><Template>%s<Parameter expression="floor([HOUR_0_23] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="141" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="60" /><Text align="CENTER"><Font family="vfd7g2_2e9d" size="100" color="#1caaebff"><Template>%s<Parameter expression="[HOUR_0_23] % 10" /></Template></Font></Text></PartText>
+          <PartText x="191" y="104" width="22" height="96"><Variant mode="AMBIENT" target="alpha" value="60" /><Text align="CENTER"><Font family="vfd7g2_2e9d" size="100" color="#1caaebff">:</Font></Text></PartText>
+          <PartText x="213" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="60" /><Text align="CENTER"><Font family="vfd7g2_2e9d" size="100" color="#1caaebff"><Template>%s<Parameter expression="floor([MINUTE] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="263" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="60" /><Text align="CENTER"><Font family="vfd7g2_2e9d" size="100" color="#1caaebff"><Template>%s<Parameter expression="[MINUTE] % 10" /></Template></Font></Text></PartText>
+          <PartText x="91" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><Font family="vfd7g1_2e9d" size="100" color="#36aaebff"><Template>%s<Parameter expression="floor([HOUR_0_23] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="141" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><Font family="vfd7g1_2e9d" size="100" color="#36aaebff"><Template>%s<Parameter expression="[HOUR_0_23] % 10" /></Template></Font></Text></PartText>
+          <PartText x="191" y="104" width="22" height="96"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><Font family="vfd7g1_2e9d" size="100" color="#36aaebff">:</Font></Text></PartText>
+          <PartText x="213" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><Font family="vfd7g1_2e9d" size="100" color="#36aaebff"><Template>%s<Parameter expression="floor([MINUTE] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="263" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><Font family="vfd7g1_2e9d" size="100" color="#36aaebff"><Template>%s<Parameter expression="[MINUTE] % 10" /></Template></Font></Text></PartText>
+          <PartText x="91" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="255" /><Text align="CENTER"><Font family="vfd7_2e9d" size="100" color="#ffaaebff"><Template>%s<Parameter expression="floor([HOUR_0_23] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="141" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="255" /><Text align="CENTER"><Font family="vfd7_2e9d" size="100" color="#ffaaebff"><Template>%s<Parameter expression="[HOUR_0_23] % 10" /></Template></Font></Text></PartText>
+          <PartText x="191" y="104" width="22" height="96"><Variant mode="AMBIENT" target="alpha" value="255" /><Text align="CENTER"><Font family="vfd7_2e9d" size="100" color="#ffaaebff">:</Font></Text></PartText>
+          <PartText x="213" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="255" /><Text align="CENTER"><Font family="vfd7_2e9d" size="100" color="#ffaaebff"><Template>%s<Parameter expression="floor([MINUTE] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="263" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="255" /><Text align="CENTER"><Font family="vfd7_2e9d" size="100" color="#ffaaebff"><Template>%s<Parameter expression="[MINUTE] % 10" /></Template></Font></Text></PartText>
+          <PartText x="335" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_2e9d" size="30" color="#a01b2528">8</Font></Text></PartText>
+          <PartText x="350" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_2e9d" size="30" color="#a01b2528">8</Font></Text></PartText>
+          <PartText x="335" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7g2_2e9d" size="30" color="#1caaebff"><Template>%s<Parameter expression="floor([SECOND] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="350" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7g2_2e9d" size="30" color="#1caaebff"><Template>%s<Parameter expression="[SECOND] % 10" /></Template></Font></Text></PartText>
+          <PartText x="335" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7g1_2e9d" size="30" color="#36aaebff"><Template>%s<Parameter expression="floor([SECOND] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="350" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7g1_2e9d" size="30" color="#36aaebff"><Template>%s<Parameter expression="[SECOND] % 10" /></Template></Font></Text></PartText>
+          <PartText x="335" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_2e9d" size="30" color="#ffaaebff"><Template>%s<Parameter expression="floor([SECOND] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="350" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_2e9d" size="30" color="#ffaaebff"><Template>%s<Parameter expression="[SECOND] % 10" /></Template></Font></Text></PartText>
+          <PartImage x="81" y="100" width="242" height="104"><Image resource="vfd_mesh" /></PartImage>
+          <PartImage x="331" y="124" width="38" height="36"><Variant mode="AMBIENT" target="alpha" value="0" /><Image resource="vfd_mesh_s" /></PartImage>
           <PartText x="331" y="161" width="38" height="16"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><BitmapFont family="sc" size="13" color="#ff6e737a">SN</BitmapFont></Text></PartText>
 
         <PartDraw x="81" y="210" width="288" height="44"><Variant mode="AMBIENT" target="alpha" value="0" />

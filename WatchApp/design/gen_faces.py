@@ -10,7 +10,7 @@ bitmap font glifleri), manifest, strings, watch_face_info, build.gradle.kts.
 Bitmap font: Bahnschrift glifleri RESİM olarak gömülür (font dosyası dağıtılmaz);
 renk WFF tarafında BitmapFont color ile verilir (beyaz glif + renk).
 """
-import math, random, shutil
+import math, random, shutil, time
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageChops
 
@@ -67,7 +67,7 @@ android {{
         applicationId = "{pkg}"
         minSdk = 33
         targetSdk = 35
-        versionCode = 1
+        versionCode = {int(time.time() // 60)}   // her üretimde yeni sürüm: saat çalışma zamanı önbelleğini tazeler
         versionName = "1.0"
     }}
 }}
@@ -168,6 +168,28 @@ def _vfd_cell(ch, cell, h, dw, dh, t, col, ghost=False):
     return res
 
 
+def vfd_cells(spec, cells, size, aod_main, aod_halo):
+    """Her rakam kendi kutusunda ortalı: Samsung motoru TTF yan boşluklarını tutarsız uyguluyor,
+    tek kutuda 'hh:mm' yazınca '1' kayıyor ve hale katmanı rakamla örtüşmüyordu.
+    cells: (x_ofs, genişlik, ifade | sabit metin, sönük_metin)"""
+    out = []
+    m, g1, g2 = VFD_FONTS
+    layers = ((m, "#a01b2528", 0, "ghost"), (g2, "#1caaebff", aod_halo // 2, None),
+              (g1, "#36aaebff", aod_halo, None), (m, "#ffaaebff", aod_main, None))
+    for fam, col, a_, kind in layers:
+        for xo, w, expr, ghost in cells:
+            if kind == "ghost":
+                if not ghost: continue
+                body = ghost
+            elif expr.startswith("="):
+                body = f'<Template>%s<Parameter expression="{expr[1:]}" /></Template>'
+            else:
+                body = expr
+            out.append(f'          <PartText x="{spec["x"] + xo}" y="{spec["y"]}" width="{w}" height="{spec["h"]}">{amb(a_)}'
+                       f'<Text align="CENTER"><Font family="{fam}" size="{size}" color="{col}">{body}</Font></Text></PartText>')
+    return "\n".join(out)
+
+
 def vfd_font(dr, prefix, spec, col):
     chars = []
     for ch in "0123456789:":
@@ -210,12 +232,13 @@ def recessed(g, box, rad, S2):
     g.paste(Image.new("RGBA", g.size, (95, 102, 108, 255)), (0, 0), low)
 
 
-def mesh_png(dr, box):
+def mesh_png(dr, box, name="vfd_mesh", alpha=80):
+    """Pencere içi VFD ızgarası; çizgiler bg_ultra'daki ızgarayla aynı yerde (4 px)."""
     w, h = box[2] - box[0], box[3] - box[1]
-    q = 2; img = Image.new("RGBA", (w * q, h * q), (0, 0, 0, 0)); d = ImageDraw.Draw(img)
-    for kk in range(0, w * q, 4 * q): d.line((kk, 0, kk, h * q), fill=(0, 0, 0, 70), width=1)
-    for kk in range(0, h * q, 4 * q): d.line((0, kk, w * q, kk), fill=(0, 0, 0, 70), width=1)
-    img.resize((w, h), Image.LANCZOS).save(dr / "vfd_mesh.png")
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0)); d = ImageDraw.Draw(img)
+    for kk in range(4, w - 3, 4): d.line((kk, 3, kk, h - 3), fill=(0, 0, 0, alpha))
+    for kk in range(4, h - 3, 4): d.line((3, kk, w - 3, kk), fill=(0, 0, 0, alpha))
+    img.save(dr / f"{name}.png")
 
 
 def glow_png(dr, name, w, h, below, rad, col, strength=0.35, below_k=0.22):
@@ -301,7 +324,16 @@ def face_ultra():
     # VFD rakamları: gerçek TTF (bitmap glifler AOD geçişinde CPU'yu kilitliyordu)
     import build_vfd_font
     (d / "src/main/res/font").mkdir(parents=True, exist_ok=True)
-    build_vfd_font.build(d / "src/main/res/font/vfd7.ttf")
+    # yazı tipi adı her üretimde değişir: saat çalışma zamanı fontları ada göre önbellekliyor
+    global VFD_FONTS
+    tag = format(int(time.time()) % 46656, "x")
+    VFD_FONTS = (f"vfd7_{tag}", f"vfd7g1_{tag}", f"vfd7g2_{tag}")
+    fd = d / "src/main/res/font"
+    for old in fd.glob("vfd7*.ttf"): old.unlink()
+    build_vfd_font.build(fd / f"{VFD_FONTS[0]}.ttf", f"VFD7{tag}")
+    build_vfd_font.build(fd / f"{VFD_FONTS[1]}.ttf", f"VFD7G1{tag}", grow=30)   # parlama halesi (TimeText'te OutGlow yok)
+    build_vfd_font.build(fd / f"{VFD_FONTS[2]}.ttf", f"VFD7G2{tag}", grow=60)
+    mesh_png(dr, WIN); mesh_png(dr, SWIN, "vfd_mesh_s")
     ghost_w = 4 * VFD["cell"] + VFD["colon"]
     # önizleme: saatin gerçek ekran görüntüsü (design/preview_A_saat.png)
     shutil.copy(ROOT / "design/preview_A_saat.png", dr / "preview.png")
@@ -338,6 +370,14 @@ def face_ultra():
         f'<Default>{text(tpl_x, ty, tpl_w, 36, "%s", ["[COMPLICATION.TEXT]"], "bc", size, "#ffb4b2a9", "END", 140)}</Default>'
         '</Condition>')
 
+    c_, cl = VFD["cell"], VFD["colon"]
+    clock_xml = vfd_cells(VFD, [
+        (0, c_, "=floor([HOUR_0_23] / 10)", "8"), (c_, c_, "=[HOUR_0_23] % 10", "8"),
+        (2 * c_, cl, ":", ":"),
+        (2 * c_ + cl, c_, "=floor([MINUTE] / 10)", "8"), (3 * c_ + cl, c_, "=[MINUTE] % 10", "8"),
+    ], VFD["dh"] * 100 // 84, 255, 120) + "\n" + vfd_cells(VFDS, [
+        (0, VFDS["cell"], "=floor([SECOND] / 10)", "8"), (VFDS["cell"], VFDS["cell"], "=[SECOND] % 10", "8"),
+    ], VFDS["cell"] * 2, 0, 0)
     px0, py0, pw, ph = k(96), k(272), k(288), k(92)       # panel
     for nm, col in (("glow_pos", (60, 225, 170)), ("glow_neg", (255, 80, 90)), ("glow_neu", (150, 200, 255))):
         glow_png(dr, nm, pw, ph, k(22), k(22), col)
@@ -360,20 +400,9 @@ def face_ultra():
 
         {text(0, k(84), 450, k(34), "%s %s %s", ["[DAY_OF_WEEK_F]", "[DAY]", "[MONTH_F]"], "sc", k(25), "#ffa0a5aa", "CENTER", 110)}
 
-          <PartText x="{VFD['x']}" y="{VFD['y']}" width="{ghost_w}" height="{VFD['h']}">{amb(0)}
-            <Text align="START"><Font family="vfd7" size="{VFD['dh'] * 100 // 84}" color="#a01b2528">88:88</Font></Text></PartText>
-          <DigitalClock x="{VFD['x']}" y="{VFD['y']}" width="{ghost_w}" height="{VFD['h']}">{amb(255)}
-            <TimeText format="hh:mm" hourFormat="24" align="START" x="0" y="0" width="{ghost_w}" height="{VFD['h']}">
-                <Font family="vfd7" size="{VFD['dh'] * 100 // 84}" color="#ffaaebff" />
-            </TimeText>
-        </DigitalClock>
-          <PartText x="{VFDS['x']}" y="{VFDS['y']}" width="{2 * VFDS['cell']}" height="{VFDS['h']}">{amb(0)}
-            <Text align="START"><Font family="vfd7" size="{VFDS['cell'] * 2}" color="#a01b2528">88</Font></Text></PartText>
-          <DigitalClock x="{VFDS['x']}" y="{VFDS['y']}" width="{2 * VFDS['cell']}" height="{VFDS['h']}">{amb(0)}
-            <TimeText format="ss" align="START" x="0" y="0" width="{2 * VFDS['cell']}" height="{VFDS['h']}">
-                <Font family="vfd7" size="{VFDS['cell'] * 2}" color="#ffaaebff" />
-            </TimeText>
-        </DigitalClock>
+{clock_xml}
+          <PartImage x="{WIN[0]}" y="{WIN[1]}" width="{WIN[2] - WIN[0]}" height="{WIN[3] - WIN[1]}"><Image resource="vfd_mesh" /></PartImage>
+          <PartImage x="{SWIN[0]}" y="{SWIN[1]}" width="{SWIN[2] - SWIN[0]}" height="{SWIN[3] - SWIN[1]}">{amb(0)}<Image resource="vfd_mesh_s" /></PartImage>
           {text(SWIN[0], SWIN[3] + 1, SWIN[2] - SWIN[0], 16, "SN", [], "sc", 13, "#ff6e737a", "CENTER", 0)}
 
         <PartDraw x="{k(104)}" y="{k(226)}" width="{k(272)}" height="{k(42)}">{amb(0)}

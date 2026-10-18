@@ -33,7 +33,7 @@ SEG = {"0": "abcdef", "1": "bc", "2": "abged", "3": "abgcd", "4": "fgbc", "5": "
 def seg_polys(x, y, w, h, t, slant=0.12):
     """Eğik 7-segment çokgenleri (x,y sol üst)."""
     def P(px, py): return (x + px + (h - py) * slant, y + py)
-    hw = t / 2; g = t * 0.18
+    hw = t / 2; g = t * 0.10
     def hseg(py):
         return [P(hw + g, py), P(w - hw - g, py), P(w - g, py + 0) if False else P(w - hw - g + hw, py), P(w - hw - g, py + 0)]
     def H(py):
