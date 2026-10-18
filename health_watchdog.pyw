@@ -154,10 +154,18 @@ def _market_open():
     now = datetime.now()
     return now.weekday() < 5 and now.replace(hour=9, minute=55).time() <= now.time() <= now.replace(hour=18, minute=25).time()
 
+def _eod_mode():
+    """Gunluk_Al_Sat/config.json data_mode=EOD → MatriksIQ/DDE kullanılmıyor."""
+    try:
+        cfg = json.loads((ROOT / "Gunluk_Al_Sat" / "config.json").read_text(encoding="utf-8"))
+        return (cfg.get("data_mode") or "").upper() == "EOD"
+    except Exception:
+        return False
+
 def check_dde():
     """Piyasa açıkken DDE canlı değilse görünmez aç. Döner: (canli_mi, mudahale)."""
-    if not _market_open():
-        return True, False
+    if not _market_open() or _eod_mode():
+        return True, False   # Matriks'siz modda DDE beklenmiyor → sorun sayma
     try:
         sys.path.insert(0, str(ROOT / "Gunluk_Al_Sat"))
         import ensure_dde
