@@ -7,10 +7,13 @@ import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.drawable.Icon
+import android.util.Log
 import androidx.wear.watchface.complications.data.ComplicationData
 import androidx.wear.watchface.complications.data.ComplicationType
 import androidx.wear.watchface.complications.data.NoDataComplicationData
-import androidx.wear.watchface.complications.data.PhotoImageComplicationData
+import androidx.wear.watchface.complications.data.SmallImage
+import androidx.wear.watchface.complications.data.SmallImageComplicationData
+import androidx.wear.watchface.complications.data.SmallImageType
 import androidx.wear.watchface.complications.data.PlainComplicationText
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
 import androidx.wear.watchface.complications.datasource.SuspendingComplicationDataSourceService
@@ -35,21 +38,27 @@ object Intraday {
         cache[symbol]?.let { if (System.currentTimeMillis() - it.first < 5 * 60_000L) return it.second }
         val bars = withContext(Dispatchers.IO) {
             runCatching {
-                val u = URL("https://query1.finance.yahoo.com/v8/finance/chart/$symbol.IS?interval=5m&range=1d")
+                // 5 günlük çek, SON işlem gününü kullan (hafta sonu/açılış öncesi boş kalmasın)
+                val u = URL("https://query1.finance.yahoo.com/v8/finance/chart/$symbol.IS?interval=5m&range=5d")
                 val c = u.openConnection() as HttpURLConnection
                 c.setRequestProperty("User-Agent", "Mozilla/5.0")
                 c.connectTimeout = 15_000; c.readTimeout = 15_000
                 val body = try { c.inputStream.bufferedReader().use { it.readText() } } finally { c.disconnect() }
-                val q = JSONObject(body).getJSONObject("chart").getJSONArray("result").getJSONObject(0)
-                    .getJSONObject("indicators").getJSONArray("quote").getJSONObject(0)
+                val res = JSONObject(body).getJSONObject("chart").getJSONArray("result").getJSONObject(0)
+                val ts = res.getJSONArray("timestamp")
+                val q = res.getJSONObject("indicators").getJSONArray("quote").getJSONObject(0)
+                // İstanbul günü (UTC+3) — son günün indekslerini bul
+                val day = { i: Int -> (ts.getLong(i) + 3 * 3600) / 86400 }
+                val lastDay = day(ts.length() - 1)
                 val o = q.getJSONArray("open"); val h = q.getJSONArray("high")
                 val l = q.getJSONArray("low"); val cl = q.getJSONArray("close")
                 (0 until cl.length()).mapNotNull { i ->
-                    if (cl.isNull(i) || o.isNull(i)) null
+                    if (cl.isNull(i) || o.isNull(i) || day(i) != lastDay) null
                     else Bar(o.getDouble(i), h.getDouble(i), l.getDouble(i), cl.getDouble(i))
                 }
-            }.getOrDefault(emptyList())
+            }.onFailure { Log.w("GridWatch", "Yahoo $symbol: $it") }.getOrDefault(emptyList())
         }
+        Log.d("GridWatch", "Yahoo $symbol bar=${bars.size}")
         if (bars.isNotEmpty()) cache[symbol] = System.currentTimeMillis() to bars
         bars.ifEmpty { cache[symbol]?.second ?: emptyList() }
     }
@@ -121,13 +130,16 @@ fun candleBitmap(bars: List<Bar>, stop: Double, target: Double, w: Int = 300, h:
 }
 
 private fun photo(bmp: Bitmap, desc: String): ComplicationData =
-    PhotoImageComplicationData.Builder(Icon.createWithBitmap(bmp), PlainComplicationText.Builder(desc).build()).build()
+    SmallImageComplicationData.Builder(
+        SmallImage.Builder(Icon.createWithBitmap(bmp), SmallImageType.PHOTO).build(),
+        PlainComplicationText.Builder(desc).build()).build()
 
 /** Pozisyondaki (yoksa önerilen) hissenin gün içi çizgi grafiği. */
 class SparkComplicationService : SuspendingComplicationDataSourceService() {
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData {
-        if (request.complicationType != ComplicationType.PHOTO_IMAGE) return NoDataComplicationData()
+        if (request.complicationType != ComplicationType.SMALL_IMAGE) return NoDataComplicationData()
         val s = AlSatRepo.get(applicationContext)
+        Log.d("GridWatch", "spark istek ${s.symbol} tip=${request.complicationType}")
         return photo(sparkBitmap(Intraday.bars(s.symbol.ifEmpty { "XU100" }), 180, 120), "${s.symbol} grafik")
     }
     override fun getPreviewData(type: ComplicationType): ComplicationData? = null
@@ -136,7 +148,7 @@ class SparkComplicationService : SuspendingComplicationDataSourceService() {
 /** Mum grafik + stop/hedef çizgileri. */
 class CandleComplicationService : SuspendingComplicationDataSourceService() {
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData {
-        if (request.complicationType != ComplicationType.PHOTO_IMAGE) return NoDataComplicationData()
+        if (request.complicationType != ComplicationType.SMALL_IMAGE) return NoDataComplicationData()
         val s = AlSatRepo.get(applicationContext)
         return photo(candleBitmap(Intraday.bars(s.symbol.ifEmpty { "XU100" }), s.stop, s.target), "${s.symbol} mum")
     }

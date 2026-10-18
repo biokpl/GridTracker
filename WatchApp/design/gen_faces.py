@@ -186,7 +186,7 @@ def face_ultra():
         # parlama (geniş, soluk)
         f'<PartDraw x="0" y="0" width="450" height="450">{amb(0)}'
         f'<Arc {arc_box} startAngle="225" endAngle="225"><Transform target="endAngle" value="225 + 270 * {prog}" />'
-        f'<Stroke color="#40ffffff" thickness="{TH * 2.2:.1f}">{grad}</Stroke></Arc></PartDraw>'
+        f'<Stroke color="#22ffffff" thickness="{TH * 1.6:.1f}">{grad}</Stroke></Arc></PartDraw>'
         # segmentli parlak yay
         f'<PartDraw x="0" y="0" width="450" height="450">{amb(110)}'
         f'<Arc {arc_box} startAngle="225" endAngle="225"><Transform target="endAngle" value="225 + 270 * {prog}" />'
@@ -264,8 +264,8 @@ def face_ultra():
                 <Fill color="#eb0e1216" /><Stroke color="#ff2d343a" thickness="2" />
             </RoundRectangle>
         </PartDraw>
-        {slot(6, k(218), k(286), k(72), k(52), "PHOTO_IMAGE", APP + "SparkComplicationService", "PHOTO_IMAGE", "slot_grafik",
-              f'<PartImage x="0" y="0" width="{k(72)}" height="{k(52)}">{amb(0)}<Image resource="[COMPLICATION.PHOTO_IMAGE]" /></PartImage>')}
+        {slot(6, k(218), k(286), k(72), k(52), "SMALL_IMAGE", APP + "SparkComplicationService", "SMALL_IMAGE", "slot_grafik",
+              f'<PartImage x="0" y="0" width="{k(72)}" height="{k(52)}">{amb(0)}<Image resource="[COMPLICATION.SMALL_IMAGE]" /></PartImage>')}
         {slot(2, px0 + k(16), k(278), pw - k(32), 36, "RANGED_VALUE", APP + "KzComplicationService", "RANGED_VALUE", "slot_alsat",
               text(0, 0, k(130), 36, "%s", ["[COMPLICATION.TITLE]"], "bc", k(28), WHITE, "START", 150) + kz_cond(k(130), pw - k(32) - k(130), k(28)))}
         {slot(7, px0 + k(16), k(312), pw - k(32), 22, "RANGED_VALUE", APP + "RingComplicationService", "RANGED_VALUE", "slot_alsat",
@@ -495,8 +495,8 @@ def face_neon():
             </TimeText>
         </DigitalClock>
 
-        {slot(6, cx0, cy0, cw, chh, "PHOTO_IMAGE", APP + "CandleComplicationService", "PHOTO_IMAGE", "slot_grafik",
-              f'<PartImage x="0" y="0" width="{cw}" height="{chh}">{amb(0)}<Image resource="[COMPLICATION.PHOTO_IMAGE]" /></PartImage>')}
+        {slot(6, cx0, cy0, cw, chh, "SMALL_IMAGE", APP + "CandleComplicationService", "SMALL_IMAGE", "slot_grafik",
+              f'<PartImage x="0" y="0" width="{cw}" height="{chh}">{amb(0)}<Image resource="[COMPLICATION.SMALL_IMAGE]" /></PartImage>')}
 
         {slot(2, k(90), k(338), k(300), 34, "RANGED_VALUE", APP + "KzComplicationService", "RANGED_VALUE", "slot_alsat",
               text(0, 0, k(140), 34, "%s", ["[COMPLICATION.TITLE]"], "bc", k(26), ICE, "START", 150)
