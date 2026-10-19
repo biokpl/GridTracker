@@ -21,6 +21,7 @@ data class Snapshot(
     val qty: Int = 0,
     val stop: Double = 0.0,      // kurumdaki STOP emri (hard_stop)
     val target: Double = 0.0,
+    val entry: Double = 0.0,     // açık pozisyonun alış (ortalama) fiyatı
     val signal: String = "",
     val lots: Int = 0,
     val entryLow: Double = 0.0,
@@ -33,9 +34,19 @@ data class Snapshot(
 ) {
     enum class Mode { ACTIVE, PICK, WAIT, NO_DATA }
 
-    /** Fiyatın stop→hedef aralığındaki yeri (0..1). */
+    /**
+     * Halkadaki yer (0..1).
+     * Açık pozisyon: alışa sabit — tepe (0.5) = alış, sağ uç = hedef, sol uç = alıştan aynı mesafe aşağı.
+     *   (Stop'a göre ölçeklemek, iz süren stop yükseldikçe halkayı yerinde sayıyormuş gibi gösteriyordu.)
+     * Diğer durumlar: fiyatın stop→hedef aralığındaki yeri.
+     */
     val progress: Float
-        get() = if (target > stop && stop > 0) ((price - stop) / (target - stop)).coerceIn(0.0, 1.0).toFloat() else 0f
+        get() = when {
+            mode == Mode.ACTIVE && entry > 0 && target > entry ->
+                (0.5 + 0.5 * (price - entry) / (target - entry)).coerceIn(0.0, 1.0).toFloat()
+            target > stop && stop > 0 -> ((price - stop) / (target - stop)).coerceIn(0.0, 1.0).toFloat()
+            else -> 0f
+        }
 }
 
 private val TR = Locale("tr", "TR")
@@ -114,6 +125,7 @@ object AlSatRepo {
                 pnlPct = tr.optDouble("unrealized_pct", 0.0),
                 qty = tr.optInt("open_qty", tr.optInt("total_qty", 0)),
                 stop = stop, target = tr.optDouble("target1", 0.0),
+                entry = tr.optDouble("avg_cost", 0.0).takeIf { it > 0 } ?: tr.optDouble("entry_price", 0.0),
                 signal = if (sig == "—") "DEVAM" else sig,
                 totalPnl = total, trades = trades, winRate = wr, updated = updated,
             )
