@@ -1604,7 +1604,7 @@ select.field-input option{background:var(--surface2);}
     <!-- Alt butonlar -->
     <div class="adv-footer">
       <button class="adv-detail-btn" onclick="toggleAdvDetail()" id="adv-detail-btn">▼ Top 3 Göster</button>
-      <button class="adv-refresh-btn" onclick="renderAdvisor()" title="Son analiz verilerini yenile">↻ Yenile</button>
+      <button class="adv-refresh-btn" onclick="advManualRefresh(this)" title="Son analiz verilerini ve güncel fiyatı yeniden çek (analizi yeniden çalıştırmaz)">↻ Yenile</button>
     </div>
 
   </div>
@@ -56417,6 +56417,17 @@ function _updateFabBadge(){
 }
 // ─────────────────────────────────────────────────────────
 
+// Yenile tuşu: görünür geri bildirim (eskiden sessizdi, basıldığı anlaşılmıyordu)
+async function advManualRefresh(btn){
+  if(btn){ btn.disabled=true; btn.textContent='⏳ Yenileniyor…'; }
+  try{ await renderAdvisor(); }catch(_){}
+  if(btn){
+    const t=new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+    btn.textContent='✓ Yenilendi '+t; btn.style.color='#4ade80';
+    setTimeout(()=>{ btn.textContent='↻ Yenile'; btn.style.color=''; btn.disabled=false; }, 2500);
+  }
+}
+
 async function renderAdvisor(){
   const card=$('advisor-card');
   if(!card) return;
@@ -56605,7 +56616,7 @@ async function renderAdvisor(){
 
         // Canlı GİRİLEBİLİRLİK — yalnız işlem günü göster (bekleme günü gizli)
         if(_isNoTrade){ const _est=$('adv-entry-status'); if(_est) _est.style.display='none'; }
-        else gcCheckEntryStatus(top.symbol, top.entry_zone?.low, top.entry_zone?.high);
+        else gcCheckEntryStatus(top.symbol, top.entry_zone?.low, top.entry_zone?.high, top.hard_stop||top.stop_loss);
       } else {
         // Hiç öneri yok (saf bekleme günü) — alanları sıfırla, aksiyonları gizle
         $('adv-top1').textContent='—';
@@ -56773,7 +56784,7 @@ function _renderAdvPerf(perf, eod){
 // Önerilen hisse için canlı GİRİLEBİLİRLİK kontrolü.
 // Güncel fiyatı çeker, giriş bölgesiyle karşılaştırır:
 //   bölge içinde → 🟢 GİRİLEBİLİR | üstünde → 🔴 FİYAT KAÇTI | altında → 🟢 DAHA İYİ
-async function gcCheckEntryStatus(sym, low, high){
+async function gcCheckEntryStatus(sym, low, high, stop){
   const el=$('adv-entry-status');
   if(!el || !sym || !low || !high){ if(el) el.style.display='none'; return; }
   let price=0;
@@ -56784,7 +56795,8 @@ async function gcCheckEntryStatus(sym, low, high){
   if(!price){
     try{
       const r=await fetch(FIREBASE_URL+'/gridtracker/stocks/'+sym+'.json',{signal:AbortSignal.timeout(4000)});
-      if(r.ok){ const j=await r.json(); if(j&&j.price) price=j.price; }
+      // stale: Matriks kapalıyken Excel'den kalan eski fiyat — giriş kararı için kullanma
+      if(r.ok){ const j=await r.json(); if(j&&j.price&&!j.stale) price=j.price; }
     }catch(_){}
   }
   if(!price){ el.style.display='none'; return; }
@@ -56792,7 +56804,10 @@ async function gcCheckEntryStatus(sym, low, high){
   // Tolerans: giriş bölgesinin biraz üstü hâlâ kabul edilebilir (%1)
   const upperOk=high*1.01;
   let txt, bg, col, bd;
-  if(price < low){
+  if(stop && price <= stop){
+    txt=`⚠️ ${_fmtPrice(price)} — STOP ALTINDA, girme (öneri geçersiz)`;
+    bg='rgba(248,113,113,.12)'; col='#f87171'; bd='rgba(248,113,113,.4)';
+  } else if(price < low){
     txt=`🟢 ${_fmtPrice(price)} — DAHA UYGUN, girilebilir`;
     bg='rgba(74,222,128,.10)'; col='#4ade80'; bd='rgba(74,222,128,.3)';
   } else if(price <= upperOk){

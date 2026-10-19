@@ -143,7 +143,56 @@ def read_excel():
     except Exception as e:
         slog.debug(f'[DDE] anlık fiyat override atlandı: {e}')
 
+    _mark_stale_and_refresh_picks(result)
     return result
+
+
+# Matriks kapalıyken ATR_Sonuc.xlsx güncellenmez; içindeki fiyat aylar öncesinden
+# kalabilir. Web/telefon ekranı Firebase'deki bu fiyatı "güncel" sanıp yanlış
+# giriş durumu gösteriyordu (TUPRS 297,5 ↔ gerçek ~375). Bayat fiyatları işaretle,
+# danışmanın önerdiği hisseler + açık pozisyon için Yahoo fiyatı koy.
+EXCEL_STALE_SEC = 2 * 86400
+_PICK_PX = {}  # {sym: (ts, price)} — Yahoo'yu her dakika yormamak için 5 dk cache
+
+
+def _advisor_symbols():
+    try:
+        with open(os.path.join(BASE_DIR, 'advisor_result.json'), 'r', encoding='utf-8') as f:
+            d = json.load(f)
+        syms = [p.get('symbol') for p in (d.get('top_picks') or [])[:3]]
+        act = (d.get('tracker') or {}).get('active_symbol')
+        if act: syms.append(act)
+        return {s.upper() for s in syms if s}
+    except Exception:
+        return set()
+
+
+def _mark_stale_and_refresh_picks(result):
+    try:
+        mtime = os.path.getmtime(ATR_FILE) if os.path.exists(ATR_FILE) else 0
+    except Exception:
+        mtime = 0
+    if time.time() - mtime > EXCEL_STALE_SEC:
+        day = time.strftime('%Y-%m-%d', time.localtime(mtime)) if mtime else None
+        for e in result.values():
+            if not e.get('live'):
+                e['stale'] = True
+                e['price_date'] = day
+    for sym in _advisor_symbols():
+        rec = _PICK_PX.get(sym)
+        if not rec or time.time() - rec[0] > 300:
+            try:
+                from price_reader import get_price_from_yahoo
+                p = get_price_from_yahoo(sym)
+            except Exception:
+                p = None
+            if p and p > 0:
+                rec = _PICK_PX[sym] = (time.time(), round(p, 4))
+        if rec:
+            e = result.setdefault(sym, {})
+            if not e.get('live'):
+                e.update(price=rec[1], src='yahoo', stale=False, price_ts=int(rec[0]))
+                e.pop('price_date', None)
 
 def _safe(v):
     if v is None: return None
