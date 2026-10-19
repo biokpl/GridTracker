@@ -348,16 +348,39 @@ def face_ultra():
     prog = "([COMPLICATION.RANGED_VALUE_VALUE] - [COMPLICATION.RANGED_VALUE_MIN]) / ([COMPLICATION.RANGED_VALUE_MAX] - [COMPLICATION.RANGED_VALUE_MIN])"
     TEAL, RED, GREEN, AMBER, GRAY, WHITE = "#ff3ce1aa", "#ffff7a6e", "#ff6ee6aa", "#fffac775", "#ff8c9196", "#fff5f5f0"
 
+    SEG = 270 / 42; GAPD = math.degrees(4 / R)
+    seg_a0 = f"(225 + {SEG:.4f} * clamp(floor({prog} * 42), 0, 41))"
+    # yumuşak hale: yuvarlak uçlu, dışa doğru soluklaşan 3 katman (WFF'de bulanıklık yok)
+    def _gg(al):
+        return (f'<SweepGradient centerX="225" centerY="225" startAngle="225" endAngle="495" '
+                f'colors="#{al}ff5550 #{al}ffbe3c #{al}3ce1aa" positions="0 0.5 1" />')
+    glow_0, glow_1, glow_2 = _gg("1e"), _gg("34"), _gg("5a")
     ring_body = (
         # segmentli parlak yay
         f'<PartDraw x="0" y="0" width="450" height="450">{amb(110)}'
         f'<Arc {arc_box} startAngle="225" endAngle="225"><Transform target="endAngle" value="225 + 270 * {prog}" />'
         f'<Stroke color="#ffffffff" thickness="{TH}">{grad}</Stroke></Arc></PartDraw>'
-        # fiyat noktası
-        f'<PartDraw x="0" y="0" width="450" height="450">{amb(150)}'
+        # son yanan segment parlar — yerinde, segment şeklinde (boşluklar kesmez)
+        f'<PartDraw x="0" y="0" width="450" height="450">{amb(0)}'
         f'<Arc {arc_box} startAngle="225" endAngle="225">'
-        f'<Transform target="startAngle" value="224.6 + 270 * {prog}" /><Transform target="endAngle" value="225.4 + 270 * {prog}" />'
-        f'<Stroke color="#ffffffff" thickness="22" cap="ROUND" /></Arc></PartDraw>'
+        f'<Transform target="startAngle" value="{seg_a0} + 1.6" /><Transform target="endAngle" value="{seg_a0} + {SEG - GAPD - 1.6:.3f}" />'
+        f'<Stroke color="#ffffffff" thickness="{TH + 18}" cap="ROUND">{glow_0}</Stroke></Arc></PartDraw>'
+        f'<PartDraw x="0" y="0" width="450" height="450">{amb(0)}'
+        f'<Arc {arc_box} startAngle="225" endAngle="225">'
+        f'<Transform target="startAngle" value="{seg_a0} + 1.2" /><Transform target="endAngle" value="{seg_a0} + {SEG - GAPD - 1.2:.3f}" />'
+        f'<Stroke color="#ffffffff" thickness="{TH + 11}" cap="ROUND">{glow_1}</Stroke></Arc></PartDraw>'
+        f'<PartDraw x="0" y="0" width="450" height="450">{amb(0)}'
+        f'<Arc {arc_box} startAngle="225" endAngle="225">'
+        f'<Transform target="startAngle" value="{seg_a0} + 0.8" /><Transform target="endAngle" value="{seg_a0} + {SEG - GAPD - 0.8:.3f}" />'
+        f'<Stroke color="#ffffffff" thickness="{TH + 5}" cap="ROUND">{glow_2}</Stroke></Arc></PartDraw>'
+        f'<PartDraw x="0" y="0" width="450" height="450">{amb(110)}'
+        f'<Arc {arc_box} startAngle="225" endAngle="225">'
+        f'<Transform target="startAngle" value="{seg_a0}" /><Transform target="endAngle" value="{seg_a0} + {SEG - GAPD:.3f}" />'
+        f'<Stroke color="#ffffffff" thickness="{TH}">{grad}</Stroke></Arc></PartDraw>'
+        f'<PartDraw x="0" y="0" width="450" height="450">{amb(110)}'
+        f'<Arc {arc_box} startAngle="225" endAngle="225">'
+        f'<Transform target="startAngle" value="{seg_a0}" /><Transform target="endAngle" value="{seg_a0} + {SEG - GAPD:.3f}" />'
+        f'<Stroke color="#b0ffffff" thickness="{TH}" /></Arc></PartDraw>'
     )
 
     kz_cond = lambda tpl_x, tpl_w, size, ty=0: (
