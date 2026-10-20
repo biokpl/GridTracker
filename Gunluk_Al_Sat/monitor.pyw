@@ -311,6 +311,11 @@ def _fast_price_check():
         pnl_pct = ((price - entry) / entry * 100) if entry else 0
         pnl_tl  = (price - entry) * qty if (entry and qty) else 0
 
+        # Anlık fiyat + K/Z'yi HER tikte yaz (sayfa/saat). Eskiden yalnız "her şey
+        # normal" dalının sonunda yazılıyordu; stop bölgesi / ÇIK / hedef dalları
+        # erken return ettiği için tam kritik anda saat eski K/Z'de donuyordu.
+        _update_tracker_price(price, entry, qty)
+
         # ── TRAILING STOP: fiyat yükseldikçe stop'u YUKARI çek (kâr kilitle) ──
         # Orijinal stop mesafesi kadar geriden takip eder; sadece yukarı hareket eder.
         # Stop anlamlı yükseldiğinde "çıkışını buna göre ayarla" bildirimi gönderir.
@@ -434,9 +439,6 @@ def _fast_price_check():
         # ── Her şey normal: sadece log ─────────────────────────────────────
         log.debug(f"{sym} {_fp(price)} ₺  {pnl_pct:+.2f}%  (stop:{_fp(stop)}  h1:{_fp(h1)}  h2:{_fp(h2)})  [{kaynak}]")
 
-        # ── Sermaye kartı için anlık fiyat + K/Z güncelle (result.json) ──
-        # Her 5 sn'de bist_tracker.html Sermaye kartı güncel kalsın.
-        _update_tracker_price(price, entry, qty)
 
     except Exception as e:
         log.error(f"Hızlı kontrol hatası: {e}")
