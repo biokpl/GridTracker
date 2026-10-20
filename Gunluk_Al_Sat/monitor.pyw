@@ -368,6 +368,28 @@ def _fast_price_check():
                 active["peak_price"] = peak                       # peak ilerledi, kaydet
                 _save_state(state)
 
+        # ── BEKLEMEDE KALIYORUM modu ──────────────────────────────────────
+        # Kullanıcı ÇIK sinyalinde satmayıp beklemeyi seçti: izleme stopundan
+        # gelen ÇIK/BEKLE bildirimleri susar; kurum stopu (hard) uyarıları sürer.
+        hold = bool(active.get("hold"))
+        if hold and stop and price >= stop * 1.003:
+            active.pop("hold", None); _save_state(state); _patch_tracker_hold(False)
+            log.info(f"{sym} izleme stopunun üstüne döndü ({_fp(price)} > {_fp(stop)}) — bekleme modu kapandı")
+            notifier._send(f"▶️ {sym} — Beklemede Kalıyorum modu kapandı",
+                           f"Fiyat {_fp(price)} ₺, izleme stopunun ({_fp(stop)} ₺) üstüne döndü.\n"
+                           f"Uyarılar yeniden normal çalışıyor.", priority="default", tags="arrow_forward")
+            hold = False
+        if hold and hard and hard < price <= hard * 1.006:
+            if _should_send(sym, "HOLD_NEAR_HARD"):
+                log.warning(f"{sym} kurum stopuna yaklaştı ({_fp(price)} ~ {_fp(hard)}) — bekleme modunda")
+                notifier._send(f"⚠️ {sym} — KURUM STOPUNA YAKIN",
+                               f"Fiyat {_fp(price)} ₺, kurumdaki stop {_fp(hard)} ₺.\n"
+                               f"━━━━━━━━━━━━━━━━━━━━\n"
+                               f"Beklemede Kalıyorum modundasın. Bu seviye kırılırsa kurum satar.\n"
+                               f"Anlık K/Z: {pnl_tl:+,.0f} TL ({pnl_pct:+.1f}%)".replace(",", "."),
+                               priority="urgent", tags="warning", alert=True,
+                               actions=notifier.action_sold(sym))
+
         # ── FELAKET STOPU: stop'un belirgin altı → ANINDA ÇIK (kapanış bekleme) ──
         if hard and price <= hard:
             if _should_send(sym, "ACİL_ÇIK"):
@@ -385,6 +407,8 @@ def _fast_price_check():
 
         # ── STOP BÖLGESİ: fiyat stop altında ama felaket değil → KAPANIŞ BARINI BEKLE ──
         if stop and price <= stop:
+            if hold:
+                return   # Beklemede Kalıyorum: izleme stopu bildirimleri sessiz
             closed_below = _hourly_closed_below(sym, stop)
             if closed_below is True:
                 # Saatlik mum stop altında KAPANDI → gerçek kırılım, çık
@@ -802,6 +826,51 @@ def _do_set_capital(state: dict, capital):
     threading.Thread(target=_recalc_lots, daemon=True).start()
 
 
+def _patch_tracker_hold(on: bool):
+    """Bekleme durumunu sayfa/saat verisine yaz (result.json + Firebase tracker)."""
+    try:
+        from advisor import RESULT_PATH
+        if RESULT_PATH.exists():
+            d = json.loads(RESULT_PATH.read_text(encoding="utf-8"))
+            if d.get("tracker"):
+                d["tracker"]["hold"] = on
+                RESULT_PATH.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    except Exception:
+        pass
+    try:
+        import requests as _req
+        _req.patch(_FB_BASE + "/gridtracker/advisor/tracker.json", json={"hold": on}, timeout=6)
+    except Exception:
+        pass
+
+
+def _do_user_hold(state: dict, symbol: str, on: bool):
+    """"Beklemede Kalıyorum" (on) / bekleme modunu kapat (off)."""
+    import notifier
+    active = state.get("active")
+    if not active or (symbol and active.get("symbol") != symbol):
+        log.info(f"Bekleme komutu yok sayıldı (aktif: {active and active.get('symbol')}, komut: {symbol})")
+        _save_state(state); return
+    sym = active["symbol"]
+    if on:
+        active["hold"] = {"since": datetime.now().strftime("%d.%m.%Y %H:%M")}
+        log.info(f"{sym}: Beklemede Kalıyorum modu AÇIK")
+        hard = active.get("hard_stop") or 0
+        notifier._send(f"⏸️ {sym} — Beklemede Kalıyorum",
+                       f"Tekrar eden ÇIK bildirimleri susturuldu.\n"
+                       f"━━━━━━━━━━━━━━━━━━━━\n"
+                       f"Yine de uyaracağım: kurum stopuna ({_fp(hard)} ₺) yaklaşınca ve kırılınca.\n"
+                       f"Fiyat izleme stopunun ({_fp(active.get('stop_loss', 0))} ₺) üstüne dönerse mod kendiliğinden kapanır.",
+                       priority="default", tags="pause_button")
+    else:
+        active.pop("hold", None)
+        log.info(f"{sym}: Beklemede Kalıyorum modu KAPALI (kullanıcı)")
+    with _sent_lock:
+        _last_state_sig.pop(sym, None)   # kapanınca mevcut ÇIK durumu yeniden bildirilebilsin
+    _save_state(state)
+    _patch_tracker_hold(on)
+
+
 def _process_user_action():
     """Firebase'deki kullanıcı komutunu (Sattım/Aldım/SetCapital) işler — idempotent (id ile)."""
     import requests as _req
@@ -830,6 +899,8 @@ def _process_user_action():
             _do_user_sold(state, symbol, act.get("price"))
         elif action == "bought":
             _do_user_bought(state, symbol, act.get("price"), act.get("qty"))
+        elif action in ("hold", "hold_off"):
+            _do_user_hold(state, symbol, action == "hold")
         elif action == "fix":
             _do_fix_trade(state, act)
         elif action == "set_capital":
@@ -968,7 +1039,9 @@ def _slow_analysis():
         except: pass
 
         # Push — SADECE sinyal değiştiğinde (aynı sinyal sürdükçe tekrar yok)
-        if final == "ÇIK_ERKEN":
+        if active.get("hold") and final in ("ÇIK_ERKEN", "DİKKAT", "ÇIK", "ACİL_ÇIK", "DEĞİŞTİR"):
+            log.info(f"{sym} {final} — Beklemede Kalıyorum modunda, bildirim gönderilmedi")
+        elif final == "ÇIK_ERKEN":
             if _should_send_state(sym, "ÇIK_ERKEN"):
                 new_pick, lot_info = _get_last_alternative(sym)
                 lines = [
@@ -982,7 +1055,7 @@ def _slow_analysis():
                     lines += notifier._new_pick_lines(new_pick, lot_info)
                 notifier._send(f"🟠 {sym} — ERKEN ÇIKIŞ — SAT", "\n".join(lines),
                                priority="urgent", tags="warning", alert=True,
-                               actions=notifier.action_sold(sym))
+                               actions=notifier.action_sold_or_hold(sym))
         elif final in ("DİKKAT", "ÇIK", "ACİL_ÇIK", "DEĞİŞTİR"):
             if _should_send_state(sym, final):
                 new_pick, lot_info = _get_last_alternative(sym)

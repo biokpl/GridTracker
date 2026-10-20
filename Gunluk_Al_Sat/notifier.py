@@ -59,6 +59,16 @@ def action_sold(symbol: str) -> str:
     return _action_cmd("sold", symbol, f"SATTIM ({symbol})")
 
 
+def action_hold(symbol: str) -> str:
+    # ÇIK sinyalinde kullanıcı satmayıp beklemeyi seçerse: tekrar eden ÇIK
+    # bildirimleri susar, kurum stopuna yaklaşma/kırılma uyarıları sürer.
+    return _action_cmd("hold", symbol, "BEKLEMEDE KALIYORUM")
+
+
+def action_sold_or_hold(symbol: str) -> str:
+    return action_sold(symbol) + "; " + action_hold(symbol)
+
+
 def action_bought(symbol: str) -> str:
     return _action_cmd("bought", symbol, f"ALDIM ({symbol})")
 
@@ -187,7 +197,7 @@ def send_exit_signal(signal, symbol, score_prev, score_now, message, new_pick, l
         # Kritik → alarm topic (ayrı ses) + tek dokunuş SATTIM butonu
         return _send(title, "\n".join(lines), priority="urgent",
                      tags="rotating_light", alert=True,
-                     actions=action_sold(symbol))
+                     actions=action_sold_or_hold(symbol))
 
     return False
 

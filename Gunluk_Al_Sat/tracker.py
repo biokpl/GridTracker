@@ -270,6 +270,7 @@ def track(state: dict) -> dict:
         "unrealized_pct": round(unrealized_pct, 2),
         "realized_pnl":   round(realized, 2),
         "data_source":    data_source,
+        "hold":           bool(active.get("hold")),
     })
     return result
 
