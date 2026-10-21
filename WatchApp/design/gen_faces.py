@@ -375,7 +375,13 @@ def face_ultra():
     def _gg(al):
         return (f'<SweepGradient centerX="225" centerY="225" startAngle="225" endAngle="495" '
                 f'colors="#{al}ff5550 #{al}ffbe3c #{al}3ce1aa" positions="0 0.5 1" />')
-    glow_0, glow_1, glow_2 = _gg("1e"), _gg("34"), _gg("5a")
+    glow_0, glow_1, glow_2, glow_3, glow_4 = _gg("12"), _gg("1c"), _gg("2a"), _gg("40"), _gg("60")
+    grad_core0 = (f'<SweepGradient centerX="225" centerY="225" startAngle="225" endAngle="495" '
+                  f'colors="#90ff9c95 #90ffd690 #9080eac2" positions="0 0.5 1" />')   # çekirdek dış kademe
+    grad_body = _gg("d8")
+    grad_core = (f'<SweepGradient centerX="225" centerY="225" startAngle="225" endAngle="495" '
+                 f'colors="#e6ffb3ae #e6ffe3a8 #e6a9f0d8" positions="0 0.5 1" />')   # halka renginin açık tonu
+    SEG_MID = f"({seg_a0} + {(270 / 42 - math.degrees(4 / R)) / 2:.3f})"
     # nefes efekti: parça alfası 255→40 (1 sn) ve geri — sonsuz döngü, ekran açıkken
     # (Animation öğesi ileri-geri gidemiyor: söner sonra başa atlar) → kosinüsle gerçek nefes, 2 sn periyot
     BREATH = '<Transform target="alpha" value="147 + 108 * cos(3.14159265 * [SECOND_MILLISECOND])" />'
@@ -386,27 +392,43 @@ def face_ultra():
         f'<Stroke color="#ffffffff" thickness="{TH}">{grad}</Stroke></Arc></PartDraw>'
         # segment boşlukları — halenin altında kalsın (parlama alanında siyah çizik görünmesin)
         f'<PartImage x="0" y="0" width="450" height="450">{amb(0)}<Image resource="ring_gaps" /></PartImage>'
-        # son yanan segment parlar — yerinde, segment şeklinde (boşluklar kesmez)
+        # ATEŞ TOPU — hepsi halkanın o anki renginde: yumuşak hale (5 kademe) → segment → yuvarlak gövde → iki kademeli sıcak çekirdek
         f'<PartDraw x="0" y="0" width="450" height="450">{amb(0)}{BREATH}'
         f'<Arc {arc_box} startAngle="225" endAngle="225">'
-        f'<Transform target="startAngle" value="{seg_a0} + 1.6" /><Transform target="endAngle" value="{seg_a0} + {SEG - GAPD - 1.6:.3f}" />'
-        f'<Stroke color="#ffffffff" thickness="{TH + 18}" cap="ROUND">{glow_0}</Stroke></Arc></PartDraw>'
+        f'<Transform target="startAngle" value="{seg_a0} + -0.8" /><Transform target="endAngle" value="{seg_a0} + {SEG - GAPD - -0.8:.3f}" />'
+        f'<Stroke color="#ffffffff" thickness="{TH + 26}" cap="ROUND">{glow_0}</Stroke></Arc></PartDraw>'
         f'<PartDraw x="0" y="0" width="450" height="450">{amb(0)}{BREATH}'
         f'<Arc {arc_box} startAngle="225" endAngle="225">'
-        f'<Transform target="startAngle" value="{seg_a0} + 1.2" /><Transform target="endAngle" value="{seg_a0} + {SEG - GAPD - 1.2:.3f}" />'
-        f'<Stroke color="#ffffffff" thickness="{TH + 11}" cap="ROUND">{glow_1}</Stroke></Arc></PartDraw>'
+        f'<Transform target="startAngle" value="{seg_a0} + -0.2" /><Transform target="endAngle" value="{seg_a0} + {SEG - GAPD - -0.2:.3f}" />'
+        f'<Stroke color="#ffffffff" thickness="{TH + 20}" cap="ROUND">{glow_1}</Stroke></Arc></PartDraw>'
         f'<PartDraw x="0" y="0" width="450" height="450">{amb(0)}{BREATH}'
         f'<Arc {arc_box} startAngle="225" endAngle="225">'
-        f'<Transform target="startAngle" value="{seg_a0} + 0.8" /><Transform target="endAngle" value="{seg_a0} + {SEG - GAPD - 0.8:.3f}" />'
-        f'<Stroke color="#ffffffff" thickness="{TH + 5}" cap="ROUND">{glow_2}</Stroke></Arc></PartDraw>'
+        f'<Transform target="startAngle" value="{seg_a0} + 0.3" /><Transform target="endAngle" value="{seg_a0} + {SEG - GAPD - 0.3:.3f}" />'
+        f'<Stroke color="#ffffffff" thickness="{TH + 14}" cap="ROUND">{glow_2}</Stroke></Arc></PartDraw>'
+        f'<PartDraw x="0" y="0" width="450" height="450">{amb(0)}{BREATH}'
+        f'<Arc {arc_box} startAngle="225" endAngle="225">'
+        f'<Transform target="startAngle" value="{seg_a0} + 0.7" /><Transform target="endAngle" value="{seg_a0} + {SEG - GAPD - 0.7:.3f}" />'
+        f'<Stroke color="#ffffffff" thickness="{TH + 9}" cap="ROUND">{glow_3}</Stroke></Arc></PartDraw>'
+        f'<PartDraw x="0" y="0" width="450" height="450">{amb(0)}{BREATH}'
+        f'<Arc {arc_box} startAngle="225" endAngle="225">'
+        f'<Transform target="startAngle" value="{seg_a0} + 1.0" /><Transform target="endAngle" value="{seg_a0} + {SEG - GAPD - 1.0:.3f}" />'
+        f'<Stroke color="#ffffffff" thickness="{TH + 4}" cap="ROUND">{glow_4}</Stroke></Arc></PartDraw>'
         f'<PartDraw x="0" y="0" width="450" height="450">{amb(110)}'
         f'<Arc {arc_box} startAngle="225" endAngle="225">'
         f'<Transform target="startAngle" value="{seg_a0}" /><Transform target="endAngle" value="{seg_a0} + {SEG - GAPD:.3f}" />'
         f'<Stroke color="#ffffffff" thickness="{TH}">{grad}</Stroke></Arc></PartDraw>'
+        f'<PartDraw x="0" y="0" width="450" height="450">{amb(0)}{BREATH}'
+        f'<Arc {arc_box} startAngle="225" endAngle="225">'
+        f'<Transform target="startAngle" value="{SEG_MID} - 0.05" /><Transform target="endAngle" value="{SEG_MID} + 0.05" />'
+        f'<Stroke color="#ffffffff" thickness="{TH + 8}" cap="ROUND">{grad_body}</Stroke></Arc></PartDraw>'
+        f'<PartDraw x="0" y="0" width="450" height="450">{amb(0)}{BREATH}'
+        f'<Arc {arc_box} startAngle="225" endAngle="225">'
+        f'<Transform target="startAngle" value="{SEG_MID} - 0.05" /><Transform target="endAngle" value="{SEG_MID} + 0.05" />'
+        f'<Stroke color="#ffffffff" thickness="{TH * 0.75:.1f}" cap="ROUND">{grad_core0}</Stroke></Arc></PartDraw>'
         f'<PartDraw x="0" y="0" width="450" height="450">{amb(110)}{BREATH}'
         f'<Arc {arc_box} startAngle="225" endAngle="225">'
-        f'<Transform target="startAngle" value="{seg_a0}" /><Transform target="endAngle" value="{seg_a0} + {SEG - GAPD:.3f}" />'
-        f'<Stroke color="#b0ffffff" thickness="{TH}" /></Arc></PartDraw>'
+        f'<Transform target="startAngle" value="{SEG_MID} - 0.05" /><Transform target="endAngle" value="{SEG_MID} + 0.05" />'
+        f'<Stroke color="#ffffffff" thickness="{TH * 0.45:.1f}" cap="ROUND">{grad_core}</Stroke></Arc></PartDraw>'
     )
 
     kz_cond = lambda tpl_x, tpl_w, size, ty=0: (
