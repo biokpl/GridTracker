@@ -184,6 +184,64 @@
             <Character name="y" resource="sc_u0079" width="11" height="31" />
             <Character name="z" resource="sc_u007a" width="11" height="31" />
         </BitmapFont>
+        <BitmapFont name="bci">
+            <Character name="0" resource="bci_u0030" width="21" height="45" />
+            <Character name="1" resource="bci_u0031" width="15" height="45" />
+            <Character name="2" resource="bci_u0032" width="21" height="45" />
+            <Character name="3" resource="bci_u0033" width="20" height="45" />
+            <Character name="4" resource="bci_u0034" width="22" height="45" />
+            <Character name="5" resource="bci_u0035" width="21" height="45" />
+            <Character name="6" resource="bci_u0036" width="20" height="45" />
+            <Character name="7" resource="bci_u0037" width="20" height="45" />
+            <Character name="8" resource="bci_u0038" width="21" height="45" />
+            <Character name="9" resource="bci_u0039" width="20" height="45" />
+        </BitmapFont>
+        <BitmapFont name="sci">
+            <Character name=" " resource="sci_u0020" width="9" height="31" />
+            <Character name="0" resource="sci_u0030" width="15" height="31" />
+            <Character name="1" resource="sci_u0031" width="11" height="31" />
+            <Character name="2" resource="sci_u0032" width="15" height="31" />
+            <Character name="3" resource="sci_u0033" width="15" height="31" />
+            <Character name="4" resource="sci_u0034" width="16" height="31" />
+            <Character name="5" resource="sci_u0035" width="15" height="31" />
+            <Character name="6" resource="sci_u0036" width="15" height="31" />
+            <Character name="7" resource="sci_u0037" width="14" height="31" />
+            <Character name="8" resource="sci_u0038" width="15" height="31" />
+            <Character name="9" resource="sci_u0039" width="15" height="31" />
+            <Character name="A" resource="sci_u0041" width="16" height="31" />
+            <Character name="C" resource="sci_u0043" width="16" height="31" />
+            <Character name="E" resource="sci_u0045" width="14" height="31" />
+            <Character name="H" resource="sci_u0048" width="16" height="31" />
+            <Character name="K" resource="sci_u004b" width="16" height="31" />
+            <Character name="M" resource="sci_u004d" width="20" height="31" />
+            <Character name="N" resource="sci_u004e" width="16" height="31" />
+            <Character name="O" resource="sci_u004f" width="17" height="31" />
+            <Character name="P" resource="sci_u0050" width="16" height="31" />
+            <Character name="S" resource="sci_u0053" width="16" height="31" />
+            <Character name="T" resource="sci_u0054" width="13" height="31" />
+            <Character name="a" resource="sci_u0061" width="15" height="31" />
+            <Character name="b" resource="sci_u0062" width="15" height="31" />
+            <Character name="c" resource="sci_u0063" width="14" height="31" />
+            <Character name="e" resource="sci_u0065" width="15" height="31" />
+            <Character name="i" resource="sci_u0069" width="9" height="31" />
+            <Character name="k" resource="sci_u006b" width="15" height="31" />
+            <Character name="l" resource="sci_u006c" width="10" height="31" />
+            <Character name="m" resource="sci_u006d" width="22" height="31" />
+            <Character name="n" resource="sci_u006e" width="16" height="31" />
+            <Character name="o" resource="sci_u006f" width="14" height="31" />
+            <Character name="r" resource="sci_u0072" width="12" height="31" />
+            <Character name="s" resource="sci_u0073" width="14" height="31" />
+            <Character name="t" resource="sci_u0074" width="11" height="31" />
+            <Character name="u" resource="sci_u0075" width="15" height="31" />
+            <Character name="y" resource="sci_u0079" width="14" height="31" />
+            <Character name="z" resource="sci_u007a" width="14" height="31" />
+            <Character name="Ç" resource="sci_u00c7" width="16" height="31" />
+            <Character name="ü" resource="sci_u00fc" width="15" height="31" />
+            <Character name="ğ" resource="sci_u011f" width="15" height="31" />
+            <Character name="ı" resource="sci_u0131" width="9" height="31" />
+            <Character name="Ş" resource="sci_u015e" width="16" height="31" />
+            <Character name="ş" resource="sci_u015f" width="14" height="31" />
+        </BitmapFont>
     </BitmapFonts>
     <Scene backgroundColor="#ff000000">
         <PartImage x="0" y="0" width="450" height="450"><Variant mode="AMBIENT" target="alpha" value="0" /><Image resource="bg_ultra" /></PartImage>
@@ -192,38 +250,38 @@
         <ComplicationSlot slotId="0" x="0" y="0" width="450" height="450" supportedTypes="RANGED_VALUE" isCustomizable="TRUE" displayName="@string/slot_alsat"><DefaultProviderPolicy defaultSystemProvider="EMPTY" defaultSystemProviderType="RANGED_VALUE" primaryProvider="com.biokpl.gridwatch/com.biokpl.gridwatch.RingComplicationService" primaryProviderType="RANGED_VALUE" /><BoundingOval x="0" y="0" width="450" height="450" /><Complication type="RANGED_VALUE"><PartDraw x="0" y="0" width="450" height="450"><Variant mode="AMBIENT" target="alpha" value="110" /><Arc centerX="225" centerY="225" width="399" height="399" startAngle="225" endAngle="225"><Transform target="endAngle" value="225 + 270 * ([COMPLICATION.RANGED_VALUE_VALUE] - [COMPLICATION.RANGED_VALUE_MIN]) / ([COMPLICATION.RANGED_VALUE_MAX] - [COMPLICATION.RANGED_VALUE_MIN])" /><Stroke color="#ffffffff" thickness="16.875"><SweepGradient centerX="225" centerY="225" startAngle="225" endAngle="495" colors="#ffff5550 #ffffbe3c #ff3ce1aa" positions="0 0.5 1" /></Stroke></Arc></PartDraw><PartDraw x="0" y="0" width="450" height="450"><Variant mode="AMBIENT" target="alpha" value="0" /><Arc centerX="225" centerY="225" width="399" height="399" startAngle="225" endAngle="225"><Transform target="startAngle" value="(225 + 6.4286 * clamp(floor(([COMPLICATION.RANGED_VALUE_VALUE] - [COMPLICATION.RANGED_VALUE_MIN]) / ([COMPLICATION.RANGED_VALUE_MAX] - [COMPLICATION.RANGED_VALUE_MIN]) * 42), 0, 41)) + 1.6" /><Transform target="endAngle" value="(225 + 6.4286 * clamp(floor(([COMPLICATION.RANGED_VALUE_VALUE] - [COMPLICATION.RANGED_VALUE_MIN]) / ([COMPLICATION.RANGED_VALUE_MAX] - [COMPLICATION.RANGED_VALUE_MIN]) * 42), 0, 41)) + 3.681" /><Stroke color="#ffffffff" thickness="34.875" cap="ROUND"><SweepGradient centerX="225" centerY="225" startAngle="225" endAngle="495" colors="#1eff5550 #1effbe3c #1e3ce1aa" positions="0 0.5 1" /></Stroke></Arc></PartDraw><PartDraw x="0" y="0" width="450" height="450"><Variant mode="AMBIENT" target="alpha" value="0" /><Arc centerX="225" centerY="225" width="399" height="399" startAngle="225" endAngle="225"><Transform target="startAngle" value="(225 + 6.4286 * clamp(floor(([COMPLICATION.RANGED_VALUE_VALUE] - [COMPLICATION.RANGED_VALUE_MIN]) / ([COMPLICATION.RANGED_VALUE_MAX] - [COMPLICATION.RANGED_VALUE_MIN]) * 42), 0, 41)) + 1.2" /><Transform target="endAngle" value="(225 + 6.4286 * clamp(floor(([COMPLICATION.RANGED_VALUE_VALUE] - [COMPLICATION.RANGED_VALUE_MIN]) / ([COMPLICATION.RANGED_VALUE_MAX] - [COMPLICATION.RANGED_VALUE_MIN]) * 42), 0, 41)) + 4.081" /><Stroke color="#ffffffff" thickness="27.875" cap="ROUND"><SweepGradient centerX="225" centerY="225" startAngle="225" endAngle="495" colors="#34ff5550 #34ffbe3c #343ce1aa" positions="0 0.5 1" /></Stroke></Arc></PartDraw><PartDraw x="0" y="0" width="450" height="450"><Variant mode="AMBIENT" target="alpha" value="0" /><Arc centerX="225" centerY="225" width="399" height="399" startAngle="225" endAngle="225"><Transform target="startAngle" value="(225 + 6.4286 * clamp(floor(([COMPLICATION.RANGED_VALUE_VALUE] - [COMPLICATION.RANGED_VALUE_MIN]) / ([COMPLICATION.RANGED_VALUE_MAX] - [COMPLICATION.RANGED_VALUE_MIN]) * 42), 0, 41)) + 0.8" /><Transform target="endAngle" value="(225 + 6.4286 * clamp(floor(([COMPLICATION.RANGED_VALUE_VALUE] - [COMPLICATION.RANGED_VALUE_MIN]) / ([COMPLICATION.RANGED_VALUE_MAX] - [COMPLICATION.RANGED_VALUE_MIN]) * 42), 0, 41)) + 4.481" /><Stroke color="#ffffffff" thickness="21.875" cap="ROUND"><SweepGradient centerX="225" centerY="225" startAngle="225" endAngle="495" colors="#5aff5550 #5affbe3c #5a3ce1aa" positions="0 0.5 1" /></Stroke></Arc></PartDraw><PartDraw x="0" y="0" width="450" height="450"><Variant mode="AMBIENT" target="alpha" value="110" /><Arc centerX="225" centerY="225" width="399" height="399" startAngle="225" endAngle="225"><Transform target="startAngle" value="(225 + 6.4286 * clamp(floor(([COMPLICATION.RANGED_VALUE_VALUE] - [COMPLICATION.RANGED_VALUE_MIN]) / ([COMPLICATION.RANGED_VALUE_MAX] - [COMPLICATION.RANGED_VALUE_MIN]) * 42), 0, 41))" /><Transform target="endAngle" value="(225 + 6.4286 * clamp(floor(([COMPLICATION.RANGED_VALUE_VALUE] - [COMPLICATION.RANGED_VALUE_MIN]) / ([COMPLICATION.RANGED_VALUE_MAX] - [COMPLICATION.RANGED_VALUE_MIN]) * 42), 0, 41)) + 5.281" /><Stroke color="#ffffffff" thickness="16.875"><SweepGradient centerX="225" centerY="225" startAngle="225" endAngle="495" colors="#ffff5550 #ffffbe3c #ff3ce1aa" positions="0 0.5 1" /></Stroke></Arc></PartDraw><PartDraw x="0" y="0" width="450" height="450"><Variant mode="AMBIENT" target="alpha" value="110" /><Arc centerX="225" centerY="225" width="399" height="399" startAngle="225" endAngle="225"><Transform target="startAngle" value="(225 + 6.4286 * clamp(floor(([COMPLICATION.RANGED_VALUE_VALUE] - [COMPLICATION.RANGED_VALUE_MIN]) / ([COMPLICATION.RANGED_VALUE_MAX] - [COMPLICATION.RANGED_VALUE_MIN]) * 42), 0, 41))" /><Transform target="endAngle" value="(225 + 6.4286 * clamp(floor(([COMPLICATION.RANGED_VALUE_VALUE] - [COMPLICATION.RANGED_VALUE_MIN]) / ([COMPLICATION.RANGED_VALUE_MAX] - [COMPLICATION.RANGED_VALUE_MIN]) * 42), 0, 41)) + 5.281" /><Stroke color="#b0ffffff" thickness="16.875" /></Arc></PartDraw></Complication></ComplicationSlot>
         <PartImage x="0" y="0" width="450" height="450"><Variant mode="AMBIENT" target="alpha" value="0" /><Image resource="ring_gaps" /></PartImage>
 
-        <PartText x="-29" y="49" width="230" height="49"><Variant mode="AMBIENT" target="alpha" value="140" /><Text align="END"><BitmapFont family="bc" size="47" color="#ffaaebff"><Template>%s<Parameter expression="[DAY]" /></Template></BitmapFont></Text></PartText>
-        <PartText x="209" y="52" width="212" height="23"><Variant mode="AMBIENT" target="alpha" value="110" /><Text align="START"><BitmapFont family="sc" size="21" color="#ffa0a5aa"><Template>%s<Parameter expression="[MONTH_F]" /></Template></BitmapFont></Text></PartText>
-        <PartText x="209" y="73" width="212" height="23"><Variant mode="AMBIENT" target="alpha" value="110" /><Text align="START"><BitmapFont family="sc" size="21" color="#ffa0a5aa"><Template>%s<Parameter expression="[DAY_OF_WEEK_F]" /></Template></BitmapFont></Text></PartText>
+        <PartText x="-29" y="54" width="250" height="42"><Variant mode="AMBIENT" target="alpha" value="140" /><Text align="END"><BitmapFont family="bci" size="42" color="#ffffb296"><Template>%s<Parameter expression="[DAY]" /></Template></BitmapFont></Text></PartText>
+        <PartText x="229" y="52" width="192" height="23"><Variant mode="AMBIENT" target="alpha" value="110" /><Text align="START"><BitmapFont family="sci" size="21" color="#ffa0a5aa"><Template>%s<Parameter expression="[MONTH_F]" /></Template></BitmapFont></Text></PartText>
+        <PartText x="229" y="73" width="192" height="23"><Variant mode="AMBIENT" target="alpha" value="110" /><Text align="START"><BitmapFont family="sci" size="21" color="#ffa0a5aa"><Template>%s<Parameter expression="[DAY_OF_WEEK_F]" /></Template></BitmapFont></Text></PartText>
 
-          <PartText x="91" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_8392" size="100" color="#a01b2528">8</Font></Text></PartText>
-          <PartText x="141" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_8392" size="100" color="#a01b2528">8</Font></Text></PartText>
-          <PartText x="191" y="104" width="22" height="96"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_8392" size="100" color="#a01b2528">:</Font></Text></PartText>
-          <PartText x="213" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_8392" size="100" color="#a01b2528">8</Font></Text></PartText>
-          <PartText x="263" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_8392" size="100" color="#a01b2528">8</Font></Text></PartText>
-          <PartText x="91" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="60" /><Text align="CENTER"><Font family="vfd7g2_8392" size="100" color="#1caaebff"><Template>%s<Parameter expression="floor([HOUR_0_23] / 10)" /></Template></Font></Text></PartText>
-          <PartText x="141" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="60" /><Text align="CENTER"><Font family="vfd7g2_8392" size="100" color="#1caaebff"><Template>%s<Parameter expression="[HOUR_0_23] % 10" /></Template></Font></Text></PartText>
-          <PartText x="191" y="104" width="22" height="96"><Variant mode="AMBIENT" target="alpha" value="60" /><Text align="CENTER"><Font family="vfd7g2_8392" size="100" color="#1caaebff">:</Font></Text></PartText>
-          <PartText x="213" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="60" /><Text align="CENTER"><Font family="vfd7g2_8392" size="100" color="#1caaebff"><Template>%s<Parameter expression="floor([MINUTE] / 10)" /></Template></Font></Text></PartText>
-          <PartText x="263" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="60" /><Text align="CENTER"><Font family="vfd7g2_8392" size="100" color="#1caaebff"><Template>%s<Parameter expression="[MINUTE] % 10" /></Template></Font></Text></PartText>
-          <PartText x="91" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><Font family="vfd7g1_8392" size="100" color="#36aaebff"><Template>%s<Parameter expression="floor([HOUR_0_23] / 10)" /></Template></Font></Text></PartText>
-          <PartText x="141" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><Font family="vfd7g1_8392" size="100" color="#36aaebff"><Template>%s<Parameter expression="[HOUR_0_23] % 10" /></Template></Font></Text></PartText>
-          <PartText x="191" y="104" width="22" height="96"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><Font family="vfd7g1_8392" size="100" color="#36aaebff">:</Font></Text></PartText>
-          <PartText x="213" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><Font family="vfd7g1_8392" size="100" color="#36aaebff"><Template>%s<Parameter expression="floor([MINUTE] / 10)" /></Template></Font></Text></PartText>
-          <PartText x="263" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><Font family="vfd7g1_8392" size="100" color="#36aaebff"><Template>%s<Parameter expression="[MINUTE] % 10" /></Template></Font></Text></PartText>
-          <PartText x="91" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="255" /><Text align="CENTER"><Font family="vfd7_8392" size="100" color="#ffaaebff"><Template>%s<Parameter expression="floor([HOUR_0_23] / 10)" /></Template></Font></Text></PartText>
-          <PartText x="141" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="255" /><Text align="CENTER"><Font family="vfd7_8392" size="100" color="#ffaaebff"><Template>%s<Parameter expression="[HOUR_0_23] % 10" /></Template></Font></Text></PartText>
-          <PartText x="191" y="104" width="22" height="96"><Variant mode="AMBIENT" target="alpha" value="255" /><Text align="CENTER"><Font family="vfd7_8392" size="100" color="#ffaaebff">:</Font></Text></PartText>
-          <PartText x="213" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="255" /><Text align="CENTER"><Font family="vfd7_8392" size="100" color="#ffaaebff"><Template>%s<Parameter expression="floor([MINUTE] / 10)" /></Template></Font></Text></PartText>
-          <PartText x="263" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="255" /><Text align="CENTER"><Font family="vfd7_8392" size="100" color="#ffaaebff"><Template>%s<Parameter expression="[MINUTE] % 10" /></Template></Font></Text></PartText>
-          <PartText x="335" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_8392" size="30" color="#a01b2528">8</Font></Text></PartText>
-          <PartText x="350" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_8392" size="30" color="#a01b2528">8</Font></Text></PartText>
-          <PartText x="335" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7g2_8392" size="30" color="#1caaebff"><Template>%s<Parameter expression="floor([SECOND] / 10)" /></Template></Font></Text></PartText>
-          <PartText x="350" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7g2_8392" size="30" color="#1caaebff"><Template>%s<Parameter expression="[SECOND] % 10" /></Template></Font></Text></PartText>
-          <PartText x="335" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7g1_8392" size="30" color="#36aaebff"><Template>%s<Parameter expression="floor([SECOND] / 10)" /></Template></Font></Text></PartText>
-          <PartText x="350" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7g1_8392" size="30" color="#36aaebff"><Template>%s<Parameter expression="[SECOND] % 10" /></Template></Font></Text></PartText>
-          <PartText x="335" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_8392" size="30" color="#ffaaebff"><Template>%s<Parameter expression="floor([SECOND] / 10)" /></Template></Font></Text></PartText>
-          <PartText x="350" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_8392" size="30" color="#ffaaebff"><Template>%s<Parameter expression="[SECOND] % 10" /></Template></Font></Text></PartText>
+          <PartText x="91" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_87c4" size="100" color="#a01b2528">8</Font></Text></PartText>
+          <PartText x="141" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_87c4" size="100" color="#a01b2528">8</Font></Text></PartText>
+          <PartText x="191" y="104" width="22" height="96"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_87c4" size="100" color="#a01b2528">:</Font></Text></PartText>
+          <PartText x="213" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_87c4" size="100" color="#a01b2528">8</Font></Text></PartText>
+          <PartText x="263" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_87c4" size="100" color="#a01b2528">8</Font></Text></PartText>
+          <PartText x="91" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="60" /><Text align="CENTER"><Font family="vfd7g2_87c4" size="100" color="#1caaebff"><Template>%s<Parameter expression="floor([HOUR_0_23] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="141" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="60" /><Text align="CENTER"><Font family="vfd7g2_87c4" size="100" color="#1caaebff"><Template>%s<Parameter expression="[HOUR_0_23] % 10" /></Template></Font></Text></PartText>
+          <PartText x="191" y="104" width="22" height="96"><Variant mode="AMBIENT" target="alpha" value="60" /><Text align="CENTER"><Font family="vfd7g2_87c4" size="100" color="#1caaebff">:</Font></Text></PartText>
+          <PartText x="213" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="60" /><Text align="CENTER"><Font family="vfd7g2_87c4" size="100" color="#1caaebff"><Template>%s<Parameter expression="floor([MINUTE] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="263" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="60" /><Text align="CENTER"><Font family="vfd7g2_87c4" size="100" color="#1caaebff"><Template>%s<Parameter expression="[MINUTE] % 10" /></Template></Font></Text></PartText>
+          <PartText x="91" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><Font family="vfd7g1_87c4" size="100" color="#36aaebff"><Template>%s<Parameter expression="floor([HOUR_0_23] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="141" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><Font family="vfd7g1_87c4" size="100" color="#36aaebff"><Template>%s<Parameter expression="[HOUR_0_23] % 10" /></Template></Font></Text></PartText>
+          <PartText x="191" y="104" width="22" height="96"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><Font family="vfd7g1_87c4" size="100" color="#36aaebff">:</Font></Text></PartText>
+          <PartText x="213" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><Font family="vfd7g1_87c4" size="100" color="#36aaebff"><Template>%s<Parameter expression="floor([MINUTE] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="263" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="120" /><Text align="CENTER"><Font family="vfd7g1_87c4" size="100" color="#36aaebff"><Template>%s<Parameter expression="[MINUTE] % 10" /></Template></Font></Text></PartText>
+          <PartText x="91" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="255" /><Text align="CENTER"><Font family="vfd7_87c4" size="100" color="#ffaaebff"><Template>%s<Parameter expression="floor([HOUR_0_23] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="141" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="255" /><Text align="CENTER"><Font family="vfd7_87c4" size="100" color="#ffaaebff"><Template>%s<Parameter expression="[HOUR_0_23] % 10" /></Template></Font></Text></PartText>
+          <PartText x="191" y="104" width="22" height="96"><Variant mode="AMBIENT" target="alpha" value="255" /><Text align="CENTER"><Font family="vfd7_87c4" size="100" color="#ffaaebff">:</Font></Text></PartText>
+          <PartText x="213" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="255" /><Text align="CENTER"><Font family="vfd7_87c4" size="100" color="#ffaaebff"><Template>%s<Parameter expression="floor([MINUTE] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="263" y="104" width="50" height="96"><Variant mode="AMBIENT" target="alpha" value="255" /><Text align="CENTER"><Font family="vfd7_87c4" size="100" color="#ffaaebff"><Template>%s<Parameter expression="[MINUTE] % 10" /></Template></Font></Text></PartText>
+          <PartText x="335" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_87c4" size="30" color="#a01b2528">8</Font></Text></PartText>
+          <PartText x="350" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_87c4" size="30" color="#a01b2528">8</Font></Text></PartText>
+          <PartText x="335" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7g2_87c4" size="30" color="#1caaebff"><Template>%s<Parameter expression="floor([SECOND] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="350" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7g2_87c4" size="30" color="#1caaebff"><Template>%s<Parameter expression="[SECOND] % 10" /></Template></Font></Text></PartText>
+          <PartText x="335" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7g1_87c4" size="30" color="#36aaebff"><Template>%s<Parameter expression="floor([SECOND] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="350" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7g1_87c4" size="30" color="#36aaebff"><Template>%s<Parameter expression="[SECOND] % 10" /></Template></Font></Text></PartText>
+          <PartText x="335" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_87c4" size="30" color="#ffaaebff"><Template>%s<Parameter expression="floor([SECOND] / 10)" /></Template></Font></Text></PartText>
+          <PartText x="350" y="127" width="15" height="30"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><Font family="vfd7_87c4" size="30" color="#ffaaebff"><Template>%s<Parameter expression="[SECOND] % 10" /></Template></Font></Text></PartText>
           <PartImage x="81" y="100" width="242" height="104"><Image resource="vfd_mesh" /></PartImage>
           <PartImage x="331" y="124" width="38" height="36"><Variant mode="AMBIENT" target="alpha" value="0" /><Image resource="vfd_mesh_s" /></PartImage>
           <PartText x="331" y="161" width="38" height="16"><Variant mode="AMBIENT" target="alpha" value="0" /><Text align="CENTER"><BitmapFont family="sc" size="13" color="#ff6e737a">SN</BitmapFont></Text></PartText>

@@ -32,14 +32,21 @@ def bfont(var, px):
     return f
 
 
-def glyph_set(drawable, prefix, var, px):
-    """Beyaz glif PNG'leri + <BitmapFont> XML'i döndürür. px = çizim boyu."""
+TR_DATE = "".join(sorted(set("0123456789 Ocak Şubat Mart Nisan Mayıs Haziran Temmuz Ağustos Eylül Ekim Kasım Aralık "
+                             "Pazartesi Salı Çarşamba Perşembe Cuma Cumartesi Pazar")))
+
+
+def glyph_set(drawable, prefix, var, px, italic=0.0, chars_src=None):
+    """Beyaz glif PNG'leri + <BitmapFont> XML'i döndürür. px = çizim boyu.
+    italic>0: Bahnschrift'in italiği yok → glif tabandan sağa eğilir (eğim = italic, ~0.21 ≈ 12°)."""
     f = bfont(var, px)
     asc, desc = f.getmetrics()
     h = asc + desc
+    # eğim payı: glif genişliği aynı zamanda harf aralığı → payı küçük tut, eğimi ortadan yap
+    extra = int(math.ceil(italic * asc * 0.4)) if italic else 0
     chars = []
-    for ch in CH:
-        w = max(1, round(f.getlength(ch)))
+    for ch in (chars_src or CH):
+        w = max(1, round(f.getlength(ch))) + extra
         img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
         if ch == "−":   # Bahnschrift'te "−" glifi yok (kutu çiziliyordu): "+" genişliğinde, "-" kalınlığında çiz
             w = max(1, round(f.getlength("+"))); img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
@@ -50,6 +57,10 @@ def glyph_set(drawable, prefix, var, px):
             ImageDraw.Draw(img).rectangle((pb[0], round(cy - th / 2), pb[2] - 1, round(cy + th / 2) - 1), fill=(255, 255, 255, 255))
         else:
             ImageDraw.Draw(img).text((0, 0), ch, font=f, fill=(255, 255, 255, 255))
+        if italic:   # üst sağa, taban sola; kayma payın iki yanına eşit dağılır
+            off = (italic * asc - extra) / 2
+            src = Image.new("RGBA", img.size, (0, 0, 0, 0)); src.paste(img, (0, 0))
+            img = src.transform(img.size, Image.AFFINE, (1, italic, -italic * asc + off, 0, 1, 0), resample=Image.BICUBIC)
         name = f"{prefix}_u{ord(ch):04x}"
         img.save(drawable / f"{name}.png")
         cname = {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}.get(ch, ch)
@@ -329,6 +340,8 @@ def face_ultra():
     # bitmap fontlar
     fb, hb = glyph_set(dr, "bc", "Bold Condensed", 44)      # kullanım ~36 px
     fs, hs = glyph_set(dr, "sc", "SemiBold Condensed", 30)  # kullanım ~21-26 px
+    fbi = glyph_set(dr, "bci", "Bold Condensed", 44, 0.21, "0123456789")[0]     # tarih: italik gün sayısı
+    fsi = glyph_set(dr, "sci", "SemiBold Condensed", 30, 0.21, TR_DATE)[0]      # tarih: italik ay / gün adı
     # VFD rakamları: gerçek TTF (bitmap glifler AOD geçişinde CPU'yu kilitliyordu)
     import build_vfd_font
     (d / "src/main/res/font").mkdir(parents=True, exist_ok=True)
@@ -401,7 +414,7 @@ def face_ultra():
         f'<Default>{text(tpl_x, ty, tpl_w, size + 4, "%s", ["[COMPLICATION.TEXT]"], "bc", size, "#ffb4b2a9", "END", 140)}</Default>'
         '</Condition>')
 
-    DX, DY = 230, k(56) + 19   # takvim bloğu: büyük gün sayısının sağ kenarı; sağında ay / gün adı iki satır
+    DX, DY = 250, k(56) + 19   # takvim bloğu: büyük gün sayısının sağ kenarı; sağında ay / gün adı iki satır
     c_, cl = VFD["cell"], VFD["colon"]
     clock_xml = vfd_cells(VFD, [
         (0, c_, "=floor([HOUR_0_23] / 10)", "8"), (c_, c_, "=[HOUR_0_23] % 10", "8"),
@@ -421,6 +434,8 @@ def face_ultra():
     <BitmapFonts>
 {fb}
 {fs}
+{fbi}
+{fsi}
     </BitmapFonts>
     <Scene backgroundColor="#ff000000">
         <PartImage x="0" y="0" width="450" height="450">{amb(0)}<Image resource="bg_ultra" /></PartImage>
@@ -430,9 +445,9 @@ def face_ultra():
               '<BoundingOval x="0" y="0" width="450" height="450" />')}
         <PartImage x="0" y="0" width="450" height="450">{amb(0)}<Image resource="ring_gaps" /></PartImage>
 
-        {text(0, DY, DX, k(46), "%s", ["[DAY]"], "bc", k(44), "#ffaaebff", "END", 140)}
-        {text(DX + k(8), DY + k(3), 450 - DX - k(8), k(22), "%s", ["[MONTH_F]"], "sc", k(20), "#ffa0a5aa", "START", 110)}
-        {text(DX + k(8), DY + k(23), 450 - DX - k(8), k(22), "%s", ["[DAY_OF_WEEK_F]"], "sc", k(20), "#ffa0a5aa", "START", 110)}
+        {text(0, DY + k(3) + 2, DX, k(40), "%s", ["[DAY]"], "bci", k(40), "#ffffb296", "END", 140)}
+        {text(DX + k(8), DY + k(3), 450 - DX - k(8), k(22), "%s", ["[MONTH_F]"], "sci", k(20), "#ffa0a5aa", "START", 110)}
+        {text(DX + k(8), DY + k(23), 450 - DX - k(8), k(22), "%s", ["[DAY_OF_WEEK_F]"], "sci", k(20), "#ffa0a5aa", "START", 110)}
 
 {clock_xml}
           <PartImage x="{WIN[0]}" y="{WIN[1]}" width="{WIN[2] - WIN[0]}" height="{WIN[3] - WIN[1]}"><Image resource="vfd_mesh" /></PartImage>
