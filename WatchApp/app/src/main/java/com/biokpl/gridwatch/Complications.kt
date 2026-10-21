@@ -29,7 +29,7 @@ private fun ranged(v: Float, min: Float, max: Float, title: String, text: String
 
 private val PREVIEW = Snapshot(
     Snapshot.Mode.ACTIVE, symbol = "TUPRS", price = 384.90, pnlTl = 582.0, pnlPct = 2.5, qty = 62,
-    stop = 351.45, target = 394.27, signal = "DEVAM",
+    stop = 351.45, target = 394.27, entry = 375.50, stopLoss = 368.72, signal = "DEVAM",
 )
 
 private fun ringData(s: Snapshot): ComplicationData = when (s.mode) {
@@ -51,15 +51,56 @@ private fun kzData(s: Snapshot): ComplicationData = when (s.mode) {
     Snapshot.Mode.NO_DATA -> ranged(0f, -1f, 1f, "AL/SAT", "—")
 }
 
-private fun stopData(s: Snapshot): ComplicationData =
-    if (s.stop > 0 && s.mode != Snapshot.Mode.WAIT) short("S:  ${fmtPrice(s.stop)}", "Stop ${fmtPrice(s.stop)}")
-    else if (s.mode == Snapshot.Mode.WAIT) short("${s.trades} işlem")
-    else short(" ")
+/*
+ * Stop / Hedef yuvaları metnin yanında halka iç çeperindeki bölge çizgilerini de taşır
+ * (kadranda 8 yuva sınırı dolu olduğu için ayrı yuva yok):
+ *   Stop  → değer = kurum stopunun halkadaki yeri  → kırmızı çizgi: halka başı → kurum stopu
+ *   Hedef → min = kurum stopu, değer = izleme stopu → amber çizgi: kurum stopu → izleme stopu
+ * Pozisyon yokken değerler 0 (çizgi görünmez). Konumlar her güncellemede yeniden hesaplanır.
+ */
+private fun stopText(s: Snapshot): String = when {
+    s.stop > 0 && s.mode != Snapshot.Mode.WAIT -> "S:  ${fmtPrice(s.stop)}"
+    s.mode == Snapshot.Mode.WAIT -> "${s.trades} işlem"
+    else -> " "
+}
 
-private fun targetData(s: Snapshot): ComplicationData =
-    if (s.target > 0 && s.mode != Snapshot.Mode.WAIT) short("H:  ${fmtPrice(s.target)}", "Hedef ${fmtPrice(s.target)}")
-    else if (s.mode == Snapshot.Mode.WAIT) short("%${s.winRate} isabet")
-    else short(" ")
+private fun targetText(s: Snapshot): String = when {
+    s.target > 0 && s.mode != Snapshot.Mode.WAIT -> "H:  ${fmtPrice(s.target)}"
+    s.mode == Snapshot.Mode.WAIT -> "%${s.winRate} isabet"
+    else -> " "
+}
+
+private fun stopData(s: Snapshot): ComplicationData {
+    val hard = s.ringPos(s.stop).coerceAtLeast(0f)
+    return ranged(hard, 0f, 1f, " ", stopText(s))
+}
+
+private fun targetData(s: Snapshot): ComplicationData {
+    val hard = s.ringPos(s.stop).coerceAtLeast(0f)
+    val soft = s.ringPos(s.stopLoss).coerceAtLeast(0f)
+    return ranged(maxOf(soft, hard), hard, 1f, " ", targetText(s))
+}
+
+abstract class DualService(
+    private val ranged: (Snapshot) -> ComplicationData,
+    private val text: (Snapshot) -> String,
+) : SuspendingComplicationDataSourceService() {
+    override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData {
+        val s = AlSatRepo.get(applicationContext)
+        android.util.Log.d("GridWatch", "${javaClass.simpleName} type=${request.complicationType} mode=${s.mode} entry=${s.entry} stop=${s.stop} sl=${s.stopLoss} tgt=${s.target} pos=${s.ringPos(s.stop)}")
+        return when (request.complicationType) {
+            ComplicationType.RANGED_VALUE -> ranged(s)
+            ComplicationType.SHORT_TEXT -> short(text(s))
+            else -> NoDataComplicationData()
+        }
+    }
+
+    override fun getPreviewData(type: ComplicationType): ComplicationData? = when (type) {
+        ComplicationType.RANGED_VALUE -> ranged(PREVIEW)
+        ComplicationType.SHORT_TEXT -> short(text(PREVIEW))
+        else -> null
+    }
+}
 
 abstract class BaseService(
     private val type: ComplicationType,
@@ -75,5 +116,6 @@ abstract class BaseService(
 
 class RingComplicationService : BaseService(ComplicationType.RANGED_VALUE, ::ringData)
 class KzComplicationService : BaseService(ComplicationType.RANGED_VALUE, ::kzData)
-class StopComplicationService : BaseService(ComplicationType.SHORT_TEXT, ::stopData)
-class TargetComplicationService : BaseService(ComplicationType.SHORT_TEXT, ::targetData)
+// RANGED_VALUE (A kadranı: metin + bölge çizgisi) ve SHORT_TEXT (diğer kadranlar: yalnız metin)
+class StopComplicationService : DualService(::stopData, ::stopText)
+class TargetComplicationService : DualService(::targetData, ::targetText)

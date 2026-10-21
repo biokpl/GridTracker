@@ -431,6 +431,18 @@ def face_ultra():
         f'<Stroke color="#ffffffff" thickness="{TH * 0.45:.1f}" cap="ROUND">{grad_core}</Stroke></Arc></PartDraw>'
     )
 
+    # S/H yuvaları tam ekran + tam ekran BoundingOval: Samsung yuva çizimini sınır alanına kırpıyor.
+    # Stop bölge çizgileri (halka iç çeperi): S yuvası halka başı→kurum stopu (kırmızı),
+    # H yuvası kurum stopu→izleme stopu (amber). Yuvalar tam ekran → yazılar mutlak (ölçekli) konumda.
+    O_ = 225 * (1 - Z)
+    SX = lambda x: round(x + O_); SY = lambda y: round(y + O_)
+    RI = R - TH / 2 - 5
+    def zone(t0, t1, col):
+        return (f'<PartDraw x="0" y="0" width="450" height="450">{amb(90)}'
+                f'<Arc centerX="225" centerY="225" width="{round(2 * RI)}" height="{round(2 * RI)}" startAngle="225" endAngle="225">'
+                f'<Transform target="startAngle" value="225 + 270 * {t0}" /><Transform target="endAngle" value="225 + 270 * {t1}" />'
+                f'<Stroke color="{col}" thickness="2.4" /></Arc></PartDraw>')
+
     kz_cond = lambda tpl_x, tpl_w, size, ty=0: (
         '<Condition><Expressions>'
         '<Expression name="pos"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] > 0]]></Expression>'
@@ -513,10 +525,14 @@ def face_ultra():
               text(0, 0, k(190), k(30), "%s", ["[COMPLICATION.TEXT]"], "sc", k(24), "#ff9aa0a6", "START", 0)
               + text(k(190), 0, pw - k(28) - k(190), k(30), "%s", ["[COMPLICATION.TITLE]"], "sc", k(24), "#ffc8cdd2", "END", 0))}
 
-        {slot(3, k(96), k(376), k(140), k(32), "SHORT_TEXT", APP + "StopComplicationService", "SHORT_TEXT", "slot_alsat",
-              text(0, 0, k(140), k(32), "%s", ["[COMPLICATION.TEXT]"], "sc", k(28), RED, "CENTER", 120))}
-        {slot(4, k(244), k(376), k(140), k(32), "SHORT_TEXT", APP + "TargetComplicationService", "SHORT_TEXT", "slot_alsat",
-              text(0, 0, k(140), k(32), "%s", ["[COMPLICATION.TEXT]"], "sc", k(28), GREEN, "CENTER", 120))}
+        {slot(3, 0, 0, 450, 450, "RANGED_VALUE", APP + "StopComplicationService", "RANGED_VALUE", "slot_alsat",
+              zone("0", "[COMPLICATION.RANGED_VALUE_VALUE]", "#8cff5050")
+              + text(SX(k(96)), SY(k(376)), k(140), k(32), "%s", ["[COMPLICATION.TEXT]"], "sc", k(28), RED, "CENTER", 120),
+              '<BoundingOval x="0" y="0" width="450" height="450" />')}
+        {slot(4, 0, 0, 450, 450, "RANGED_VALUE", APP + "TargetComplicationService", "RANGED_VALUE", "slot_alsat",
+              zone("[COMPLICATION.RANGED_VALUE_MIN]", "[COMPLICATION.RANGED_VALUE_VALUE]", "#8cffc45a")
+              + text(SX(k(244)), SY(k(376)), k(140), k(32), "%s", ["[COMPLICATION.TEXT]"], "sc", k(28), GREEN, "CENTER", 120),
+              '<BoundingOval x="0" y="0" width="450" height="450" />')}
 
         <PartImage x="{k(160)}" y="{k(412)}" width="{k(20)}" height="{k(20)}">{amb(0)}<Image resource="ic_heart" /></PartImage>
         {text(k(184), k(408), 60, k(28), "%s", ["[HEART_RATE]"], "sc", k(21), "#ffd2d2d2", "START", 0)}

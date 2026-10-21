@@ -22,6 +22,7 @@ data class Snapshot(
     val stop: Double = 0.0,      // kurumdaki STOP emri (hard_stop)
     val target: Double = 0.0,
     val entry: Double = 0.0,     // açık pozisyonun alış (ortalama) fiyatı
+    val stopLoss: Double = 0.0,  // izleme stopu (saatlik kapanış onaylı; kurum stopu = stop)
     val signal: String = "",
     val lots: Int = 0,
     val entryLow: Double = 0.0,
@@ -40,6 +41,12 @@ data class Snapshot(
      *   (Stop'a göre ölçeklemek, iz süren stop yükseldikçe halkayı yerinde sayıyormuş gibi gösteriyordu.)
      * Diğer durumlar: fiyatın stop→hedef aralığındaki yeri.
      */
+    /** Bir fiyat seviyesinin halkadaki yeri (açık pozisyon, alışa sabit ölçek); yoksa -1. */
+    fun ringPos(level: Double): Float =
+        if (mode == Mode.ACTIVE && entry > 0 && target > entry && level > 0)
+            (0.5 + 0.5 * (level - entry) / (target - entry)).coerceIn(0.0, 1.0).toFloat()
+        else -1f
+
     val progress: Float
         get() = when {
             mode == Mode.ACTIVE && entry > 0 && target > entry ->
@@ -126,6 +133,7 @@ object AlSatRepo {
                 qty = tr.optInt("open_qty", tr.optInt("total_qty", 0)),
                 stop = stop, target = tr.optDouble("target1", 0.0),
                 entry = tr.optDouble("avg_cost", 0.0).takeIf { it > 0 } ?: tr.optDouble("entry_price", 0.0),
+                stopLoss = tr.optDouble("stop_loss", 0.0),
                 signal = if (sig == "—") "DEVAM" else sig,
                 totalPnl = total, trades = trades, winRate = wr, updated = updated,
             )
