@@ -41,7 +41,15 @@ def glyph_set(drawable, prefix, var, px):
     for ch in CH:
         w = max(1, round(f.getlength(ch)))
         img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-        ImageDraw.Draw(img).text((0, 0), ch, font=f, fill=(255, 255, 255, 255))
+        if ch == "−":   # Bahnschrift'te "−" glifi yok (kutu çiziliyordu): "+" genişliğinde, "-" kalınlığında çiz
+            w = max(1, round(f.getlength("+"))); img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+            def _ink(c):   # çizilmiş glifin gerçek kutusu (getbbox dikeyde yanıltıyor)
+                t = Image.new("L", (w * 2, h)); ImageDraw.Draw(t).text((0, 0), c, font=f, fill=255); return t.getbbox()
+            mb, pb = _ink("-"), _ink("+")
+            th = mb[3] - mb[1]; cy = (pb[1] + pb[3]) / 2
+            ImageDraw.Draw(img).rectangle((pb[0], round(cy - th / 2), pb[2] - 1, round(cy + th / 2) - 1), fill=(255, 255, 255, 255))
+        else:
+            ImageDraw.Draw(img).text((0, 0), ch, font=f, fill=(255, 255, 255, 255))
         name = f"{prefix}_u{ord(ch):04x}"
         img.save(drawable / f"{name}.png")
         cname = {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}.get(ch, ch)
@@ -388,11 +396,12 @@ def face_ultra():
         '<Expression name="pos"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] > 0]]></Expression>'
         '<Expression name="neg"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] < 0]]></Expression>'
         '</Expressions>'
-        f'<Compare expression="pos">{text(tpl_x, ty, tpl_w, 36, "%s", ["[COMPLICATION.TEXT]"], "bc", size, TEAL, "END", 140)}</Compare>'
-        f'<Compare expression="neg">{text(tpl_x, ty, tpl_w, 36, "%s", ["[COMPLICATION.TEXT]"], "bc", size, RED, "END", 140)}</Compare>'
-        f'<Default>{text(tpl_x, ty, tpl_w, 36, "%s", ["[COMPLICATION.TEXT]"], "bc", size, "#ffb4b2a9", "END", 140)}</Default>'
+        f'<Compare expression="pos">{text(tpl_x, ty, tpl_w, size + 4, "%s", ["[COMPLICATION.TEXT]"], "bc", size, TEAL, "END", 140)}</Compare>'
+        f'<Compare expression="neg">{text(tpl_x, ty, tpl_w, size + 4, "%s", ["[COMPLICATION.TEXT]"], "bc", size, RED, "END", 140)}</Compare>'
+        f'<Default>{text(tpl_x, ty, tpl_w, size + 4, "%s", ["[COMPLICATION.TEXT]"], "bc", size, "#ffb4b2a9", "END", 140)}</Default>'
         '</Condition>')
 
+    DC = 225 + k(22)   # tarihte gün sayısının merkezi: gün adları aydan uzun → biraz sağda dengeli
     c_, cl = VFD["cell"], VFD["colon"]
     clock_xml = vfd_cells(VFD, [
         (0, c_, "=floor([HOUR_0_23] / 10)", "8"), (c_, c_, "=[HOUR_0_23] % 10", "8"),
@@ -421,7 +430,9 @@ def face_ultra():
               '<BoundingOval x="0" y="0" width="450" height="450" />')}
         <PartImage x="0" y="0" width="450" height="450">{amb(0)}<Image resource="ring_gaps" /></PartImage>
 
-        {text(0, k(84), 450, k(34), "%s %s %s", ["[DAY_OF_WEEK_F]", "[DAY]", "[MONTH_F]"], "sc", k(25), "#ffa0a5aa", "CENTER", 110)}
+        {text(0, k(82), DC - k(19), k(38), "%s", ["[DAY_OF_WEEK_F]"], "sc", k(28), "#ffa0a5aa", "END", 110)}
+        {text(DC - k(19), k(82), 2 * k(19), k(38), "%s", ["[DAY]"], "sc", k(28), "#ffaaebff", "CENTER", 140)}
+        {text(DC + k(19), k(82), 450 - DC - k(19), k(38), "%s", ["[MONTH_F]"], "sc", k(28), "#ffa0a5aa", "START", 110)}
 
 {clock_xml}
           <PartImage x="{WIN[0]}" y="{WIN[1]}" width="{WIN[2] - WIN[0]}" height="{WIN[3] - WIN[1]}"><Image resource="vfd_mesh" /></PartImage>
@@ -436,9 +447,9 @@ def face_ultra():
         </PartDraw>
         <PartImage x="{k(116)}" y="{k(237)}" width="{k(20)}" height="{k(20)}">{amb(140)}<Image resource="ic_moon" /></PartImage>
         {slot(1, k(138), k(226), k(148), k(42), "SHORT_TEXT", EZAN + "SonrakiVakitComplicationProviderService", "SHORT_TEXT", "slot_ezan",
-              text(0, k(4), k(148), k(34), "%s %s", ["[COMPLICATION.TITLE]", "[COMPLICATION.TEXT]"], "sc", k(22), AMBER, "CENTER", 150))}
+              text(0, k(2), k(148), k(38), "%s %s", ["[COMPLICATION.TITLE]", "[COMPLICATION.TEXT]"], "sc", k(25), AMBER, "CENTER", 150))}
         {slot(5, k(290), k(226), k(84), k(42), "SHORT_TEXT", EZAN + "VaktinCikmasinaComplicationProviderService", "SHORT_TEXT", "slot_kalan",
-              text(0, k(4), k(84), k(34), "%s", ["[COMPLICATION.TEXT]"], "sc", k(22), "#ffffdc9a", "CENTER", 150))}
+              text(0, k(2), k(84), k(38), "%s", ["[COMPLICATION.TEXT]"], "sc", k(25), "#ffffdc9a", "CENTER", 150))}
 
         <PartDraw x="{px0}" y="{py0}" width="{pw}" height="{ph}">{amb(0)}
             <RoundRectangle x="0" y="0" width="{pw}" height="{ph}" cornerRadiusX="{k(22)}" cornerRadiusY="{k(22)}">
@@ -456,15 +467,15 @@ def face_ultra():
               f'<Default><PartImage x="0" y="0" width="{pw}" height="{ph + k(22)}">{amb(0)}<Image resource="glow_neu" /></PartImage></Default>'
               '</Condition>'
               + text(k(14), k(6), k(100), k(40), "%s", ["[COMPLICATION.TITLE]"], "bc", k(34), WHITE, "START", 150)
-              + kz_cond(k(14) + k(100), pw - k(28) - k(100), k(34), k(6)))}
+              + kz_cond(k(14) + k(100), pw - k(28) - k(100), k(40), k(4)))}
         {slot(7, px0 + k(14), k(330), pw - k(28), k(30), "RANGED_VALUE", APP + "RingComplicationService", "RANGED_VALUE", "slot_alsat",
-              text(0, 0, k(180), k(30), "%s", ["[COMPLICATION.TEXT]"], "sc", k(20), "#ff9aa0a6", "START", 0)
-              + text(k(180), 0, pw - k(28) - k(180), k(30), "%s", ["[COMPLICATION.TITLE]"], "sc", k(20), "#ffc8cdd2", "END", 0))}
+              text(0, 0, k(190), k(30), "%s", ["[COMPLICATION.TEXT]"], "sc", k(24), "#ff9aa0a6", "START", 0)
+              + text(k(190), 0, pw - k(28) - k(190), k(30), "%s", ["[COMPLICATION.TITLE]"], "sc", k(24), "#ffc8cdd2", "END", 0))}
 
         {slot(3, k(96), k(376), k(140), k(32), "SHORT_TEXT", APP + "StopComplicationService", "SHORT_TEXT", "slot_alsat",
-              text(0, 0, k(140), k(32), "%s", ["[COMPLICATION.TEXT]"], "sc", k(24), RED, "CENTER", 120))}
+              text(0, 0, k(140), k(32), "%s", ["[COMPLICATION.TEXT]"], "sc", k(28), RED, "CENTER", 120))}
         {slot(4, k(244), k(376), k(140), k(32), "SHORT_TEXT", APP + "TargetComplicationService", "SHORT_TEXT", "slot_alsat",
-              text(0, 0, k(140), k(32), "%s", ["[COMPLICATION.TEXT]"], "sc", k(24), GREEN, "CENTER", 120))}
+              text(0, 0, k(140), k(32), "%s", ["[COMPLICATION.TEXT]"], "sc", k(28), GREEN, "CENTER", 120))}
 
         <PartImage x="{k(160)}" y="{k(412)}" width="{k(20)}" height="{k(20)}">{amb(0)}<Image resource="ic_heart" /></PartImage>
         {text(k(184), k(408), 60, k(28), "%s", ["[HEART_RATE]"], "sc", k(21), "#ffd2d2d2", "START", 0)}
