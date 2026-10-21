@@ -401,7 +401,7 @@ def face_ultra():
         f'<Default>{text(tpl_x, ty, tpl_w, size + 4, "%s", ["[COMPLICATION.TEXT]"], "bc", size, "#ffb4b2a9", "END", 140)}</Default>'
         '</Condition>')
 
-    DC = 225 + k(26)   # tarihte gün sayısının merkezi: gün adları aydan uzun → biraz sağda dengeli
+    DX, DY = 230, k(56) + 19   # takvim bloğu: büyük gün sayısının sağ kenarı; sağında ay / gün adı iki satır
     c_, cl = VFD["cell"], VFD["colon"]
     clock_xml = vfd_cells(VFD, [
         (0, c_, "=floor([HOUR_0_23] / 10)", "8"), (c_, c_, "=[HOUR_0_23] % 10", "8"),
@@ -430,9 +430,9 @@ def face_ultra():
               '<BoundingOval x="0" y="0" width="450" height="450" />')}
         <PartImage x="0" y="0" width="450" height="450">{amb(0)}<Image resource="ring_gaps" /></PartImage>
 
-        {text(0, k(82), DC - k(16), k(38), "%s", ["[DAY_OF_WEEK_F]"], "sc", k(25), "#ffa0a5aa", "END", 110)}
-        {text(DC - k(16), k(82), 2 * k(16), k(38), "%s", ["[DAY]"], "sc", k(28), "#ffaaebff", "CENTER", 140)}
-        {text(DC + k(16), k(82), 450 - DC - k(16), k(38), "%s", ["[MONTH_F]"], "sc", k(25), "#ffa0a5aa", "START", 110)}
+        {text(0, DY, DX, k(46), "%s", ["[DAY]"], "bc", k(44), "#ffaaebff", "END", 140)}
+        {text(DX + k(8), DY + k(3), 450 - DX - k(8), k(22), "%s", ["[MONTH_F]"], "sc", k(20), "#ffa0a5aa", "START", 110)}
+        {text(DX + k(8), DY + k(23), 450 - DX - k(8), k(22), "%s", ["[DAY_OF_WEEK_F]"], "sc", k(20), "#ffa0a5aa", "START", 110)}
 
 {clock_xml}
           <PartImage x="{WIN[0]}" y="{WIN[1]}" width="{WIN[2] - WIN[0]}" height="{WIN[3] - WIN[1]}"><Image resource="vfd_mesh" /></PartImage>
