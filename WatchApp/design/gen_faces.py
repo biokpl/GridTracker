@@ -437,6 +437,19 @@ def face_ultra():
     O_ = 225 * (1 - Z)
     SX = lambda x: round(x + O_); SY = lambda y: round(y + O_)
     RI = R - TH / 2 - 5
+    _tri = Image.new("RGBA", (450 * 4, 450 * 4), (0, 0, 0, 0))
+    _tip, _base, _hw = RI - 2.5, RI - 12, 5.5
+    ImageDraw.Draw(_tri).polygon([(4 * 225, 4 * (225 - _tip)), (4 * (225 - _hw), 4 * (225 - _base)),
+                                  (4 * (225 + _hw), 4 * (225 - _base))], fill=(255, 80, 80, 140))   # %55 silik
+    _tri.resize((450, 450), Image.LANCZOS).save(dr / "stop_tri.png")
+
+    def stop_marker():
+        """Kurum stopu konumunda iç çeperde silik kırmızı üçgen (pozisyon yokken gizli)."""
+        return ('<Condition><Expressions><Expression name="on"><![CDATA[[COMPLICATION.RANGED_VALUE_VALUE] > 0]]></Expression></Expressions>'
+                f'<Compare expression="on"><PartImage x="0" y="0" width="450" height="450" pivotX="0.5" pivotY="0.5">{amb(90)}'
+                '<Transform target="angle" value="270 * [COMPLICATION.RANGED_VALUE_VALUE] - 135" />'
+                '<Image resource="stop_tri" /></PartImage></Compare></Condition>')
+
     def zone(t0, t1, col):
         return (f'<PartDraw x="0" y="0" width="450" height="450">{amb(90)}'
                 f'<Arc centerX="225" centerY="225" width="{round(2 * RI)}" height="{round(2 * RI)}" startAngle="225" endAngle="225">'
@@ -526,7 +539,7 @@ def face_ultra():
               + text(k(190), 0, pw - k(28) - k(190), k(30), "%s", ["[COMPLICATION.TITLE]"], "sc", k(24), "#ffc8cdd2", "END", 0))}
 
         {slot(3, 0, 0, 450, 450, "RANGED_VALUE", APP + "StopComplicationService", "RANGED_VALUE", "slot_alsat",
-              zone("0", "[COMPLICATION.RANGED_VALUE_VALUE]", "#8cff5050")
+              zone("0", "[COMPLICATION.RANGED_VALUE_VALUE]", "#8cff5050") + stop_marker()
               + text(SX(k(96)), SY(k(376)), k(140), k(32), "%s", ["[COMPLICATION.TEXT]"], "sc", k(28), RED, "CENTER", 120),
               '<BoundingOval x="0" y="0" width="450" height="450" />')}
         {slot(4, 0, 0, 450, 450, "RANGED_VALUE", APP + "TargetComplicationService", "RANGED_VALUE", "slot_alsat",
