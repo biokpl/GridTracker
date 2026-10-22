@@ -1,5 +1,7 @@
 package com.biokpl.gridwatch
 
+import android.content.ComponentName
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
@@ -15,12 +17,18 @@ import androidx.wear.watchface.complications.data.SmallImage
 import androidx.wear.watchface.complications.data.SmallImageComplicationData
 import androidx.wear.watchface.complications.data.SmallImageType
 import androidx.wear.watchface.complications.data.PlainComplicationText
+import androidx.wear.watchface.complications.datasource.ComplicationDataSourceUpdateRequester
 import androidx.wear.watchface.complications.datasource.ComplicationRequest
 import androidx.wear.watchface.complications.datasource.SuspendingComplicationDataSourceService
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -28,12 +36,27 @@ import java.net.URL
 /** 5 dk'lık mum. */
 data class Bar(val o: Double, val h: Double, val l: Double, val c: Double)
 
-/** Gün içi 5 dk mumlar — Yahoo (BIST ~15 dk gecikmeli), 5 dk önbellek. */
+/**
+ * Gün içi 5 dk mumlar — Yahoo (BIST ~15 dk gecikmeli), 5 dk önbellek.
+ * Son başarılı veri diske de yazılır: saat yeniden başlayınca ağ hazır olmadan
+ * gelen ilk istekte grafik boş kalmasın (eskiden yalnız bellekteydi).
+ */
 object Intraday {
     private val mutex = Mutex()
     private val cache = HashMap<String, Pair<Long, List<Bar>>>()
 
-    suspend fun bars(symbol: String): List<Bar> = mutex.withLock {
+    private fun save(ctx: Context, symbol: String, bars: List<Bar>) {
+        val a = JSONArray()
+        bars.forEach { a.put(JSONArray().put(it.o).put(it.h).put(it.l).put(it.c)) }
+        ctx.getSharedPreferences("bars", Context.MODE_PRIVATE).edit().putString(symbol, a.toString()).apply()
+    }
+
+    private fun load(ctx: Context, symbol: String): List<Bar> = runCatching {
+        val a = JSONArray(ctx.getSharedPreferences("bars", Context.MODE_PRIVATE).getString(symbol, null) ?: return emptyList())
+        (0 until a.length()).map { i -> a.getJSONArray(i).let { Bar(it.getDouble(0), it.getDouble(1), it.getDouble(2), it.getDouble(3)) } }
+    }.getOrDefault(emptyList())
+
+    suspend fun bars(ctx: Context, symbol: String): List<Bar> = mutex.withLock {
         if (symbol.isEmpty()) return emptyList()
         cache[symbol]?.let { if (System.currentTimeMillis() - it.first < 5 * 60_000L) return it.second }
         val bars = withContext(Dispatchers.IO) {
@@ -59,8 +82,8 @@ object Intraday {
             }.onFailure { Log.w("GridWatch", "Yahoo $symbol: $it") }.getOrDefault(emptyList())
         }
         Log.d("GridWatch", "Yahoo $symbol bar=${bars.size}")
-        if (bars.isNotEmpty()) cache[symbol] = System.currentTimeMillis() to bars
-        bars.ifEmpty { cache[symbol]?.second ?: emptyList() }
+        if (bars.isNotEmpty()) { cache[symbol] = System.currentTimeMillis() to bars; save(ctx, symbol, bars) }
+        bars.ifEmpty { cache[symbol]?.second ?: load(ctx, symbol) }
     }
 }
 
@@ -129,6 +152,18 @@ fun candleBitmap(bars: List<Bar>, stop: Double, target: Double, w: Int = 300, h:
     return bmp
 }
 
+private val retryScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+/** Veri hiç yoksa (ağ henüz hazır değil) 1 dk sonra grafik yuvalarını yeniden iste. */
+private fun retrySoon(ctx: Context) {
+    val app = ctx.applicationContext
+    retryScope.launch {
+        delay(60_000L)
+        for (cls in listOf(SparkComplicationService::class.java, CandleComplicationService::class.java))
+            ComplicationDataSourceUpdateRequester.create(app, ComponentName(app, cls)).requestUpdateAll()
+    }
+}
+
 private fun photo(bmp: Bitmap, desc: String): ComplicationData =
     SmallImageComplicationData.Builder(
         SmallImage.Builder(Icon.createWithBitmap(bmp), SmallImageType.PHOTO).build(),
@@ -140,7 +175,9 @@ class SparkComplicationService : SuspendingComplicationDataSourceService() {
         if (request.complicationType != ComplicationType.SMALL_IMAGE) return NoDataComplicationData()
         val s = AlSatRepo.get(applicationContext)
         Log.d("GridWatch", "spark istek ${s.symbol} tip=${request.complicationType}")
-        return photo(sparkBitmap(Intraday.bars(s.symbol.ifEmpty { "XU100" }), 180, 120), "${s.symbol} grafik")
+        val bars = Intraday.bars(applicationContext, s.symbol.ifEmpty { "XU100" })
+        if (bars.size < 2) retrySoon(applicationContext)
+        return photo(sparkBitmap(bars, 180, 120), "${s.symbol} grafik")
     }
     override fun getPreviewData(type: ComplicationType): ComplicationData? = null
 }
@@ -150,7 +187,9 @@ class CandleComplicationService : SuspendingComplicationDataSourceService() {
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData {
         if (request.complicationType != ComplicationType.SMALL_IMAGE) return NoDataComplicationData()
         val s = AlSatRepo.get(applicationContext)
-        return photo(candleBitmap(Intraday.bars(s.symbol.ifEmpty { "XU100" }), s.stop, s.target), "${s.symbol} mum")
+        val bars = Intraday.bars(applicationContext, s.symbol.ifEmpty { "XU100" })
+        if (bars.isEmpty()) retrySoon(applicationContext)
+        return photo(candleBitmap(bars, s.stop, s.target), "${s.symbol} mum")
     }
     override fun getPreviewData(type: ComplicationType): ComplicationData? = null
 }
