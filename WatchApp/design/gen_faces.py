@@ -477,7 +477,8 @@ def face_ultra():
     ], VFDS["cell"] * 2, 0, 0)
     px0, py0, pw, ph = k(96), k(272), k(288), k(92)       # panel
     for nm, col in (("glow_pos", (60, 225, 170)), ("glow_neg", (255, 80, 90)), ("glow_neu", (150, 200, 255))):
-        glow_png(dr, nm, pw, ph, k(22), k(22), col)
+        from glow_v2 import glow_png2   # kesik piramit ışık + ortada parlak ışın + beyaz çizik
+        glow_png2(pw, ph, k(22), k(22), col).save(dr / f"{nm}.png")
     xml = f'''<?xml version="1.0" encoding="utf-8"?>
 <!-- A · ULTRA PRO — gen_faces.py ile üretildi, elle düzenlemeyin. -->
 <WatchFace width="450" height="450" clipShape="CIRCLE">
