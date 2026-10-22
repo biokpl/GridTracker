@@ -1559,6 +1559,16 @@ def _picks_refresh_loop():
         time.sleep(REFRESH_MIN * 60)
 
 
+def _heartbeat():
+    """Piyasa açıkken monitor çalışıyor → advisor/heartbeat = epoch sn.
+    Saat 10 dk'dan eski kalp atışını OFFLINE sayar (PC kapalı / piyasa kapalı / kopukluk)."""
+    try:
+        import requests as _req
+        _req.put(_FB_BASE + "/gridtracker/advisor/heartbeat.json", data=str(int(time.time())), timeout=6)
+    except Exception as e:
+        log.debug(f"heartbeat: {e}")
+
+
 def main():
     log.info("Monitor başlatıldı. Hızlı:5sn | Yavaş:15dk | Öneri-tazele:10dk")
     print("[Monitor] Başlatıldı — Hızlı:5sn | Yavaş:15dk | Log:", log_path)
@@ -1582,11 +1592,17 @@ def main():
     # 18:35'te oluşuyor, gün içi güncel değil. Senkron advisor.py --run içinde
     # (evening_automation, 1.xlsx hazır olduktan sonra) yapılır.
 
+    last_hb = 0
     while True:
         try:
             if _is_market_open():
                 # ── Hızlı kontrol: her 5 saniye ─────────────────────
                 _fast_price_check()
+
+                # ── Kalp atışı: saat/sayfa "ONLINE" göstersin (her 60 sn) ──
+                if time.time() - last_hb >= 60:
+                    threading.Thread(target=_heartbeat, daemon=True).start()
+                    last_hb = time.time()
 
                 # ── Öneri kaçtı mı: her 30 saniye ───────────────────
                 if time.time() - last_pending >= 30:

@@ -32,6 +32,8 @@ data class Snapshot(
     val trades: Int = 0,
     val winRate: Int = 0,
     val updated: String = "",
+    val live: Boolean = false,   // monitor son 10 dk içinde kalp attı (PC + piyasa açık)
+    val hold: Boolean = false,   // "Beklemede Kalıyorum" modu
 ) {
     enum class Mode { ACTIVE, PICK, WAIT, NO_DATA }
 
@@ -82,6 +84,9 @@ object AlSatRepo {
     private const val URL_ADVISOR =
         "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app/gridtracker/advisor.json"
     private const val TTL_MS = 60_000L
+    private const val URL_ACTION =
+        "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app/gridtracker/advisor/userAction.json"
+    private const val LIVE_SEC = 600L
     private val mutex = Mutex()
     private var cache: Snapshot? = null
     private var cacheTs = 0L
@@ -95,6 +100,28 @@ object AlSatRepo {
         val snap = body?.let { runCatching { parse(it) }.getOrNull() } ?: Snapshot(Snapshot.Mode.NO_DATA)
         cache = snap; cacheTs = now
         snap
+    }
+
+    /** Sonraki get() ağdan taze okusun. */
+    fun invalidate() { cacheTs = 0L }
+
+    /** Saatten kullanıcı komutu (sayfadaki Sattım/Beklemede ile aynı kanal; PC'deki monitor işler). */
+    suspend fun sendAction(action: String, symbol: String): Boolean = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        val body = JSONObject().put("action", action).put("symbol", symbol).put("ts", now)
+            .put("id", "watch-$now-${(1000..9999).random()}").toString()
+        val ok = runCatching {
+            val c = URL(URL_ACTION).openConnection() as HttpURLConnection
+            c.requestMethod = "PUT"; c.doOutput = true
+            c.connectTimeout = 15_000; c.readTimeout = 15_000
+            c.setRequestProperty("Content-Type", "application/json")
+            try {
+                c.outputStream.use { it.write(body.toByteArray()) }
+                c.responseCode == 200
+            } finally { c.disconnect() }
+        }.getOrDefault(false)
+        invalidate()
+        ok
     }
 
     private suspend fun fetch(): String? = withContext(Dispatchers.IO) {
@@ -114,6 +141,12 @@ object AlSatRepo {
 
     private fun parse(text: String): Snapshot {
         val root = JSONObject(text)
+        val hb = root.optLong("heartbeat", 0L)
+        val live = hb > 0 && System.currentTimeMillis() / 1000 - hb < LIVE_SEC
+        return parseMode(root).copy(live = live)
+    }
+
+    private fun parseMode(root: JSONObject): Snapshot {
         val tr = root.optJSONObject("tracker") ?: JSONObject()
         val perf = tr.optJSONObject("perf") ?: JSONObject()
         val total = tr.optDouble("history_pnl_total", 0.0)
@@ -136,6 +169,7 @@ object AlSatRepo {
                 stopLoss = tr.optDouble("stop_loss", 0.0),
                 signal = if (sig == "—") "DEVAM" else sig,
                 totalPnl = total, trades = trades, winRate = wr, updated = updated,
+                hold = tr.optBoolean("hold", false),
             )
         }
 

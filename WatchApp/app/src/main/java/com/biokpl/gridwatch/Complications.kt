@@ -72,7 +72,8 @@ private fun targetText(s: Snapshot): String = when {
 
 private fun stopData(s: Snapshot): ComplicationData {
     val hard = s.ringPos(s.stop).coerceAtLeast(0f)
-    return ranged(hard, 0f, 1f, " ", stopText(s))
+    // max = canlılık bayrağı: 1 → ONLINE, 1.5 → OFFLINE (kadran [RANGED_VALUE_MAX] ile okur)
+    return ranged(hard, 0f, if (s.live) 1f else 1.5f, " ", stopText(s))
 }
 
 private fun targetData(s: Snapshot): ComplicationData {

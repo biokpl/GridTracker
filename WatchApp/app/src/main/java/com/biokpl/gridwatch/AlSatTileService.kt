@@ -1,7 +1,9 @@
 package com.biokpl.gridwatch
 
 import androidx.concurrent.futures.SuspendToFutureAdapter
+import androidx.wear.protolayout.ActionBuilders
 import androidx.wear.protolayout.ColorBuilders.argb
+import androidx.wear.protolayout.ModifiersBuilders
 import androidx.wear.protolayout.DimensionBuilders.degrees
 import androidx.wear.protolayout.DimensionBuilders.dp
 import androidx.wear.protolayout.DimensionBuilders.expand
@@ -34,12 +36,21 @@ private const val GREEN_SOFT = 0xFF97C459.toInt()
 private const val WHITE = 0xFFF1EFE8.toInt()
 private const val GRAY = 0xFFB4B2A9.toInt()
 private const val GRAY_DARK = 0xFF5F5E5A.toInt()
+private const val CYAN = 0xFF22D3EE.toInt()
+private const val ICE = 0xFF7DD3FC.toInt()
+private const val ID_HOLD = "hold"
 
 /** Kaydırınca açılan detay kutucuğu — tasarım taslağındaki 3 durum. */
 class AlSatTileService : TileService() {
 
     override fun onTileRequest(requestParams: RequestBuilders.TileRequest): ListenableFuture<TileBuilders.Tile> =
         SuspendToFutureAdapter.launchFuture {
+            // BEKLE / DEVAM ET düğmesi: kutucuk yeniden istenir, komut burada gönderilir
+            if (requestParams.currentState.lastClickableId == ID_HOLD) {
+                val cur = AlSatRepo.get(applicationContext)
+                if (cur.mode == Snapshot.Mode.ACTIVE)
+                    AlSatRepo.sendAction(if (cur.hold) "hold_off" else "hold", cur.symbol)
+            }
             val s = AlSatRepo.get(applicationContext)
             TileBuilders.Tile.Builder()
                 .setResourcesVersion("1")
@@ -67,6 +78,38 @@ class AlSatTileService : TileService() {
             .addContent(ArcLine.Builder().setLength(degrees(length)).setThickness(dp(thick)).setColor(argb(color)).build())
             .build()
 
+    private fun button(label: String, fg: Int, bg: Int, click: ModifiersBuilders.Clickable): LayoutElement =
+        Box.Builder().setWidth(dp(64f)).setHeight(dp(28f))
+            .setModifiers(
+                ModifiersBuilders.Modifiers.Builder()
+                    .setClickable(click)
+                    .setBackground(
+                        ModifiersBuilders.Background.Builder().setColor(argb(bg))
+                            .setCorner(ModifiersBuilders.Corner.Builder().setRadius(dp(14f)).build()).build()
+                    )
+                    .setBorder(ModifiersBuilders.Border.Builder().setWidth(dp(1f)).setColor(argb(fg)).build())
+                    .build()
+            )
+            .addContent(text(label, 12f, fg, true))
+            .build()
+
+    private fun buttons(s: Snapshot): LayoutElement {
+        val sold = ModifiersBuilders.Clickable.Builder().setId("sold").setOnClick(
+            ActionBuilders.LaunchAction.Builder().setAndroidActivity(
+                ActionBuilders.AndroidActivity.Builder()
+                    .setPackageName(packageName).setClassName(SoldConfirmActivity::class.java.name)
+                    .build()
+            ).build()
+        ).build()
+        val hold = ModifiersBuilders.Clickable.Builder().setId(ID_HOLD)
+            .setOnClick(ActionBuilders.LoadAction.Builder().build()).build()
+        return Row.Builder()
+            .addContent(button("SATTIM", 0xFFFFBEBE.toInt(), 0xFF5A181A.toInt(), sold))
+            .addContent(Spacer.Builder().setWidth(dp(8f)).build())
+            .addContent(button(if (s.hold) "DEVAM ET" else "BEKLE", CYAN, 0xFF0A343E.toInt(), hold))
+            .build()
+    }
+
     private fun pair(left: String, lc: Int, right: String, rc: Int): LayoutElement =
         Row.Builder()
             .addContent(text(left, 13f, lc))
@@ -80,16 +123,27 @@ class AlSatTileService : TileService() {
         when (s.mode) {
             Snapshot.Mode.ACTIVE -> {
                 val sig = s.signal.ifEmpty { "DEVAM" }
-                val sigColor = when (sig) { "DİKKAT" -> AMBER; "ÇIK", "ACİL_ÇIK" -> CORAL; else -> TEAL_LIGHT }
+                val sigColor = when {
+                    s.hold -> ICE
+                    sig == "DİKKAT" -> AMBER
+                    sig == "ÇIK" || sig == "ACİL_ÇIK" -> CORAL
+                    else -> TEAL_LIGHT
+                }
+                val sigText = if (s.hold) "BEKLEMEDE" else sig.replace('_', ' ')
                 ring = arc(225f, 270f * s.progress, if (s.pnlTl >= 0) TEAL else CORAL)
-                col.addContent(text("● ${sig.replace('_', ' ')}", 12f, sigColor))
+                col.addContent(text("● $sigText", 12f, sigColor))
                     .addContent(text(s.symbol, 22f, WHITE, true))
                     .addContent(text(fmtTl(s.pnlTl), 24f, if (s.pnlTl >= 0) TEAL else CORAL, true))
                     .addContent(text("${fmtPrice(s.price)} · ${fmtPct(s.pnlPct)} · ${s.qty} lot", 12f, GRAY))
                     .addContent(gap(5f))
                     .addContent(pair("S ${fmtPrice(s.stop)}", RED_SOFT, "H ${fmtPrice(s.target)}", GREEN_SOFT))
-                    .addContent(gap(3f))
-                    .addContent(text("${s.updated.takeLast(5)} · gecikmeli", 11f, GRAY_DARK))
+                    .addContent(gap(6f))
+                    .addContent(buttons(s))
+                    .addContent(gap(4f))
+                    .addContent(
+                        if (s.live) text("● ONLINE · gecikmeli", 10f, 0xFF46E682.toInt())
+                        else text("● OFFLINE", 10f, GRAY_DARK)
+                    )
             }
             Snapshot.Mode.PICK -> {
                 ring = arc(0f, 360f, PURPLE)

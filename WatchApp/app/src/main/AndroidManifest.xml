@@ -11,6 +11,12 @@
 
         <meta-data android:name="com.google.android.wearable.standalone" android:value="true" />
 
+        <activity
+            android:name=".SoldConfirmActivity"
+            android:exported="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
+
         <service
             android:name=".AlSatTileService"
             android:exported="true"

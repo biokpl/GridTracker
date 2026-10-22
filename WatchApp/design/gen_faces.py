@@ -341,7 +341,7 @@ def face_ultra():
     fb, hb = glyph_set(dr, "bc", "Bold Condensed", 44)      # kullanım ~36 px
     fs, hs = glyph_set(dr, "sc", "SemiBold Condensed", 30)  # kullanım ~21-26 px
     fbi = glyph_set(dr, "bci", "Bold Condensed", 44, 0.21, "0123456789")[0]     # tarih: italik gün sayısı
-    fsi = glyph_set(dr, "sci", "SemiBold Condensed", 30, 0.21, TR_DATE)[0]      # tarih: italik ay / gün adı
+    fsi = glyph_set(dr, "sci", "SemiBold Condensed", 30, 0.21, "".join(sorted(set(TR_DATE + "ONLINEOFF"))))[0]      # tarih: italik ay / gün adı
     # VFD rakamları: gerçek TTF (bitmap glifler AOD geçişinde CPU'yu kilitliyordu)
     import build_vfd_font
     (d / "src/main/res/font").mkdir(parents=True, exist_ok=True)
@@ -450,6 +450,25 @@ def face_ultra():
                 '<Transform target="angle" value="270 * [COMPLICATION.RANGED_VALUE_VALUE] - 135" />'
                 '<Image resource="stop_tri" /></PartImage></Compare></Condition>')
 
+    def live_badge():
+        """SN altında veri durumu: yeşil yanıp sönen nokta + ONLINE / gri nokta + OFFLINE.
+        Canlılık Stop yuvasının MAX değerinde gelir (1 = canlı, 1.5 = bayat)."""
+        blink_d = '<Transform target="alpha" value="160 + 95 * cos(3.14159265 * [SECOND_MILLISECOND])" />'
+        blink_g = '<Transform target="alpha" value="70 + 60 * cos(3.14159265 * [SECOND_MILLISECOND])" />'
+        def dot(col, glow):
+            g = (f'<PartDraw x="324" y="181" width="20" height="20">{amb(0)}{blink_g}'
+                 '<Ellipse x="0" y="0" width="20" height="20"><Fill color="#ffffffff">'
+                 '<RadialGradient centerX="10" centerY="10" radius="10" colors="#9046e682 #3046e682 #0046e682" positions="0 0.5 1" />'
+                 '</Fill></Ellipse></PartDraw>') if glow else ''
+            return g + (f'<PartDraw x="330" y="187" width="8" height="8">{amb(0)}{blink_d if glow else ""}'
+                        f'<Ellipse x="0" y="0" width="8" height="8"><Fill color="{col}" /></Ellipse></PartDraw>')
+        def label(t, col):
+            return (f'<PartText x="341" y="184" width="64" height="16">{amb(0)}'
+                    f'<Text align="START"><BitmapFont family="sci" size="16" color="{col}">{t}</BitmapFont></Text></PartText>')
+        return ('<Condition><Expressions><Expression name="live"><![CDATA[[COMPLICATION.RANGED_VALUE_MAX] < 1.2]]></Expression></Expressions>'
+                f'<Compare expression="live">{dot("#ff46e682", True)}{label("ONLINE", "#a5969ba0")}</Compare>'
+                f'<Default>{dot("#ff6e7278", False)}{label("OFFLINE", "#7d969ba0")}</Default></Condition>')
+
     def zone(t0, t1, col):
         return (f'<PartDraw x="0" y="0" width="450" height="450">{amb(90)}'
                 f'<Arc centerX="225" centerY="225" width="{round(2 * RI)}" height="{round(2 * RI)}" startAngle="225" endAngle="225">'
@@ -540,7 +559,7 @@ def face_ultra():
               + text(k(190), 0, pw - k(28) - k(190), k(30), "%s", ["[COMPLICATION.TITLE]"], "sc", k(24), "#ffc8cdd2", "END", 0))}
 
         {slot(3, 0, 0, 450, 450, "RANGED_VALUE", APP + "StopComplicationService", "RANGED_VALUE", "slot_alsat",
-              zone("0", "[COMPLICATION.RANGED_VALUE_VALUE]", "#8cff5050") + stop_marker()
+              zone("0", "[COMPLICATION.RANGED_VALUE_VALUE]", "#8cff5050") + stop_marker() + live_badge()
               + text(SX(k(96)), SY(k(376)), k(140), k(32), "%s", ["[COMPLICATION.TEXT]"], "sc", k(28), RED, "CENTER", 120),
               '<BoundingOval x="0" y="0" width="450" height="450" />')}
         {slot(4, 0, 0, 450, 450, "RANGED_VALUE", APP + "TargetComplicationService", "RANGED_VALUE", "slot_alsat",
