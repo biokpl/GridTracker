@@ -75,6 +75,15 @@ fun fmtPct(v: Double): String {
     return (if (v >= 0) "+%" else "−%") + s
 }
 
+/** BIST açık mı (hafta içi 09:55–18:15, İstanbul saati; resmi tatiller hariç tutulmaz). */
+fun marketOpen(): Boolean {
+    val c = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Europe/Istanbul"))
+    val d = c.get(java.util.Calendar.DAY_OF_WEEK)
+    if (d == java.util.Calendar.SATURDAY || d == java.util.Calendar.SUNDAY) return false
+    val m = c.get(java.util.Calendar.HOUR_OF_DAY) * 60 + c.get(java.util.Calendar.MINUTE)
+    return m in 595..1095
+}
+
 /**
  * Firebase'deki gridtracker/advisor düğümünü okur (sayfa ile aynı kaynak).
  * 4 komplikasyon + kutucuk aynı anda istediğinde ağ 60 sn'de bir kez kullanılır;
@@ -83,7 +92,10 @@ fun fmtPct(v: Double): String {
 object AlSatRepo {
     private const val URL_ADVISOR =
         "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app/gridtracker/advisor.json"
-    private const val TTL_MS = 60_000L
+    // Borsa açıkken veri ~her dakika tazelenir (yuvalar 60 sn'de bir ister);
+    // kapalıyken fiyat değişmez → 30 dk'da bir ağa çıkılır (pil).
+    private const val TTL_OPEN_MS = 50_000L
+    private const val TTL_CLOSED_MS = 30 * 60_000L
     private const val URL_ACTION =
         "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app/gridtracker/advisor/userAction.json"
     private const val LIVE_SEC = 600L
@@ -93,7 +105,8 @@ object AlSatRepo {
 
     suspend fun get(ctx: Context): Snapshot = mutex.withLock {
         val now = System.currentTimeMillis()
-        cache?.let { if (now - cacheTs < TTL_MS) return it }
+        val ttl = if (marketOpen()) TTL_OPEN_MS else TTL_CLOSED_MS
+        cache?.let { if (now - cacheTs < ttl) return it }
         val prefs = ctx.getSharedPreferences("alsat", Context.MODE_PRIVATE)
         val body = fetch() ?: prefs.getString("last", null)
         if (body != null) prefs.edit().putString("last", body).apply()

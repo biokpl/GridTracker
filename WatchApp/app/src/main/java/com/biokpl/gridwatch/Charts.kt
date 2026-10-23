@@ -58,7 +58,8 @@ object Intraday {
 
     suspend fun bars(ctx: Context, symbol: String): List<Bar> = mutex.withLock {
         if (symbol.isEmpty()) return emptyList()
-        cache[symbol]?.let { if (System.currentTimeMillis() - it.first < 5 * 60_000L) return it.second }
+        val ttl = if (marketOpen()) 5 * 60_000L else 30 * 60_000L     // 5 dk mum; kapalıyken 30 dk
+        cache[symbol]?.let { if (System.currentTimeMillis() - it.first < ttl) return it.second }
         val bars = withContext(Dispatchers.IO) {
             runCatching {
                 // 5 günlük çek, SON işlem gününü kullan (hafta sonu/açılış öncesi boş kalmasın)
