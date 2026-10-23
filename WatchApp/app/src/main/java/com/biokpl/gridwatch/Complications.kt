@@ -87,6 +87,7 @@ abstract class DualService(
     private val text: (Snapshot) -> String,
 ) : SuspendingComplicationDataSourceService() {
     override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData {
+        MinuteTicker.ensure(applicationContext)
         val s = AlSatRepo.get(applicationContext)
         android.util.Log.d("GridWatch", "${javaClass.simpleName} type=${request.complicationType} mode=${s.mode} entry=${s.entry} stop=${s.stop} sl=${s.stopLoss} tgt=${s.target} pos=${s.ringPos(s.stop)}")
         return when (request.complicationType) {
@@ -107,9 +108,11 @@ abstract class BaseService(
     private val type: ComplicationType,
     private val build: (Snapshot) -> ComplicationData,
 ) : SuspendingComplicationDataSourceService() {
-    override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData =
-        if (request.complicationType != type) NoDataComplicationData()
+    override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData {
+        MinuteTicker.ensure(applicationContext)
+        return if (request.complicationType != type) NoDataComplicationData()
         else build(AlSatRepo.get(applicationContext))
+    }
 
     override fun getPreviewData(type: ComplicationType): ComplicationData? =
         if (type == this.type) build(PREVIEW) else null
