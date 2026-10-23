@@ -41,8 +41,7 @@ FIREBASE_URL = "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedat
 STRATEGY_MODE = (CFG.get("strategy_mode") or "RK").upper()
 # VK3 — 2-3 günlük vur-kaç (strategy_research.py, 2026-10-23; eğitim/doğrulama ayrımlı 5y test):
 #   aday havuzu = giriş skoruna göre ilk 15 (ÖNERİLMEZ hariç) → ATR ≥ %3 (oynak) olanlar →
-#   MOMENTUM puanı en yüksek olan seçilir. Ertesi sabah açılışta tam sermaye ile girilir
-#   (RISK_OFF'ta yarım). Hedef +%5, felaket stop −%7 (kurum emri), en fazla 3 işlem günü.
+#   MOMENTUM puanı en yüksek olan seçilir. Ertesi sabah açılışta her zaman tam sermaye ile girilir. Hedef +%5, felaket stop −%7 (kurum emri), en fazla 3 işlem günü.
 VK3_TOPN, VK3_MIN_ATR = 15, 3.0
 VK3_TARGET_PCT, VK3_STOP_PCT, VK3_MAX_DAYS = 5.0, 7.0, 3
 
@@ -1241,8 +1240,9 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
 
         for p in top_picks:
             if STRATEGY_MODE == "VK3":
-                # Tam sermaye (RISK_OFF'ta yarım) — testteki gibi; risk = %7 felaket stop
-                _f = 0.5 if regime == "RISK_OFF" else 1.0
+                # Her zaman TAM sermaye (2026-10-24 kararı): zayıf piyasa günlerindeki işlemler de
+                # ortalamada kârlı; 5y testte aylık 1.756 → 2.041 TL, DD 14,4k → 17,2k. Risk = %7 felaket stop
+                _f = 1.0
                 lots = calc_lots(avail_capital * _f, p["price"])
                 _ps = p["price"] - p["hard_stop"]
                 lot_info[p["symbol"]] = {
