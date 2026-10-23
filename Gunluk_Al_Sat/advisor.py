@@ -39,6 +39,20 @@ FIREBASE_URL = "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedat
 #   "GUNLUK" → çok sıkı stop (~%1.2), küçük hedef (~%2.2)
 #   "ORTA"   → orijinal orta vade: geniş ATR hedef, geniş stop
 STRATEGY_MODE = (CFG.get("strategy_mode") or "RK").upper()
+# VK3 — 2-3 günlük vur-kaç (strategy_research.py, 2026-10-23; eğitim/doğrulama ayrımlı 5y test):
+#   aday havuzu = giriş skoruna göre ilk 15 (ÖNERİLMEZ hariç) → ATR ≥ %3 (oynak) olanlar →
+#   MOMENTUM puanı en yüksek olan seçilir. Ertesi sabah açılışta tam sermaye ile girilir
+#   (RISK_OFF'ta yarım). Hedef +%5, felaket stop −%7 (kurum emri), en fazla 3 işlem günü.
+VK3_TOPN, VK3_MIN_ATR = 15, 3.0
+VK3_TARGET_PCT, VK3_STOP_PCT, VK3_MAX_DAYS = 5.0, 7.0, 3
+
+
+def vk3_levels(entry: float) -> dict:
+    """VK3 seviyeleri — alış fiyatından: hedef +%5, stop (= kurum stopu) −%7."""
+    return {"stop_loss": round(entry * (1 - VK3_STOP_PCT / 100), 4),
+            "hard_stop": round(entry * (1 - VK3_STOP_PCT / 100), 4),
+            "target1":   round(entry * (1 + VK3_TARGET_PCT / 100), 4),
+            "target2":   round(entry * (1 + VK3_TARGET_PCT / 100), 4)}
 
 # Veri modu: "LIVE" = MatriksIQ DDE canlı fiyat + 1.xlsx mutabakatı (eski düzen)
 #            "EOD"  = Matriks'siz: analiz günlük kapanışla, gün içi fiyat Yahoo
@@ -1107,6 +1121,16 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
                 # 2.00). Aşırı alımı (check_exit RSI≥72 DİKKAT) baştan eler.
                 and s["symbol"] != _held
                 and s["symbol"] not in _cooldown]
+    if STRATEGY_MODE == "VK3":
+        # Testteki seçimin birebir aynısı (zarar molası / bb / rsi filtreleri YOK)
+        _pool = [s for s in scores if s["timeframe"] != "ÖNERİLMEZ"][:VK3_TOPN]
+        eligible = [{**s, **vk3_levels(s["price"]), "timeframe": "VUR_KAÇ_3G",
+                     "rr_ratio": round(VK3_TARGET_PCT / VK3_STOP_PCT, 2)}
+                    for s in _pool
+                    if (s.get("atr_pct") or 0) >= VK3_MIN_ATR and s["symbol"] != _held]
+        eligible.sort(key=lambda s: ((s.get("scores") or {}).get("momentum", 0), s.get("entry_score", 0)),
+                      reverse=True)
+        _cooldown = set()
     if _cooldown and not quiet:
         print(f"[Advisor] Zarar molası (7g): {', '.join(sorted(_cooldown))} önerilmeyecek")
     top_picks = [{**s, "rank": i+1} for i, s in enumerate(eligible[:3])]
@@ -1117,7 +1141,7 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
     # Kural: yeni aday, önceki #1'in GÜNCEL giriş skorunu en az 0.8 puan
     # farkla geçmedikçe önceki #1 korunur. (Önceki #1 elenmiş/uygunsuzsa
     # doğal olarak değişir.)
-    if refresh_only and top_picks:
+    if refresh_only and top_picks and STRATEGY_MODE != "VK3":
         try:
             _old   = json.loads(RESULT_PATH.read_text(encoding="utf-8")) if RESULT_PATH.exists() else {}
             _prev1 = ((_old.get("top_picks") or [{}])[0] or {}).get("symbol")
@@ -1216,6 +1240,21 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
         _regime_factor = 0.5 if _weak else 1.0
 
         for p in top_picks:
+            if STRATEGY_MODE == "VK3":
+                # Tam sermaye (RISK_OFF'ta yarım) — testteki gibi; risk = %7 felaket stop
+                _f = 0.5 if regime == "RISK_OFF" else 1.0
+                lots = calc_lots(avail_capital * _f, p["price"])
+                _ps = p["price"] - p["hard_stop"]
+                lot_info[p["symbol"]] = {
+                    "lots": lots, "lots_main": lots, "lots_dip": 0, "dip_price": 0,
+                    "price": p["price"], "conviction": "Vur-kaç 3G", "conv_factor": _f,
+                    "cost": round(lots * p["price"] * (1 + CFG["commission_rate"]), 2),
+                    "cost_total": round(lots * p["price"] * (1 + CFG["commission_rate"]), 2),
+                    "stop_tl": round(lots * _ps), "risk_tl": round(lots * _ps),
+                    "reward_tl": round(lots * (p["target1"] - p["price"])),
+                    "risk_capped": False, "regime_half": _f < 1, "max_days": VK3_MAX_DAYS,
+                }
+                continue
             # ── DOZLAMA: min(rejim, konviksiyon) — ÇİFT CEZA YOK ──────────────
             # Eskiden rejim × konviksiyon ÇARPILIYORDU (0.5×0.55=0.275) → çok
             # nakit boşta kalıyordu. Artık BAĞLAYICI KISIT (min) kullanılır:

@@ -211,7 +211,8 @@ def send_daily_pick(pick, lot=None):
     title = f"📊 {pick['symbol']} — Günün Önerisi"
     lines = [
         f"Skor  : {pick['total_score']:.1f} / 10",
-        f"Vade  : {'Kısa (3-7 gün)' if pick['timeframe']=='KISA_VADE' else 'Orta (2-4 hafta)'}",
+        "Vade  : " + ("Vur-kaç: en fazla 3 işlem günü" if pick['timeframe'] == 'VUR_KAÇ_3G'
+                      else 'Kısa (3-7 gün)' if pick['timeframe'] == 'KISA_VADE' else 'Orta (2-4 hafta)'),
         f"Giriş : {_fp(pick['entry_zone']['low'])} – {_fp(pick['entry_zone']['high'])} TL",
         f"Stop  : {_fp(pick['stop_loss'])} TL",
         f"Hedef : {_fp(pick['target1'])} → {_fp(pick['target2'])} TL",
@@ -222,7 +223,13 @@ def send_daily_pick(pick, lot=None):
                      (f"  ({_conv})" if _conv else ""))
     if lots_dip:
         lines.append(f"Fırsat alımı: {lots_dip:,} lot — {_fp(li.get('dip_price', 0))} TL'ye gelirse".replace(",", "."))
-    if EOD_MODE:
+    if pick.get("timeframe") == "VUR_KAÇ_3G":
+        lines += ["━━━━━━━━━━━━━━━━━━━━",
+                  "➤ Yarın sabah AÇILIŞTA al, sonra ALDIM'a bas",
+                  "  (stop −%7 ve hedef +%5 alış fiyatına göre yeniden hesaplanır)",
+                  "➤ Kuruma: STOP −%7, HEDEF +%5 satış emri",
+                  "➤ 3. işlem günü kapanışında hâlâ açıksa sat"]
+    elif EOD_MODE:
         lines += _order_plan_lines(pick, li)
     return _send(title, "\n".join(lines), tags="chart_increasing",
                  actions=action_bought(pick["symbol"]))

@@ -319,7 +319,8 @@ def _fast_price_check():
         # ── TRAILING STOP: fiyat yükseldikçe stop'u YUKARI çek (kâr kilitle) ──
         # Orijinal stop mesafesi kadar geriden takip eder; sadece yukarı hareket eder.
         # Stop anlamlı yükseldiğinde "çıkışını buna göre ayarla" bildirimi gönderir.
-        if entry and stop and price > entry:
+        vk3 = active.get("strategy") == "VK3"
+        if entry and stop and price > entry and not vk3:
             est = active.get("entry_stop")
             # GÜVENLİK: entry_stop eksik VEYA girişin altında değilse (bozuk
             # bookkeeping — örn. mutabakat alanı düşürdüyse), mevcut stop'tan
@@ -371,6 +372,23 @@ def _fast_price_check():
             elif peak > (active.get("peak_price", entry) or entry) + price * 0.0015:
                 active["peak_price"] = peak                       # peak ilerledi, kaydet
                 _save_state(state)
+
+        # ── VK3 SÜRE ÇIKIŞI: 3. işlem gününün kapanışında sat (testteki kural) ──
+        if vk3:
+            _held = _trading_days_held(active.get("entry_date", ""))
+            if _held >= 3 and datetime.now().strftime("%H:%M") >= "17:30":
+                if _should_send(sym, "VK3_TIME", cooldown=6 * 3600):
+                    kz = (price - entry) * qty if (entry and qty) else 0
+                    log.info(f"VK3 süre doldu: {sym} {_held}. gün — kapanışta sat ({kz:+.0f} TL)")
+                    notifier._send(
+                        f"⌛ {sym} — 3. GÜN DOLDU, KAPANIŞTA SAT",
+                        f"Vur-kaç kuralı: en fazla 3 işlem günü.\n"
+                        f"━━━━━━━━━━━━━━━━━━━━\n"
+                        f"➤ {qty:,} lotu kapanış seansında sat\n".replace(",", ".") +
+                        f"Anlık K/Z: {kz:+,.0f} TL ({pnl_pct:+.1f}%)\n".replace(",", ".") +
+                        f"Sattıktan sonra SATTIM'a bas → sıradaki öneri gelsin.",
+                        priority="urgent", tags="hourglass", alert=True,
+                        actions=notifier.action_sold(sym))
 
         # ── BEKLEMEDE KALIYORUM modu ──────────────────────────────────────
         # Kullanıcı ÇIK sinyalinde satmayıp beklemeyi seçti: izleme stopundan
@@ -683,6 +701,9 @@ def _do_user_bought(state: dict, symbol: str, real_price=None, real_qty=None):
         "last_score":  src.get("score", src.get("total_score", 0)),
         "timeframe":   src.get("timeframe", ""),
     }
+    if _vk3_mode() and entry:
+        import advisor
+        state["active"].update(advisor.vk3_levels(entry), strategy="VK3")
     state["pending_buy"] = None
     _save_state(state)
     log.info(f"MANUEL ALIŞ: {sym} {qty} lot @ {_fp(entry)}")
@@ -776,6 +797,10 @@ def _do_fix_trade(state: dict, act: dict):
             log.info(f"DÜZELTME: iz süren stop referansı yeni maliyete taşındı (tepe {price}, mesafe {dist:.2f})")
         if price: a["entry_price"] = round(price, 4)
         if qty:   a["qty"] = int(qty)
+        if price and a.get("strategy") == "VK3":
+            import advisor
+            a.update(advisor.vk3_levels(price))
+            _push_stop_to_card(a["stop_loss"], a["hard_stop"])
         log.info(f"DÜZELTME (aktif): {a['symbol']} {a.get('qty')} lot @ {a.get('entry_price')}")
         _save_state(state)
         # Açık pozisyon sürüyor → yalnız tracker'ı tazele (active_pick'e dokunma)
@@ -838,6 +863,23 @@ def _do_set_capital(state: dict, capital):
         except Exception as e:
             log.debug(f"sermaye sonrası lot recalc: {e}")
     threading.Thread(target=_recalc_lots, daemon=True).start()
+
+
+def _vk3_mode() -> bool:
+    try:
+        import advisor
+        return advisor.STRATEGY_MODE == "VK3"
+    except Exception:
+        return False
+
+
+def _trading_days_held(entry_date: str) -> int:
+    """Alış gününden bugüne geçen işlem günü (hafta sonu hariç; alış günü = 0)."""
+    try:
+        import numpy as _np
+        return int(_np.busday_count(entry_date, datetime.now().strftime("%Y-%m-%d")))
+    except Exception:
+        return 0
 
 
 def _patch_tracker_hold(on: bool):
@@ -1053,7 +1095,9 @@ def _slow_analysis():
         except: pass
 
         # Push — SADECE sinyal değiştiğinde (aynı sinyal sürdükçe tekrar yok)
-        if active.get("hold") and final in ("ÇIK_ERKEN", "DİKKAT", "ÇIK", "ACİL_ÇIK", "DEĞİŞTİR"):
+        if active.get("strategy") == "VK3" and final in ("ÇIK_ERKEN", "DİKKAT", "ÇIK", "ACİL_ÇIK", "DEĞİŞTİR"):
+            log.info(f"{sym} {final} — VK3: çıkış yalnız hedef/stop/süre ile, bildirim gönderilmedi")
+        elif active.get("hold") and final in ("ÇIK_ERKEN", "DİKKAT", "ÇIK", "ACİL_ÇIK", "DEĞİŞTİR"):
             log.info(f"{sym} {final} — Beklemede Kalıyorum modunda, bildirim gönderilmedi")
         elif final == "ÇIK_ERKEN":
             if _should_send_state(sym, "ÇIK_ERKEN"):
