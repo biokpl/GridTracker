@@ -197,7 +197,7 @@ def simulate(data, picks, rule, half_in_risk_off=True):
             t += 1; continue
 
         df = data[pos["sym"]]
-        hi, lo, cl = (float(df[c].iloc[t]) for c in ("High", "Low", "Close"))
+        op, hi, lo, cl = (float(df[c].iloc[t]) for c in ("Open", "High", "Low", "Close"))
         plan = pos["plan"]; held = t - pos["t0"]
         # planlı takviyeler (gün içi o fiyata değdiyse dolar)
         still = []
@@ -210,10 +210,10 @@ def simulate(data, picks, rule, half_in_risk_off=True):
         ex = None
         st, hard = plan.get("stop"), plan.get("hard")
         if plan.get("close_stop"):
-            if hard is not None and lo <= hard: ex = ("felaket", hard)
+            if hard is not None and lo <= hard: ex = ("felaket", min(hard, op))
             elif st is not None and cl <= st:  ex = ("stop-kapanış", cl)
         elif st is not None and lo <= st:
-            ex = ("stop", st)
+            ex = ("stop", min(st, op))           # boşluklu açılış: stopun altında açıldıysa açılıştan dolar
         if ex is None and hi >= plan["target"]: ex = ("hedef", plan["target"])
         if ex is None and held >= plan["max_hold"]: ex = ("zaman", cl)
         if ex:
