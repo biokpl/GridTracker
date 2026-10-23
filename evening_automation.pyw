@@ -270,6 +270,27 @@ def _git_publish(files, msg):
         log.warning(f'Git işlemi hatası: {e}')
 
 
+SHUTDOWN_DELAY_SEC = 120   # Windows uyarısı çıkar; iptal: "shutdown /a"
+
+
+def _shutdown_pc():
+    """Matriks'siz modda akşam işi bitince PC'yi kapatır (2 dk uyarılı).
+    Kapatmamak için: GridTracker klasörüne 'pc_acik_kalsin' adlı boş dosya koy."""
+    if (SCRIPT_DIR / 'pc_acik_kalsin').exists():
+        log.info("PC kapatma atlandı ('pc_acik_kalsin' dosyası var).")
+        return
+    if os.environ.get('GT_DRY_SHUTDOWN'):
+        log.info(f'[DRY] PC {SHUTDOWN_DELAY_SEC} sn sonra kapanacaktı.')
+        return
+    try:
+        subprocess.run(['shutdown', '/s', '/t', str(SHUTDOWN_DELAY_SEC), '/c',
+                        'GridTracker: akşam analizi bitti, PC 2 dakika içinde kapanacak. İptal: shutdown /a'],
+                       creationflags=CREATE_NO_WINDOW)
+        log.info(f'PC kapatma komutu verildi ({SHUTDOWN_DELAY_SEC} sn).')
+    except Exception as e:
+        log.warning(f'PC kapatma hatası: {e}')
+
+
 def run(mode='normal'):
     """
     mode='normal' → 18:35 görevi tarafından tetiklenir (arefe günü ise çıkar)
@@ -302,9 +323,13 @@ def run(mode='normal'):
         if adv_ok:
             _git_publish(['advisor_result.json'], 'auto: AL/SAT danismani guncellendi')
         _send_notify('🌙 Akşam Analizi Tamamlandı' if adv_ok else '⚠️ Akşam Analizi HATALI',
-                     'Matriks\'siz mod: yarının AL/SAT önerisi hazır.' if adv_ok
-                     else 'advisor.py çalışmadı — log\'a bak.',
+                     ('Matriks\'siz mod: yarının AL/SAT önerisi hazır. PC 2 dk içinde kapanacak.') if adv_ok
+                     else 'advisor.py çalışmadı — log\'a bak. PC açık bırakıldı.',
                      tag='evening-done', priority='default' if adv_ok else 'high')
+        # İş bitti → PC'yi kapat. Hata varsa açık kalır (log'a bakılabilsin).
+        if adv_ok:
+            time.sleep(15)          # bildirim + git push tamamlansın
+            _shutdown_pc()
         return
 
     # ── Adım 1: MatriksIQ'yu öne getir ─────────────────────
