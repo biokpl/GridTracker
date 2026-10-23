@@ -10,7 +10,7 @@ android {
         applicationId = "com.biokpl.gridwatch.face.ultra"
         minSdk = 33
         targetSdk = 35
-        versionCode = 29878211   // her üretimde yeni sürüm: saat çalışma zamanı önbelleğini tazeler
+        versionCode = 29879948   // her üretimde yeni sürüm: saat çalışma zamanı önbelleğini tazeler
         versionName = "1.0"
     }
 }

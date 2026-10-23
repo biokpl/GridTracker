@@ -22,7 +22,7 @@ def glow_png2(w, h, below, rad, col, strength=0.35, below_k=0.30, spread=0.50, e
     tp = np.clip((h * q - yy) / (h * q * 1.25), 0, 1)                  # 0 alt kenar → 1 tepe
     half = (W_ / 2) * (0.68 * (1 - tp) + 0.22 * tp)              # kesik piramit: tepe düz, sivri değil
     pyr = np.exp(-(np.abs(xx - W_ / 2) / half) ** 3) * (1 - tp) ** 1.6 * inside      # net piramit hatları; yukarı doğru hızla hafifler
-    a = pyr * 150 * strength * 1.25 + hot * 120 * edge + down * 150 * below_k
+    a = pyr * 150 * strength * 1.7 + hot * 120 * edge + down * 150 * below_k
     lay = np.zeros((H_, W_, 4), np.float32); lay[..., :3] = col; lay[..., 3] = a
     lay[..., 3] *= intensity                                                # genel şiddet: yalnız ışık gövdesi
     img = Image.fromarray(lay.clip(0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(2 * q))
