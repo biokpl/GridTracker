@@ -339,7 +339,11 @@ def _fast_price_check():
             gap        = est - active.get("entry_hard", hard)    # stop↔felaket farkı
             peak       = max(active.get("peak_price", entry) or entry, price)
             new_stop   = round(peak - trail_dist, 4)
-            if new_stop > stop + max(0.01, price * 0.001):       # anlamlı yukarı (≥%0.1)
+            # GÜVENLİK: stop fiyatın en az %0.5 altında kalmalı. Bayat tepe (ör. takviye
+            # öncesi pozisyondan kalan peak) stopu piyasanın üstüne itip sahte çıkış verdiriyordu.
+            if new_stop >= price * 0.995:
+                log.warning(f"TRAIL atlandı: {sym} yeni stop {_fp(new_stop)} ≥ fiyat {_fp(price)} (peak {_fp(peak)} bayat?)")
+            elif new_stop > stop + max(0.01, price * 0.001):     # anlamlı yukarı (≥%0.1)
                 old_stop = stop
                 stop = new_stop
                 hard = round(new_stop - gap, 4)
@@ -760,6 +764,16 @@ def _do_fix_trade(state: dict, act: dict):
     qty   = _pos_float(act.get("qty"))
     if act.get("target") == "active" and state.get("active"):
         a = state["active"]
+        if price and a.get("entry_price") and abs(price - a["entry_price"]) > 1e-6:
+            # Takviye/düzeltme: tepe ve iz süren stop mesafesi YENİ maliyete göre yeniden kurulur
+            old_e = a["entry_price"]
+            dist = max(0.01, old_e - (a.get("entry_stop") or old_e * 0.99))
+            gap = max(0.01, (a.get("entry_stop") or old_e) - (a.get("entry_hard") or a.get("hard_stop") or old_e * 0.97))
+            a["peak_price"] = round(price, 4)
+            a["entry_stop"] = round(price - dist, 4)
+            a["entry_hard"] = round(price - dist - gap, 4)
+            a.pop("notified_hard", None)
+            log.info(f"DÜZELTME: iz süren stop referansı yeni maliyete taşındı (tepe {price}, mesafe {dist:.2f})")
         if price: a["entry_price"] = round(price, 4)
         if qty:   a["qty"] = int(qty)
         log.info(f"DÜZELTME (aktif): {a['symbol']} {a.get('qty')} lot @ {a.get('entry_price')}")
