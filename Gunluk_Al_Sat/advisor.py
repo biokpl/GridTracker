@@ -30,6 +30,8 @@ BASE         = Path(__file__).parent
 CFG          = json.loads((BASE / "config.json").read_text(encoding="utf-8"))
 STATE_PATH   = BASE / "state.json"
 RESULT_PATH  = Path(CFG["result_path"])
+if not RESULT_PATH.parent.exists():          # başka makine (ör. Raspberry Pi): GridTracker kökü
+    RESULT_PATH = BASE.parent / "advisor_result.json"
 FIREBASE_URL = "https://grid-tracker-73ed2-default-rtdb.europe-west1.firebasedatabase.app"
 
 # Strateji modu (config.json'dan, varsayılan RK):
