@@ -4,7 +4,7 @@ Firebase gridtracker/stocks beslemesinin yerine geçer (yalnız AL/SAT için ger
 
 Önerilen ilk 3 hisse + açık pozisyon için Yahoo fiyatını gridtracker/stocks/{SYM}'e PATCH eder
 (diğer alanlar — ATR, destek/direnç — korunur). Kart bunu "girilebilir / stop altında"
-kontrolü için okur. systemd timer ile borsa saatlerinde 2 dk'da bir çalışır.
+kontrolü için okur. systemd timer ile borsa saatlerinde 1 dk'da bir çalışır.
 
 Kullanım: python pi_stocks_feed.py           (borsa kapalıysa hiçbir şey yapmaz)
           python pi_stocks_feed.py --force   (test)
