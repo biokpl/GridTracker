@@ -139,6 +139,8 @@ def check_services():
         # Cooldown: aynı servisi 5 dk içinde tekrar başlatma (restart loop önle)
         if time.time() - _last_restart.get(match, 0) < 300:
             continue
+        if "monitor.pyw" in match and (ROOT / "pi_aktif").exists():
+            continue           # asıl AL/SAT monitor'ü Raspberry Pi'de
         log.warning(f"DÜŞMÜŞ: {match} → yeniden başlatılıyor")
         try:
             _launch(script, cwd)

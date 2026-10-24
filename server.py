@@ -380,9 +380,10 @@ def _bg_loop():
                 _stocks.update(stocks)
                 global _stocks_ts
                 _stocks_ts = ts
-            # Firebase'e yaz
-            firebase_put('gridtracker/stocks', stocks)
-            firebase_put('gridtracker/stocks_ts', ts)
+            # Firebase'e yaz — 'pi_aktif' varsa fiyatları Raspberry Pi besliyor, ezme
+            if not os.path.exists(os.path.join(BASE_DIR, 'pi_aktif')):
+                firebase_put('gridtracker/stocks', stocks)
+                firebase_put('gridtracker/stocks_ts', ts)
         except Exception as e:
             slog.warning(f'[BG] hata: {e}')
         time.sleep(60)

@@ -317,6 +317,11 @@ def run(mode='normal'):
     # ── MATRİKS'SİZ MOD: MatriksIQ çalışmıyorsa koordinat tıklamaları başka
     # pencerelere gider → Adım 1-4 ATLANIR, sadece AL/SAT danışmanı (yfinance
     # kapanış verisiyle) çalışır ve sonucu yayınlanır.
+    if not _matriks_running() and (SCRIPT_DIR / 'pi_aktif').exists():
+        log.info("'pi_aktif' işareti var → AL/SAT analizi Raspberry Pi'de; PC yalnız kapatılıyor.")
+        _shutdown_pc()
+        return
+
     if not _matriks_running():
         log.info('MatriksIQ çalışmıyor → Matriks\'siz mod: sadece AL/SAT danışmanı çalıştırılıyor.')
         adv_ok = _run_advisor()

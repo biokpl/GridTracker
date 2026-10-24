@@ -1628,6 +1628,12 @@ def _heartbeat():
 
 
 def main():
+    # GEÇİCİ RASPBERRY PI DÖNEMİ: GridTracker kökünde 'pi_aktif' dosyası varsa asıl sistem
+    # Pi'dedir → bu makinede monitor ÇALIŞMAZ (çift bildirim / çift Firebase yazımı olmasın).
+    # Matriks'e dönüşte: dosyayı sil + Pi servislerini durdur (bkz. hafıza raspberry_pi_tasima).
+    if (BASE.parent / "pi_aktif").exists():
+        log.info("'pi_aktif' işareti var → asıl sistem Raspberry Pi'de, bu monitor çıkıyor.")
+        return
     log.info("Monitor başlatıldı. Hızlı:5sn | Yavaş:15dk | Öneri-tazele:10dk")
     print("[Monitor] Başlatıldı — Hızlı:5sn | Yavaş:15dk | Log:", log_path)
 
