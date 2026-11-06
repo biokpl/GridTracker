@@ -284,9 +284,15 @@ def _shutdown_pc():
         return
     try:
         subprocess.run(['shutdown', '/s', '/t', str(SHUTDOWN_DELAY_SEC), '/c',
-                        'GridTracker: akşam analizi bitti, PC 2 dakika içinde kapanacak. İptal: shutdown /a'],
+                        'GridTracker: akşam analizi bitti, PC 2 dakika içinde kapanacak. İptal: ekrandaki "İptal Et" butonu'],
                        creationflags=CREATE_NO_WINDOW)
         log.info(f'PC kapatma komutu verildi ({SHUTDOWN_DELAY_SEC} sn).')
+        # Ekranda "İptal Et" butonlu geri sayım penceresi (ayrı süreç; bu betik bitse de açık kalır)
+        try:
+            subprocess.Popen([sys.executable, str(SCRIPT_DIR / 'shutdown_cancel.pyw'), str(SHUTDOWN_DELAY_SEC)],
+                             creationflags=0x00000008)   # DETACHED_PROCESS
+        except Exception as e:
+            log.warning(f'İptal penceresi açılamadı: {e}')
     except Exception as e:
         log.warning(f'PC kapatma hatası: {e}')
 
