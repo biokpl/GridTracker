@@ -1216,6 +1216,26 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
                         print(f"[Advisor] Yeni satılan, önerilmeyecek: {', '.join(sorted(_just_sold))}")
             except Exception:
                 pass
+        # 3) OLAY FİLTRESİ: elde tutma süresinde bilanço / temettü kesimi olan hisse önerilmez
+        #    (sıradaki önerilir). Yalnız akşam analizinde (gün içi tazelemede Yahoo yükü olmasın).
+        if not no_trade_reason and not refresh_only:
+            try:
+                import events
+                _ev_out = []
+                for _s in list(eligible[:6]):
+                    _why = events.blocked(_s["symbol"])
+                    if _why:
+                        _ev_out.append(f"{_s['symbol']} ({_why})")
+                        eligible = [x for x in eligible if x["symbol"] != _s["symbol"]]
+                if _ev_out:
+                    top_picks = [{**s, "rank": i+1} for i, s in enumerate(eligible[:3])]
+                    if not eligible:
+                        no_trade_today = True
+                    if not quiet:
+                        print(f"[Advisor] Olay filtresi, önerilmeyecek: {', '.join(_ev_out)}")
+            except Exception as _e:
+                if not quiet:
+                    print(f"[Advisor] olay filtresi atlandı: {_e}")
         if no_trade_reason and not quiet:
             print(f"[Advisor] VK3 bekleme: {no_trade_reason}")
 

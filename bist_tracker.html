@@ -56765,6 +56765,21 @@ async function advFixTrade(target){
   if(target==='active'){ const _q=prompt('Lot adedi:',defQty); if(_q===null) return; qty=Math.round(_advNum(_q)||0); }
   const price=_advNum(_px);
   if(!price&&!qty){ toast('Geçerli bir değer girin','err'); return; }
+  // DİSİPLİN: lot artıyorsa (ekleme) riski göster, onay iste
+  const _oq=+(tr.open_qty||tr.total_qty||0);
+  if(target==='active' && _oq>0 && qty>_oq){
+    const oe=+(tr.avg_cost||0), hard=+(tr.hard_stop||0), cur=+(tr.current_price||0), ne=price||oe;
+    const vk3=hard&&oe&&Math.abs(hard-oe*0.93)<oe*0.003;
+    const nh=vk3?ne*0.93:hard;
+    const f0=n=>Math.round(n).toLocaleString('tr-TR');
+    const r0=hard?_oq*(oe-hard):0, r1=nh?qty*(ne-nh):0;
+    const txt='⚠️ EKLEME UYARISI\n\n'
+      +(cur&&oe&&cur<oe?'Pozisyon şu an ZARARDA ('+f0(tr.unrealized_pnl||(cur-oe)*_oq)+' TL).\n':'')
+      +'Lot: '+_oq+' → '+qty+'\n'
+      +(hard?'Kurum stopunda zarar: '+f0(r0)+' TL → '+f0(r1)+' TL\n':'')
+      +'\nSistem kuralı: zarardaki hisseye ekleme yapılmaz.\nTUPRS\'de eklemeler zararı ~2.100 TL büyüttü.\n\nYine de kaydedilsin mi?';
+    if(!confirm(txt)) return;
+  }
   const id=Date.now()+'-'+Math.random().toString(36).slice(2,6);
   try{
     await fbWrite('gridtracker/advisor/userAction',{action:'fix',target,price:price||null,qty:qty||null,ts:Date.now(),id});

@@ -394,6 +394,22 @@ def _fast_price_check():
         # Kullanıcı ÇIK sinyalinde satmayıp beklemeyi seçti: izleme stopundan
         # gelen ÇIK/BEKLE bildirimleri susar; kurum stopu (hard) uyarıları sürer.
         hold = bool(active.get("hold"))
+        # DİSİPLİN (2026-11-10): bekleme modu en fazla 1 işlem günü sürer. Ertesi işlem günü
+        # 10:15'te kendiliğinden kapanır → kullanıcı yeniden karar verir (sat / tekrar bekle).
+        if hold and _hold_expired(active.get("hold")):
+            active.pop("hold", None); _save_state(state); _patch_tracker_hold(False)
+            with _sent_lock:
+                _last_state_sig.pop(sym, None)
+            log.info(f"{sym}: bekleme modu süresi doldu (1 gün) — karar yeniden soruluyor")
+            notifier._send(f"⏰ {sym} — Bekleme süresi doldu",
+                           f"Dün 'Beklemede Kalıyorum' demiştin. Bekleme en fazla 1 gün sürer.\n"
+                           f"━━━━━━━━━━━━━━━━━━━━\n"
+                           f"Fiyat {_fp(price)} ₺ | Anlık K/Z: {pnl_tl:+,.0f} TL ({pnl_pct:+.1f}%)\n".replace(",", ".") +
+                           f"Kurum stopu: {_fp(hard)} ₺\n"
+                           f"Bugün yeniden karar ver: sat ya da tekrar 'Beklemede Kalıyorum' de.",
+                           priority="high", tags="alarm_clock",
+                           actions=notifier.action_sold_or_hold(sym))
+            hold = False
         if hold and stop and price >= stop * 1.003:
             active.pop("hold", None); _save_state(state); _patch_tracker_hold(False)
             log.info(f"{sym} izleme stopunun üstüne döndü ({_fp(price)} > {_fp(stop)}) — bekleme modu kapandı")
@@ -741,8 +757,10 @@ def _do_user_bought(state: dict, symbol: str, real_price=None, real_qty=None):
         f"Pozisyon açıldı ({'gerçek fiyat' if real_price else 'tahmini'}).\n"
         f"Maliyet: {_fp(entry)} TL | {qty:,} lot\n".replace(",", ".") +
         (f"━━━━ KURUMA GİR ━━━━\n"
-         f"🛑 STOP emri : {_fp(state['active']['hard_stop'] or state['active']['stop_loss'])} TL\n"
+         f"🛑 STOP emri : {_fp(state['active']['hard_stop'] or state['active']['stop_loss'])} TL\n" +
+         (f"   (en fazla zarar ≈ {qty * max(0, entry - (state['active']['hard_stop'] or state['active']['stop_loss'] or entry)):,.0f} TL)\n").replace(",", ".") +
          f"🎯 Hedef     : {_fp(state['active']['target1'])} TL\n"
+         f"Stop emrini ŞİMDİ gir — sonra 'beklerim' deme, kural bu.\n"
          f"(Fiyat/lot farklıysa sayfadaki ✏️ ile düzelt)"
          if EOD_MODE else
          f"Stop: {_fp(state['active']['stop_loss'])} | Hedef: {_fp(state['active']['target1'])} TL\n"
@@ -785,6 +803,8 @@ def _do_fix_trade(state: dict, act: dict):
     qty   = _pos_float(act.get("qty"))
     if act.get("target") == "active" and state.get("active"):
         a = state["active"]
+        _old_q, _old_e = int(a.get("qty") or 0), float(a.get("entry_price") or 0)
+        _old_hard = float(a.get("hard_stop") or 0)
         if price and a.get("entry_price") and abs(price - a["entry_price"]) > 1e-6:
             # Takviye/düzeltme: tepe ve iz süren stop mesafesi YENİ maliyete göre yeniden kurulur
             old_e = a["entry_price"]
@@ -803,6 +823,27 @@ def _do_fix_trade(state: dict, act: dict):
             _push_stop_to_card(a["stop_loss"], a["hard_stop"])
         log.info(f"DÜZELTME (aktif): {a['symbol']} {a.get('qty')} lot @ {a.get('entry_price')}")
         _save_state(state)
+        # DİSİPLİN: zarardaki pozisyona EKLEME → kurum stopundaki riskin nasıl büyüdüğünü bildir
+        try:
+            _new_q = int(a.get("qty") or 0)
+            if _old_q and _new_q > _old_q:
+                import notifier
+                _px, _ = get_price(a["symbol"])
+                _hard = float(a.get("hard_stop") or 0)
+                _r0 = _old_q * (_old_e - _old_hard) if _old_hard else 0
+                _r1 = _new_q * (a["entry_price"] - _hard) if _hard else 0
+                _loss = bool(_px and _old_e and _px < _old_e)
+                log.info(f"EKLEME: {a['symbol']} {_old_q}→{_new_q} lot, kurum stopu riski {_r0:.0f}→{_r1:.0f} TL")
+                notifier._send(
+                    f"⚠️ {a['symbol']} — Ekleme kaydedildi",
+                    (f"Pozisyon eklemeden önce zarardaydı ({_fp(_px)} < maliyet {_fp(_old_e)}).\n" if _loss else "") +
+                    f"Lot: {_old_q} → {_new_q}\n" +
+                    (f"Kurum stopunda ({_fp(_hard)} ₺) zarar: {_r0:,.0f} → {_r1:,.0f} TL\n".replace(",", ".") if _hard else "") +
+                    f"━━━━━━━━━━━━━━━━━━━━\n"
+                    f"Sistem kuralı: zarardaki hisseye ekleme yapılmaz. Kurum stopunu yeni lota göre güncellemeyi unutma.",
+                    priority="high", tags="warning")
+        except Exception as e:
+            log.debug(f"ekleme uyarısı: {e}")
         # Açık pozisyon sürüyor → yalnız tracker'ı tazele (active_pick'e dokunma)
         try:
             from tracker import track
@@ -880,6 +921,17 @@ def _trading_days_held(entry_date: str) -> int:
         return int(_np.busday_count(entry_date, datetime.now().strftime("%Y-%m-%d")))
     except Exception:
         return 0
+
+
+def _hold_expired(hold, now=None) -> bool:
+    """Bekleme modu, açıldığı günden SONRAKİ ilk işlem gününde 10:15'te dolar."""
+    now = now or datetime.now()
+    try:
+        since = datetime.strptime((hold or {}).get("since", ""), "%d.%m.%Y %H:%M")
+    except Exception:
+        return False
+    return (now.weekday() < 5 and now.date() > since.date()
+            and (now.hour, now.minute) >= (10, 15))
 
 
 def _patch_tracker_hold(on: bool):

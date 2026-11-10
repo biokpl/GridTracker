@@ -4,3 +4,8 @@ monitor.log
 last_prices.json
 __pycache__/
 *.pyc
+_events_cache.json
+events_live.json
+shadow_book.json
+shadow.log
+*.pkl
