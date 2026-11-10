@@ -1193,17 +1193,27 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
                                    f"Endeks ortalamanın üstüne çıkınca yeni alım önerilecek.").replace(",", ".")
         except Exception:
             pass
+        # 2') (2026-11-10 kullanıcı kararı: "1 gün bekle" yerine) SATILAN HİSSE YENİDEN
+        #     ÖNERİLMEZ: satış günü akşamı (ve ertesi gün içi tazelemede) az önce satılan
+        #     hisse listeden çıkar, sıradaki hisse önerilir. Testte bekleme kadar iyi, zaman kaybı yok.
         if not no_trade_reason:
             try:
-                _last_x = max((h.get("exit_date") or "" for h in state.get("history", [])
-                               if isinstance(h, dict)), default="")
-                if _last_x:
-                    import numpy as _npy      # (bu fonksiyonda 'np' yerel değişken olarak da kullanılıyor)
-                    _bd = int(_npy.busday_count(_last_x, datetime.now().strftime("%Y-%m-%d")))
-                    if _bd == 0 or (refresh_only and _bd <= 1):
+                import numpy as _npy      # (bu fonksiyonda 'np' yerel değişken olarak da kullanılıyor)
+                _today_s = datetime.now().strftime("%Y-%m-%d")
+                _just_sold = set()
+                for _h in state.get("history", []):
+                    _xd = (_h.get("exit_date") or "") if isinstance(_h, dict) else ""
+                    if _xd and _xd <= _today_s:
+                        _bd = int(_npy.busday_count(_xd, _today_s))
+                        if _bd == 0 or (refresh_only and _bd <= 1):
+                            _just_sold.add(_h.get("symbol"))
+                if _just_sold:
+                    eligible = [s for s in eligible if s["symbol"] not in _just_sold]
+                    top_picks = [{**s, "rank": i+1} for i, s in enumerate(eligible[:3])]
+                    if not eligible:
                         no_trade_today = True
-                        no_trade_reason = ("Son satıştan sonra 1 gün bekleme kuralı. "
-                                           "Yarın akşam yeni öneri gelecek.")
+                    if not quiet:
+                        print(f"[Advisor] Yeni satılan, önerilmeyecek: {', '.join(sorted(_just_sold))}")
             except Exception:
                 pass
         if no_trade_reason and not quiet:
