@@ -98,7 +98,8 @@ def _firebase_push(result: dict):
         # BEKLEME GÜNÜ" uyarısı bunlara bakıyor (Firebase'e yazılmazsa web'de
         # uyarı çıkmıyordu).
         "no_trade_today": bool(result.get("no_trade_today")),
-        "regime":         (result.get("market_regime") or {}).get("level"),
+        "no_trade_reason": result.get("no_trade_reason") or "",
+        "regime":        (result.get("market_regime") or {}).get("level"),
         "regime_msg":     (result.get("market_regime") or {}).get("msg"),
         "data_mode":      result.get("data_mode", "LIVE"),
     }
@@ -1175,6 +1176,38 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
     # önerilir. Yalnız RISK_OFF'ta veya hiç eligible yoksa dur.
     no_trade_today = (not active) and (
         not eligible or (regime == "RISK_OFF" and REGIME_MODE != "half"))
+    no_trade_reason = ""
+
+    # ── VK3 KAPILARI (2026-11-10, improve_test.py: 5y + doğrulama dönemi) ──────
+    # 1) ENDEKS FİLTRESİ: XU100 kapanışı 20 günlük ortalamanın altındaysa yeni alım yok
+    #    (düşen piyasada momentum alımı zarar ediyor; DD ~37k → ~16k).
+    # 2) SATIŞTAN SONRA 1 GÜN BEKLE: satış günü akşamı ve ertesi gün içinde yeni öneri yok;
+    #    yeni alım satıştan 2 işlem günü sonra açılışta (testte aylık ~850 → ~1.400 TL).
+    if STRATEGY_MODE == "VK3" and not active:
+        try:
+            _xc = xu100["Close"].dropna()
+            _xl, _xs = float(_xc.iloc[-1]), float(_xc.iloc[-20:].mean())
+            if _xl < _xs:
+                no_trade_today = True
+                no_trade_reason = (f"BIST100 düşüş eğiliminde ({_xl:,.0f} < 20 günlük ortalama {_xs:,.0f}). "
+                                   f"Endeks ortalamanın üstüne çıkınca yeni alım önerilecek.").replace(",", ".")
+        except Exception:
+            pass
+        if not no_trade_reason:
+            try:
+                _last_x = max((h.get("exit_date") or "" for h in state.get("history", [])
+                               if isinstance(h, dict)), default="")
+                if _last_x:
+                    import numpy as _npy      # (bu fonksiyonda 'np' yerel değişken olarak da kullanılıyor)
+                    _bd = int(_npy.busday_count(_last_x, datetime.now().strftime("%Y-%m-%d")))
+                    if _bd == 0 or (refresh_only and _bd <= 1):
+                        no_trade_today = True
+                        no_trade_reason = ("Son satıştan sonra 1 gün bekleme kuralı. "
+                                           "Yarın akşam yeni öneri gelecek.")
+            except Exception:
+                pass
+        if no_trade_reason and not quiet:
+            print(f"[Advisor] VK3 bekleme: {no_trade_reason}")
 
     # Aktif pozisyon çıkış kontrolü
     exit_signal = {"symbol": None, "signal": "—", "score_now": 0.0, "score_prev": 0.0, "message": ""}
@@ -1343,6 +1376,7 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
         "exit_signal":    exit_signal,
         "lot_info":       lot_info,
         "no_trade_today": no_trade_today,
+        "no_trade_reason": no_trade_reason,
         "high_quality_count": len(high_quality),
         "market_regime":  {"level": regime, "msg": regime_msg},
         "data_mode":      DATA_MODE,
@@ -1423,7 +1457,8 @@ def run_analysis(dry_run: bool = False, quiet: bool = False,
                 )
             elif no_trade_today:
                 # Kaliteli kurulum yok VEYA piyasa rejimi negatif → nakit kal
-                _why = (f"📉 Piyasa rejimi: {regime_msg}\n"
+                _why = (f"{no_trade_reason}\n" if no_trade_reason else
+                        f"📉 Piyasa rejimi: {regime_msg}\n"
                         if regime == "RISK_OFF" else
                         "Bant-içi (R/K≥1.0, temiz giriş) uygun aday yok — zayıf gün.\n")
                 notifier._send(
