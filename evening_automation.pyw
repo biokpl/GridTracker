@@ -283,16 +283,19 @@ def _shutdown_pc():
         log.info(f'[DRY] PC {SHUTDOWN_DELAY_SEC} sn sonra kapanacaktı.')
         return
     try:
-        subprocess.run(['shutdown', '/s', '/t', str(SHUTDOWN_DELAY_SEC), '/c',
-                        'GridTracker: akşam analizi bitti, PC 2 dakika içinde kapanacak. İptal: ekrandaki "İptal Et" butonu'],
-                       creationflags=CREATE_NO_WINDOW)
-        log.info(f'PC kapatma komutu verildi ({SHUTDOWN_DELAY_SEC} sn).')
-        # Ekranda "İptal Et" butonlu geri sayım penceresi (ayrı süreç; bu betik bitse de açık kalır)
+        # Geri sayımı ve kapatmayı kendi penceremiz yapar (Windows'un siyah "Oturumunuz kapatılmak
+        # üzere" penceresi çıkmasın — onun "Kapat" butonu kapatmayı iptal ETMİYORDU, sadece gizliyordu).
+        # Pencere süre dolunca 'shutdown /s /t 0' verir; "İptal Et" → kapanmaz.
         try:
             subprocess.Popen([sys.executable, str(SCRIPT_DIR / 'shutdown_cancel.pyw'), str(SHUTDOWN_DELAY_SEC)],
                              creationflags=0x00000008)   # DETACHED_PROCESS
+            log.info(f'PC kapatma geri sayımı başladı ({SHUTDOWN_DELAY_SEC} sn, İptal Et penceresi).')
         except Exception as e:
-            log.warning(f'İptal penceresi açılamadı: {e}')
+            # Pencere açılamazsa eski yöntem (Windows uyarılı kapatma) — PC açık kalmasın
+            log.warning(f'İptal penceresi açılamadı ({e}) → Windows kapatma komutu')
+            subprocess.run(['shutdown', '/s', '/t', str(SHUTDOWN_DELAY_SEC), '/c',
+                            'GridTracker: akşam analizi bitti, PC 2 dakika içinde kapanacak. İptal: shutdown /a'],
+                           creationflags=CREATE_NO_WINDOW)
     except Exception as e:
         log.warning(f'PC kapatma hatası: {e}')
 

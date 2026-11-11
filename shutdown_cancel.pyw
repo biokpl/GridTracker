@@ -1,8 +1,8 @@
 """shutdown_cancel.pyw — akşam otomasyonu PC'yi kapatırken çıkan "İptal Et" penceresi.
 
-evening_automation.pyw, 'shutdown /s /t N' verdikten hemen sonra bunu ayrı süreç olarak açar.
-Pencere geri sayımı gösterir; "İptal Et" → 'shutdown /a' (kapatma iptal).
-Süre dolarsa pencere kendiliğinden kapanır (Windows kapatmaya devam eder).
+evening_automation.pyw bunu ayrı süreç olarak açar. Geri sayımı ve kapatmayı bu pencere yapar
+(Windows'un siyah uyarı penceresi çıkmaz). "İptal Et" → PC kapanmaz.
+Süre dolarsa 'shutdown /s /t 0' ile PC kapatılır.
 
 Test: python shutdown_cancel.pyw 30 --dry   (shutdown komutu çalıştırmaz)
 """
@@ -43,8 +43,8 @@ def main():
     lbl.pack(pady=(4, 14))
 
     def cancel():
-        if not dry:
-            subprocess.run(["shutdown", "/a"], creationflags=NO_WIN)
+        if not dry:   # (eski yöntemle verilmiş bekleyen kapatma varsa onu da iptal et)
+            subprocess.run(["shutdown", "/a"], creationflags=NO_WIN, capture_output=True)
         log("PC kapatma kullanıcı tarafından İPTAL edildi (İptal Et butonu)." + (" [DRY]" if dry else ""))
         lbl.config(text="Kapatma iptal edildi ✓", fg="#4ade80")
         btn.config(state="disabled")
@@ -61,7 +61,12 @@ def main():
             return
         left = int(deadline - time.time())
         if left <= 0:
-            root.destroy()
+            btn.config(state="disabled")
+            lbl.config(text="PC kapanıyor…")
+            log("Geri sayım bitti → PC kapatılıyor." + (" [DRY]" if dry else ""))
+            if not dry:
+                subprocess.run(["shutdown", "/s", "/t", "0"], creationflags=NO_WIN)
+            root.after(1500, root.destroy)
             return
         lbl.config(text=f"PC {left // 60}:{left % 60:02d} sonra kapanacak")
         root.after(500, tick)
