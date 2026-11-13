@@ -76,6 +76,7 @@ def manage(v, today, bar, log):
     elif held >= HOLD:
         ex, why = c, "süre"
     if ex is None:
+        p["last"] = c          # karnede açık pozisyonun anlık K/Z'si için
         return
     pnl = (ex - p["entry"]) * p["qty"] - COMM * (ex + p["entry"]) * p["qty"]
     v["trades"].append({"sym": p["sym"], "in": p["entry_date"], "entry": round(p["entry"], 4), "qty": p["qty"],
@@ -163,9 +164,12 @@ def summary(b):
         v = b["variants"][k]; tr = v["trades"]
         tot = sum(t["pnl"] for t in tr); wk = sum(t["pnl"] for t in tr if t["out"] >= week0)
         wins = sum(1 for t in tr if t["pnl"] > 0)
+        p = v["pos"] or {}
+        acik_kz = round((p["last"] - p["entry"]) * p["qty"]) if p.get("last") else 0
         out.append({"key": k, "ad": cfg["ad"], "toplam": round(tot), "hafta": round(wk), "islem": len(tr),
                     "isabet": round(wins / len(tr) * 100) if tr else None,
-                    "acik": (v["pos"] or {}).get("sym"), "bekleyen": (v["pending"] or {}).get("sym")})
+                    "acik": p.get("sym"), "acik_kz": acik_kz, "acik_giris": round(p.get("entry", 0), 2),
+                    "bekleyen": (v["pending"] or {}).get("sym")})
     return out
 
 
@@ -179,13 +183,15 @@ def push_firebase(b):
 
 
 def report(b, send=False):
-    rows = sorted(summary(b), key=lambda r: -r["toplam"])
+    rows = sorted(summary(b), key=lambda r: -(r["toplam"] + r["acik_kz"]))
     f = lambda n: f"{n:+,.0f}".replace(",", ".")
-    lines = [f"Başlangıç: {datetime.fromisoformat(b['start']).strftime('%d.%m.%Y')} (her işlem 50.000 TL, sanal)", "━━━━━━━━━━━━━━━━━━━━"]
+    lines = [f"Başlangıç: {datetime.fromisoformat(b['start']).strftime('%d.%m.%Y')} (her işlem 50.000 TL, sanal)",
+             "Kapanan = satılmış işlemler · Açık = henüz satılmamış pozisyonun anlık K/Z'si",
+             "━━━━━━━━━━━━━━━━━━━━"]
     for i, r in enumerate(rows, 1):
-        extra = f" · açık: {r['acik']}" if r["acik"] else ""
-        lines.append(f"{i}. {r['ad']}\n   toplam {f(r['toplam'])} TL · bu hafta {f(r['hafta'])} · {r['islem']} işlem"
-                     + (f" · isabet %{r['isabet']}" if r["isabet"] is not None else "") + extra)
+        lines.append(f"{i}. {r['ad']}\n   kapanan {f(r['toplam'])} TL ({r['islem']} işlem"
+                     + (f", isabet %{r['isabet']}" if r["isabet"] is not None else "") + ")"
+                     + (f"\n   açık: {r['acik']} @ {r['acik_giris']:.2f} → {f(r['acik_kz'])} TL".replace(".", ",", 1) if r["acik"] else ""))
     text = "\n".join(lines)
     print(text)
     if send:
