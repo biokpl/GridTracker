@@ -1669,6 +1669,17 @@ def _picks_refresh_loop():
         time.sleep(REFRESH_MIN * 60)
 
 
+def _alive_loop():
+    """advisor/monitor_alive = epoch sn, her 15 dk (piyasa açık/kapalı fark etmez)."""
+    import requests as _req
+    while True:
+        try:
+            _req.put(_FB_BASE + "/gridtracker/advisor/monitor_alive.json", data=str(int(time.time())), timeout=6)
+        except Exception as e:
+            log.debug(f"monitor_alive: {e}")
+        time.sleep(15 * 60)
+
+
 def _heartbeat():
     """Piyasa açıkken monitor çalışıyor → advisor/heartbeat = epoch sn.
     Saat 10 dk'dan eski kalp atışını OFFLINE sayar (PC kapalı / piyasa kapalı / kopukluk)."""
@@ -1701,6 +1712,10 @@ def main():
 
     # Gün-içi öneri tazeleyici (pozisyon yokken her 10 dk top_picks güncellenir)
     threading.Thread(target=_picks_refresh_loop, daemon=True).start()
+
+    # "Monitor yaşıyor" sinyali — 7/24, 15 dk'da bir (PC sabah sağlık kontrolü okur).
+    # Saatin ONLINE noktası ayrı (advisor/heartbeat, yalnız piyasa açıkken) — karışmasın.
+    threading.Thread(target=_alive_loop, daemon=True).start()
 
     last_slow    = 0.0  # Son teknik analiz zamanı
     last_pending = 0.0  # Son pending (öneri kaçtı mı) kontrolü
