@@ -216,9 +216,21 @@ def daily_backup():
 def _full_check_and_report():
     """Tam kontrol; SADECE sorun varsa bildirir. (Sabah raporu + restart bildirimi)"""
     problems = []
+    pi = (ROOT / "pi_aktif").exists()
     for match, (script, cwd) in SERVICES.items():
+        if pi and "monitor.pyw" in match:
+            continue          # Pi döneminde AL/SAT monitor'ü PC'de değil Pi'de çalışır
         if script.exists() and not _proc_running(match):
             problems.append(f"❌ {match.split(chr(92))[-1]} çalışmıyor")
+    if pi:
+        # Pi monitor'ü piyasa saatlerinde kalp atışı yazar; hafta sonu/tatil payıyla 4 gün sessizlik = sorun
+        try:
+            with urllib.request.urlopen(FB_BASE + "/advisor/heartbeat.json", timeout=8) as r:
+                hb = float(json.loads(r.read().decode()) or 0)
+            if time.time() - hb > 4 * 86400:
+                problems.append("❌ Raspberry Pi monitor'ünden 4 gündür sinyal yok (Pi açık mı?)")
+        except Exception as e:
+            log.warning(f"Pi kalp atışı okunamadı: {e}")
     live, _ = check_dde()
     if _market_open() and not live:
         problems.append("❌ DDE canlı değil (fiyatlar gecikmeli — MatriksIQ açık mı?)")
